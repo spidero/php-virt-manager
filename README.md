@@ -8,4 +8,5 @@ Requirements:
 Installation:
 
 composer install
+
 mkdir -p {templates_c,configs,cache}
