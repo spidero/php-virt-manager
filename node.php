@@ -6,6 +6,7 @@ if (isset($_GET['node']) AND isset($_GET['state'])){
 	$node	= filter_input(INPUT_GET, 'node',  FILTER_SANITIZE_STRING);
 	$state	= filter_input(INPUT_GET, 'state',  FILTER_SANITIZE_STRING);
 //	echo "$node|$state";
+
 	
 	if ($state=="start"){
         $res  = libvirt_domain_lookup_by_name ($con, $node);
@@ -183,6 +184,14 @@ if (isset($_GET['node']) AND isset($_GET['state'])){
 
 if (isset($_GET['node'])){
 	$node	= filter_input(INPUT_GET, 'node',  FILTER_SANITIZE_STRING);
+	
+	///////////
+echo "-$node-";
+$res = libvirt_domain_lookup_by_name ($con, $node);
+$ss = libvirt_domain_get_screenshot($res, $node, 1);
+print_r($ss);
+echo "-";
+///////////
 	
     $smarty->assign('node', $node);
     //print_r( libvirt_domain_get_info (libvirt_domain_lookup_by_name ($con, $node)) );
