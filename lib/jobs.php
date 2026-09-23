@@ -34,12 +34,7 @@ function job_active_count() {
 
 // true when a queued/running job of the type has the parameter value (e.g. a clone target name)
 function job_pending($type, $param, $value) {
-    foreach (db_query("SELECT params FROM jobs WHERE type = ? AND status IN ('queued', 'running')", [$type])->fetchAll() as $row) {
-        if ((json_decode($row['params'], true)[$param] ?? null) === $value) {
-            return true;
-        }
-    }
-    return false;
+    return job_find_pending($type, $param, $value) !== null;
 }
 
 // takes the oldest queued job; the conditional update makes it safe against a second worker
@@ -52,13 +47,39 @@ function job_claim() {
     return $claimed->rowCount() ? $job : null;
 }
 
-// progress text of a running job, shown on the tasks page
-function job_progress($id, $message) {
-    db_query("UPDATE jobs SET message = ? WHERE id = ? AND status = 'running'", [mb_substr((string)$message, 0, 2000), $id]);
+// progress of a running job shown on the tasks page: text of the current phase
+// and its percent (null = unknown, shown as an animated bar)
+function job_progress($id, $message, $percent = null) {
+    db_query("UPDATE jobs SET message = ?, progress = ? WHERE id = ? AND status = 'running'",
+        [mb_substr((string)$message, 0, 2000), $percent === null ? null : max(0, min(100, (int)$percent)), $id]);
+}
+
+// queued or running job of the type whose parameter has the value, null when none
+function job_find_pending($type, $param, $value) {
+    foreach (db_query("SELECT * FROM jobs WHERE type = ? AND status IN ('queued', 'running') ORDER BY id", [$type])->fetchAll() as $job) {
+        if ((json_decode($job['params'], true)[$param] ?? null) === $value) {
+            return $job;
+        }
+    }
+    return null;
+}
+
+// state of the given jobs for the progress bars (polled by the browser)
+function job_states(array $ids) {
+    $ids = array_values(array_filter(array_map('intval', $ids)));
+    if (!$ids) {
+        return [];
+    }
+    $rows = db_query('SELECT id, status, progress, message FROM jobs WHERE id IN ('.implode(',', array_fill(0, count($ids), '?')).')', $ids)->fetchAll();
+    $states = [];
+    foreach ($rows as $row) {
+        $states[$row['id']] = ['status' => $row['status'], 'progress' => $row['progress'] === null ? null : (int)$row['progress'], 'message' => (string)$row['message']];
+    }
+    return $states;
 }
 
 function job_finish($id, $ok, $message) {
-    db_query('UPDATE jobs SET status = ?, message = ?, finished_at = ? WHERE id = ?',
+    db_query('UPDATE jobs SET status = ?, message = ?, progress = NULL, finished_at = ? WHERE id = ?',
         [$ok ? 'done' : 'failed', mb_substr((string)$message, 0, 2000), time(), $id]);
 }
 

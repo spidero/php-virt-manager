@@ -11,12 +11,14 @@
         <td>
 {if isset($downloaded[$key])}
           <span class="badge text-bg-success">{'downloaded'|t}</span> <small class="text-body-secondary">{$downloaded[$key].pool}, {$downloaded[$key].size}</small>
+{elseif isset($downloading[$key])}
+          {include file="job_progress.tpl" job=$downloading[$key]}
 {else}
           <span class="badge text-bg-secondary">{'not downloaded'|t}</span>
 {/if}
         </td>
         <td class="text-end">
-{if !isset($downloaded[$key]) && $allow.admin && $pools}
+{if !isset($downloaded[$key]) && !isset($downloading[$key]) && $allow.admin && $pools}
           <form method="post" action="cloud.php" class="d-inline-flex gap-1">
             <input type="hidden" name="csrf" value="{$csrf_token}">
             <input type="hidden" name="action" value="download">

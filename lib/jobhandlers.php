@@ -14,7 +14,7 @@ function job_progress_reporter($job_id, $label) {
     return function ($done, $total) use ($job_id, $label, &$last) {
         if (time() - $last >= 2 && $total > 0) {
             $last = time();
-            job_progress($job_id, sprintf('%s %d%% (%s / %s)', $label, $done * 100 / $total, format_bytes($done), format_bytes($total)));
+            job_progress($job_id, sprintf('%s: %s / %s', $label, format_bytes($done), format_bytes($total)), $done * 100 / $total);
         }
     };
 }
@@ -37,8 +37,7 @@ function job_image_download(array $params, $con, $job_id, $uri) {
     try {
         cloud_download($image['url'], $file, job_progress_reporter($job_id, 'download'));
         $size = (int)filesize($file);
-        job_progress($job_id, 'copying to the storage pool');
-        $vol = cloud_upload_file($con, $uri, $pool, cloud_volume_name($key), $file);
+        $vol = cloud_upload_file($con, $uri, $pool, cloud_volume_name($key), $file, job_progress_reporter($job_id, 'copying to the storage pool'));
         $format = (string)(simplexml_load_string((string)libvirt_storagevolume_get_xml_desc($vol, null))->target->format['type'] ?? '');
         if ($format !== 'qcow2') {
             libvirt_storagevolume_delete($vol, 0);

@@ -201,17 +201,24 @@ function cloud_build_seed_iso($dir, $user_data, $meta_data) {
 // uploads a local file into a new volume with "virsh vol-upload" (the pool
 // directory is not writable for the web server, and libvirt_stream_send() of
 // libvirt-php 0.5.x sends wrong data because it does not dereference $data)
-function cloud_upload_file($con, $uri, $pool, $vol_name, $file) {
+function cloud_upload_file($con, $uri, $pool, $vol_name, $file, ?callable $progress = null) {
     $size = filesize($file);
+    // allocation 0: the file stays sparse, so its allocation shows the upload progress
     $xml = '<volume><name>'.xml_escape($vol_name).'</name>'
-        ."<capacity unit='bytes'>".$size.'</capacity>'
+        ."<capacity unit='bytes'>".$size."</capacity><allocation unit='bytes'>0</allocation>"
         ."<target><format type='raw'/></target></volume>";
     $vol = libvirt_storagevolume_create_xml($pool, $xml);
     if (!$vol) {
         throw new RuntimeException('cannot create volume '.$vol_name.': '.libvirt_get_last_error());
     }
     $cmd = ['virsh', '-q', '-c', $uri, 'vol-upload', '--vol', (string)libvirt_storagevolume_get_path($vol), '--file', $file];
-    [$status, $output] = cloud_run($cmd);
+    $tick = $progress ? function () use ($vol, $size, $progress) {
+        $info = @libvirt_storagevolume_get_info($vol);
+        if (is_array($info)) {
+            $progress(min($size, (int)$info['allocation']), $size);
+        }
+    } : null;
+    [$status, $output] = cloud_run($cmd, $tick);
     if ($status !== 0) {
         @libvirt_storagevolume_delete($vol, 0);
         throw new RuntimeException('upload of '.$vol_name.' failed: '.trim($output));
@@ -222,13 +229,44 @@ function cloud_upload_file($con, $uri, $pool, $vol_name, $file) {
 }
 
 // runs a command without a shell, returns [exit status, stdout+stderr]
-function cloud_run(array $cmd) {
+function cloud_run(array $cmd, ?callable $tick = null) {
     $proc = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
     if (!is_resource($proc)) {
         throw new RuntimeException('cannot run '.$cmd[0]);
     }
-    $output = stream_get_contents($pipes[1]).stream_get_contents($pipes[2]);
-    return [proc_close($proc), (string)$output];
+    // read output while the command runs, calling $tick about once a second
+    stream_set_blocking($pipes[1], false);
+    stream_set_blocking($pipes[2], false);
+    $output = '';
+    $open = [$pipes[1], $pipes[2]];
+    $last_tick = 0.0;
+    do {
+        if ($open) {
+            $read = $open;
+            $write = $except = null;
+            if (@stream_select($read, $write, $except, 1) > 0) {
+                foreach ($read as $pipe) {
+                    $output .= (string)fread($pipe, 65536);
+                }
+            }
+            // closed pipes would make stream_select() return at once
+            $open = array_values(array_filter($open, fn($pipe) => !feof($pipe)));
+        }
+        else {
+            usleep(500000);
+        }
+        if ($tick && microtime(true) - $last_tick >= 1) {
+            $last_tick = microtime(true);
+            $tick();
+        }
+        $proc_status = proc_get_status($proc);
+    } while ($proc_status['running']);
+    $output .= stream_get_contents($pipes[1]).stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    // the exit code is reported only once, by the proc_get_status() call that saw the exit
+    proc_close($proc);
+    return [$proc_status['exitcode'], $output];
 }
 
 // downloads a URL to a file with curl, calling $progress($bytes, $total)

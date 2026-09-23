@@ -1,9 +1,7 @@
 {include file="header.tpl"}
 <div class="card">
   <div class="card-header">{'Background tasks'|t}
-{if $active_jobs}
-    <small class="text-body-secondary">({'refreshing every 5 s'|t})</small>
-{/if}
+
   </div>
   <div class="table-responsive">
   <table class="table table-sm mb-0">
@@ -16,13 +14,14 @@
         <td class="text-nowrap">{$j.params.name|default:'-'}</td>
         <td>{$j.username}</td>
         <td class="text-nowrap"><small>{$j.created_at|date_format:'%Y-%m-%d %H:%M:%S'}</small></td>
+{if $j.status=='done' || $j.status=='failed'}
         <td>
-          {if $j.status=='done'}<span class="badge text-bg-success">{'done'|t}</span>
-          {elseif $j.status=='failed'}<span class="badge text-bg-danger">{'failed'|t}</span>
-          {elseif $j.status=='running'}<span class="badge text-bg-primary">{'running'|t}</span>
-          {else}<span class="badge text-bg-secondary">{'queued'|t}</span>{/if}
+          {if $j.status=='done'}<span class="badge text-bg-success">{'done'|t}</span>{else}<span class="badge text-bg-danger">{'failed'|t}</span>{/if}
         </td>
-        <td><small>{$j.message}</small></td>
+        <td class="text-break"><small>{$j.message}</small></td>
+{else}
+        <td colspan="2">{include file="job_progress.tpl" job=$j}</td>
+{/if}
       </tr>
 {foreachelse}
       <tr><td colspan="7">{'No tasks'|t}</td></tr>
@@ -31,7 +30,4 @@
   </table>
   </div>
 </div>
-{if $active_jobs}
-<script>setTimeout(function () { location.reload(); }, 5000);</script>
-{/if}
 {include file="footer.tpl"}

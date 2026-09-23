@@ -372,4 +372,5 @@ return [
     'Image download' => 'Pobieranie obrazu',
     'Machine from cloud image' => 'Maszyna z obrazu chmurowego',
     'Cloning' => 'Klonowanie',
+    'progress' => 'postęp',
 ];

@@ -53,6 +53,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $smarty->assign('catalog', $catalog);
 $smarty->assign('downloaded', cloud_downloaded($con));
+// downloads in progress: image key => job
+$downloading = [];
+foreach (array_keys($catalog) as $key) {
+    if ($job = job_find_pending('image_download', 'image', $key)) {
+        $downloading[$key] = $job;
+    }
+}
+$smarty->assign('downloading', $downloading);
 $smarty->assign('pools', $pools);
 $smarty->assign('networks', $networks);
 $smarty->assign('form', $form);

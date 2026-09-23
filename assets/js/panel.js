@@ -131,8 +131,40 @@
       .catch(function () {});
   }
 
+  // progress bars of background jobs ([data-job]); the page reloads when one finishes
+  function pollJobs() {
+    var bars = document.querySelectorAll('[data-job]');
+    if (!bars.length || document.hidden) return;
+    var ids = Array.prototype.map.call(bars, function (el) { return el.getAttribute('data-job'); });
+    fetch('jobs.php?ids=' + ids.join(','), { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (states) {
+        if (!states) return;
+        var finished = false;
+        bars.forEach(function (el) {
+          var id = el.getAttribute('data-job');
+          var job = states[id];
+          if (!job || job.status === 'done' || job.status === 'failed') {
+            finished = true;
+            return;
+          }
+          var bar = el.firstElementChild;
+          var known = job.progress !== null;
+          bar.style.width = (known ? job.progress : 100) + '%';
+          bar.textContent = known ? job.progress + '%' : '';
+          bar.classList.toggle('bg-secondary', job.status === 'queued');
+          var msg = document.querySelector('[data-job-message="' + id + '"]');
+          if (msg) msg.textContent = job.message;
+        });
+        if (finished) window.location.reload();
+      })
+      .catch(function () {});
+  }
+
   poll();
   setInterval(poll, INTERVAL);
+  pollJobs();
+  setInterval(pollJobs, 2000);
   window.addEventListener('resize', function () {
     document.querySelectorAll('canvas[data-series]').forEach(draw);
   });

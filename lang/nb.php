@@ -359,4 +359,5 @@ return [
     'weekly on %s at %02d:00' => 'ukentlig på %s kl. %02d:00',
     'xorriso or genisoimage is required to build the cloud-init ISO.' => 'xorriso eller genisoimage kreves for å bygge cloud-init-ISO-en.',
     'you' => 'deg',
+    'progress' => 'fremdrift',
 ];

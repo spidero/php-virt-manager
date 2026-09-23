@@ -359,4 +359,5 @@ return [
     'weekly on %s at %02d:00' => 'щотижня: %s о %02d:00',
     'xorriso or genisoimage is required to build the cloud-init ISO.' => 'Для створення ISO cloud-init потрібен xorriso або genisoimage.',
     'you' => 'ви',
+    'progress' => 'прогрес',
 ];

@@ -359,4 +359,5 @@ return [
     'weekly on %s at %02d:00' => 'semanal: %s a las %02d:00',
     'xorriso or genisoimage is required to build the cloud-init ISO.' => 'Se necesita xorriso o genisoimage para crear la ISO de cloud-init.',
     'you' => 'usted',
+    'progress' => 'progreso',
 ];

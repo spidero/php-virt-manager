@@ -56,6 +56,10 @@ const DB_MIGRATIONS = [
             last_used INTEGER
         )',
     ],
+    5 => [
+        // percent of the current phase, NULL when unknown (indeterminate progress bar)
+        'ALTER TABLE jobs ADD COLUMN progress INTEGER',
+    ],
 ];
 
 function db() {
