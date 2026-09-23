@@ -27,8 +27,8 @@ server {
 
     # internal files and directories
     location ~ /\. { deny all; }
-    location ~ ^/(vendor|templates|templates_c|cache|configs|data|lib|lang|bin|tests|deploy|docs|stubs)(/|$) { deny all; }
-    location ~ \.(md|neon|lock|json|tpl|in|yml)$ { deny all; }
+    location ~ ^/(vendor|templates|templates_c|cache|configs|data|lib|lang|bin|tests|deploy|doc|docs|stubs)(/|$) { deny all; }
+    location ~ \.(md|neon|lock|json|tpl|in|yml|yaml)$ { deny all; }
     location ~ ^/(config|config-default|function)\.php$ { deny all; }
 
     # noVNC client files

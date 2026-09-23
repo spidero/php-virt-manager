@@ -13,3 +13,4 @@ config.php
 assets/css
 tests
 .phpunit.result.cache
+doc

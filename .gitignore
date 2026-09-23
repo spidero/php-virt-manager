@@ -9,6 +9,7 @@
 # Local notes - markdown is not committed (except README)
 *.md
 !/README.md
+!/doc/*.md
 /.claude/
 /docs/
 /.phpunit.result.cache

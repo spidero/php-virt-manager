@@ -191,39 +191,16 @@ cannot write to pool directories and `libvirt_stream_send()` of libvirt-php
 
 ## REST API
 
-Create a token in your profile (it is shown once, only its hash is stored).
-Tokens act with the role of their owner; failed authentications count
-towards the login lockout.
+JSON API with personal tokens (created in the profile, same permissions as
+the user's role): machines, power actions, snapshots, cloning and machines
+from cloud images as background jobs, networks and pools.
 
 ```sh
-TOKEN=pvm_...
-URL=https://panel.example.com:8443/api.php/v1
-
-curl -H "Authorization: Bearer $TOKEN" $URL/domains
-curl -H "Authorization: Bearer $TOKEN" -X POST $URL/domains/web-01/actions/start
-curl -H "Authorization: Bearer $TOKEN" -X POST $URL/domains/web-01/snapshots \
-     -d '{"name": "before-upgrade", "description": "manual"}'
-curl -H "Authorization: Bearer $TOKEN" -X POST $URL/cloud -d '{"image": "debian-13",
-     "name": "ci-runner", "memory": 2048, "vcpus": 2, "disk": 20, "user": "admin",
-     "ssh_keys": ["ssh-ed25519 AAAA... me@laptop"], "start": true}'
+curl -H "Authorization: Bearer pvm_..." https://panel.example.com:8443/api.php/v1/domains
 ```
 
-| Method | Path | Role |
-|--------|------|------|
-| GET | `/connections` | viewer |
-| GET | `/domains`, `/domains/{name}`, `/domains/{name}/stats` | viewer |
-| POST | `/domains/{name}/actions/{start,stop,destroy,reboot,suspend,resume}` | operator |
-| GET, POST | `/domains/{name}/snapshots` | viewer, operator |
-| POST | `/domains/{name}/snapshots/{snapshot}/revert` | operator |
-| DELETE | `/domains/{name}/snapshots/{snapshot}` | operator |
-| POST | `/domains/{name}/clone` (`{"name": ...}`, returns a job) | operator |
-| GET | `/cloud/images` | viewer |
-| POST | `/cloud` (returns a job) | operator |
-| GET | `/jobs`, `/jobs/{id}` | operator |
-| GET | `/networks`, `/pools` | viewer |
-
-Other connections are selected with `?conn=<key>` (keys from `$connections`).
-Errors are returned as `{"error": "..."}` with an HTTP status code.
+- Guide with examples (curl, shell, Python, Ansible): [doc/api.md](doc/api.md)
+- OpenAPI 3.1 specification: [doc/openapi.yaml](doc/openapi.yaml)
 
 ## Console
 

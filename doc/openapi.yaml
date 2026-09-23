@@ -1,0 +1,530 @@
+openapi: 3.1.0
+info:
+  title: php-virt-manager REST API
+  version: "1.0"
+  description: |
+    Manage libvirt/KVM machines of php-virt-manager. Authenticate with a
+    personal token created in the panel profile (`Authorization: Bearer pvm_...`).
+    Tokens act with the role of their owner. See doc/api.md for a guide.
+servers:
+  - url: https://{host}/api.php/v1
+    variables:
+      host:
+        default: localhost:8443
+        description: panel host and port
+
+security:
+  - bearerToken: []
+
+tags:
+  - name: connections
+    description: Hypervisors configured in the panel; select one with ?conn=
+  - name: machines
+    description: Virtual machines - state, details, usage counters, power actions, cloning
+  - name: snapshots
+    description: Machine snapshots
+  - name: cloud
+    description: Machines created from cloud images with cloud-init
+  - name: jobs
+    description: Background jobs started by cloning and cloud-image creation
+  - name: infrastructure
+    description: libvirt networks and storage pools
+
+paths:
+  /connections:
+    get:
+      operationId: listConnections
+      tags: [connections]
+      summary: Configured hypervisors
+      description: Required role - viewer.
+      parameters: [{$ref: '#/components/parameters/conn'}]
+      responses:
+        '200':
+          description: Connections
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/Connection'}}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /domains:
+    get:
+      operationId: listDomains
+      tags: [machines]
+      summary: List machines
+      description: Required role - viewer.
+      parameters: [{$ref: '#/components/parameters/conn'}]
+      responses:
+        '200':
+          description: Machines
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/DomainSummary'}}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /domains/{name}:
+    get:
+      operationId: getDomain
+      tags: [machines]
+      summary: Machine details
+      description: Required role - viewer.
+      parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/conn'}]
+      responses:
+        '200':
+          description: Machine
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Domain'}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /domains/{name}/stats:
+    get:
+      operationId: getDomainStats
+      tags: [machines]
+      summary: Raw usage counters
+      description: |
+        Cumulative counters; compute rates from two samples. Meaningful only
+        while `counters.state` is 1 (running). Required role - viewer.
+      parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/conn'}]
+      responses:
+        '200':
+          description: Counters
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Stats'}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /domains/{name}/actions/{action}:
+    post:
+      operationId: domainAction
+      tags: [machines]
+      summary: Power action
+      description: Required role - operator. Returns 409 when libvirt refuses the action.
+      parameters:
+        - {$ref: '#/components/parameters/name'}
+        - name: action
+          in: path
+          required: true
+          schema: {type: string, enum: [start, stop, destroy, reboot, suspend, resume]}
+        - {$ref: '#/components/parameters/conn'}
+      responses:
+        '200':
+          description: Action accepted
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OkMessage'}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /domains/{name}/snapshots:
+    get:
+      operationId: listSnapshots
+      tags: [snapshots]
+      summary: List snapshots (newest first)
+      description: Required role - viewer.
+      parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/conn'}]
+      responses:
+        '200':
+          description: Snapshots
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/Snapshot'}}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+    post:
+      operationId: createSnapshot
+      tags: [snapshots]
+      summary: Create a snapshot
+      description: Required role - operator.
+      parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/conn'}]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'
+                  description: default - current date and time
+                description: {type: string}
+            example: {name: before-upgrade, description: 'before apt full-upgrade'}
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean}
+                  name: {type: string}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /domains/{name}/snapshots/{snapshot}/revert:
+    post:
+      operationId: revertSnapshot
+      tags: [snapshots]
+      summary: Revert to a snapshot
+      description: The current state of the machine is lost. Required role - operator.
+      parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/snapshot'}, {$ref: '#/components/parameters/conn'}]
+      responses:
+        '200': {$ref: '#/components/responses/Ok'}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /domains/{name}/snapshots/{snapshot}:
+    delete:
+      operationId: deleteSnapshot
+      tags: [snapshots]
+      summary: Delete a snapshot
+      description: Required role - operator.
+      parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/snapshot'}, {$ref: '#/components/parameters/conn'}]
+      responses:
+        '200': {$ref: '#/components/responses/Ok'}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /domains/{name}/clone:
+    post:
+      operationId: cloneDomain
+      tags: [machines]
+      summary: Clone a shut off machine (background job)
+      description: Required role - operator.
+      parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/conn'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: {type: string, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'}
+            example: {name: web-02}
+      responses:
+        '200': {$ref: '#/components/responses/JobCreated'}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /cloud/images:
+    get:
+      operationId: listCloudImages
+      tags: [cloud]
+      summary: Cloud image catalog
+      description: Required role - viewer.
+      parameters: [{$ref: '#/components/parameters/conn'}]
+      responses:
+        '200':
+          description: Images
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/CloudImage'}}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /cloud:
+    post:
+      operationId: createFromCloudImage
+      tags: [cloud]
+      summary: Create a machine from a cloud image (background job)
+      description: |
+        The image must be downloaded. At least one of `ssh_keys` and `password`
+        is required. Required role - operator.
+      parameters: [{$ref: '#/components/parameters/conn'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CloudCreate'}
+            example:
+              image: debian-13
+              name: ci-runner-1
+              memory: 2048
+              vcpus: 2
+              disk: 20
+              ssh_keys: ["ssh-ed25519 AAAAC3Nza... me@laptop"]
+              start: true
+      responses:
+        '200': {$ref: '#/components/responses/JobCreated'}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /jobs:
+    get:
+      operationId: listJobs
+      tags: [jobs]
+      summary: Last 100 background jobs
+      description: Required role - operator.
+      responses:
+        '200':
+          description: Jobs
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/Job'}}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /jobs/{id}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      summary: Background job
+      description: Poll until `status` is `done` or `failed`. Required role - operator.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        '200':
+          description: Job
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /networks:
+    get:
+      operationId: listNetworks
+      tags: [infrastructure]
+      summary: libvirt networks
+      description: Required role - viewer.
+      parameters: [{$ref: '#/components/parameters/conn'}]
+      responses:
+        '200':
+          description: Networks
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/Network'}}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+  /pools:
+    get:
+      operationId: listPools
+      tags: [infrastructure]
+      summary: Storage pools (sizes in bytes)
+      description: Required role - viewer.
+      parameters: [{$ref: '#/components/parameters/conn'}]
+      responses:
+        '200':
+          description: Pools
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/Pool'}}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
+components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+      bearerFormat: pvm_ + 40 hex characters
+      description: Personal token created in the panel profile.
+
+  parameters:
+    conn:
+      name: conn
+      in: query
+      required: false
+      description: Connection key (see /connections); default the first connection.
+      schema: {type: string}
+    name:
+      name: name
+      in: path
+      required: true
+      description: Machine name (URL-encoded, may contain spaces).
+      schema: {type: string}
+    snapshot:
+      name: snapshot
+      in: path
+      required: true
+      schema: {type: string}
+
+  responses:
+    Ok:
+      description: Done
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ok: {type: boolean}
+    JobCreated:
+      description: Background job created
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ok: {type: boolean}
+              job: {type: integer, description: 'id for /jobs/{id}'}
+    Error:
+      description: |
+        400 invalid request, 401 missing/invalid token, 403 role or read-only
+        connection, 404 not found, 405 wrong method, 409 conflict (libvirt
+        refused, machine must be shut off, name exists), 429 too many failed
+        authentications, 502 hypervisor unreachable.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: {type: string}
+      example: {error: machine not found}
+
+    OkMessage:
+      type: object
+      properties:
+        ok: {type: boolean}
+        message: {type: string}
+
+    Connection:
+      type: object
+      properties:
+        key: {type: string}
+        label: {type: string}
+        uri: {type: string, example: 'qemu:///system'}
+        readonly: {type: boolean}
+        current: {type: boolean}
+
+    DomainState:
+      type: string
+      enum: [running, paused, shut off, shutting down, crashed, suspended, blocked, no state, unknown]
+
+    DomainSummary:
+      type: object
+      properties:
+        name: {type: string}
+        state: {$ref: '#/components/schemas/DomainState'}
+        state_id: {type: integer, description: 'libvirt virDomainState (1 running, 3 paused, 5 shut off)'}
+
+    Domain:
+      type: object
+      properties:
+        name: {type: string}
+        uuid: {type: string, format: uuid}
+        state: {$ref: '#/components/schemas/DomainState'}
+        memory_mb: {type: integer}
+        vcpus: {type: integer}
+        autostart: {type: boolean}
+        disks:
+          type: array
+          items:
+            type: object
+            properties:
+              device: {type: string, enum: [disk, cdrom, floppy, lun]}
+              target: {type: string, example: vda}
+              bus: {type: string, example: virtio}
+              source: {type: string}
+              size: {type: string, description: 'human-readable capacity and usage, empty for CD/DVD'}
+        interfaces:
+          type: array
+          items:
+            type: object
+            properties:
+              type: {type: string, example: network}
+              source: {type: string, example: default}
+              mac: {type: string}
+              model: {type: string}
+              target: {type: string, description: 'host device, empty when shut off'}
+              ips: {type: array, items: {type: string, example: 192.168.122.73/24}}
+        graphics:
+          type: [object, 'null']
+          properties:
+            type: {type: string, enum: [vnc, spice]}
+            port: {type: integer, description: '-1 or 0 when not running'}
+            listen: {type: string}
+
+    Stats:
+      type: object
+      properties:
+        time: {type: number, description: 'Unix time of the sample'}
+        counters:
+          type: [object, 'null']
+          properties:
+            state: {type: integer}
+            cpu_ns: {type: integer, description: 'CPU time of all vCPUs in nanoseconds'}
+            vcpus: {type: integer}
+            mem_rss: {type: integer, description: 'KiB used by the QEMU process'}
+            mem_total: {type: integer, description: 'KiB assigned to the guest'}
+            disk_rd: {type: integer, description: 'bytes read (all disks)'}
+            disk_wr: {type: integer, description: 'bytes written (all disks)'}
+            net_rx: {type: integer, description: 'bytes received (all interfaces)'}
+            net_tx: {type: integer, description: 'bytes sent (all interfaces)'}
+
+    Snapshot:
+      type: object
+      properties:
+        name: {type: string}
+        description: {type: string}
+        state: {type: string, description: 'machine state stored in the snapshot'}
+        created: {type: integer, description: 'Unix time'}
+
+    CloudImage:
+      type: object
+      properties:
+        key: {type: string, example: debian-13}
+        label: {type: string, example: Debian 13}
+        downloaded: {type: boolean}
+        pool: {type: [string, 'null']}
+
+    CloudCreate:
+      type: object
+      required: [image, name]
+      properties:
+        image: {type: string, description: 'key from /cloud/images'}
+        name: {type: string, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$', description: 'also the hostname'}
+        memory: {type: integer, minimum: 256, default: 2048, description: 'MB'}
+        vcpus: {type: integer, minimum: 1, default: 1}
+        disk: {type: integer, minimum: 3, maximum: 4096, default: 20, description: 'GB'}
+        pool: {type: string, description: 'default - first active pool'}
+        network: {type: string, default: default}
+        user: {type: string, pattern: '^[a-z_][a-z0-9_-]{0,31}$', default: admin}
+        ssh_keys:
+          oneOf:
+            - {type: array, items: {type: string}}
+            - {type: string, description: one key per line}
+        password: {type: string, minLength: 8}
+        start: {type: boolean, default: false}
+
+    Job:
+      type: object
+      properties:
+        id: {type: integer}
+        type: {type: string, enum: [clone, cloud_create, image_download]}
+        target: {type: [string, 'null']}
+        status: {type: string, enum: [queued, running, done, failed]}
+        progress: {type: [integer, 'null'], minimum: 0, maximum: 100, description: 'percent of the current phase'}
+        message: {type: [string, 'null']}
+        user: {type: string}
+        created_at: {type: integer}
+        finished_at: {type: [integer, 'null']}
+
+    Network:
+      type: object
+      properties:
+        name: {type: string}
+        active: {type: boolean}
+        ip_range: {type: [string, 'null'], example: 192.168.122.0/24}
+
+    Pool:
+      type: object
+      properties:
+        name: {type: string}
+        active: {type: boolean}
+        capacity: {type: integer}
+        allocation: {type: integer}
+        available: {type: integer}

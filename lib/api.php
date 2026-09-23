@@ -223,7 +223,8 @@ function api_job($con, $id) {
 function api_job_view(array $job) {
     return [
         'id' => (int)$job['id'], 'type' => $job['type'], 'target' => $job['params']['name'] ?? null,
-        'status' => $job['status'], 'message' => $job['message'], 'user' => $job['username'],
+        'status' => $job['status'], 'progress' => $job['progress'] === null ? null : (int)$job['progress'],
+        'message' => $job['message'], 'user' => $job['username'],
         'created_at' => (int)$job['created_at'], 'finished_at' => $job['finished_at'] ? (int)$job['finished_at'] : null,
     ];
 }
