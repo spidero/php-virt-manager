@@ -31,7 +31,7 @@ jobs:
         run: vendor/bin/phpunit
 
       - name: Translations complete
-        run: php bin/i18n-strings.php pl
+        run: for lang in de es nb pl uk; do php bin/i18n-strings.php $lang || exit 1; done
 
       - name: Shell scripts syntax
         run: sh -n deploy/install.sh && sh -n deploy/docker/entrypoint.sh

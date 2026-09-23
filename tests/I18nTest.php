@@ -38,24 +38,43 @@ final class I18nTest extends TestCase
     public function testDetectFromAcceptLanguage(): void
     {
         $this->assertSame('pl', i18n_detect('pl-PL,pl;q=0.9,en;q=0.8'));
-        $this->assertSame('en', i18n_detect('de-DE,en;q=0.5'));
+        $this->assertSame('en', i18n_detect('fr-FR,it;q=0.5'));
         $this->assertSame('en', i18n_detect(''));
+        $this->assertSame('nb', i18n_detect('no-NO,no;q=0.9'));
+        $this->assertSame('nb', i18n_detect('nn'));
+        $this->assertSame('uk', i18n_detect('uk-UA,uk;q=0.9,ru;q=0.8'));
+        $this->assertSame('de', i18n_detect('de-AT'));
+        $this->assertSame('es', i18n_detect('es-MX,es;q=0.9'));
     }
 
-    public function testPolishTranslationIsComplete(): void
+    public static function languages(): array
     {
-        $translations = require dirname(__DIR__).'/lang/pl.php';
+        return array_map(fn($code) => [$code], array_values(array_diff(array_keys(LANGUAGES), ['en'])));
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('languages')]
+    public function testTranslationIsComplete(string $lang): void
+    {
+        $translations = require dirname(__DIR__).'/lang/'.$lang.'.php';
         $missing = array_diff(i18n_collect_strings(dirname(__DIR__)), array_keys($translations));
-        $this->assertSame([], array_values($missing), 'Missing Polish translations (php bin/i18n-strings.php pl)');
+        $this->assertSame([], array_values($missing), "Missing translations (php bin/i18n-strings.php $lang)");
     }
 
-    public function testPlaceholdersMatch(): void
+    #[\PHPUnit\Framework\Attributes\DataProvider('languages')]
+    public function testPlaceholdersMatch(string $lang): void
     {
-        $translations = require dirname(__DIR__).'/lang/pl.php';
+        $translations = require dirname(__DIR__).'/lang/'.$lang.'.php';
         foreach ($translations as $source => $translated) {
             preg_match_all('/%[0-9]*[sd]/', $source, $a);
             preg_match_all('/%[0-9]*[sd]/', $translated, $b);
-            $this->assertSame($a[0], $b[0], 'Placeholders differ for: '.$source);
+            $this->assertSame($a[0], $b[0], "[$lang] placeholders differ for: $source");
+            $this->assertNotSame('', trim($translated), "[$lang] empty translation for: $source");
         }
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('languages')]
+    public function testEveryLanguageFileExists(string $lang): void
+    {
+        $this->assertFileExists(dirname(__DIR__).'/lang/'.$lang.'.php');
     }
 }

@@ -3,7 +3,17 @@
 // translations: English source strings are the keys, lang/<code>.php maps them
 // to the target language; missing entries fall back to English
 
-const LANGUAGES = ['en' => 'English', 'pl' => 'Polski'];
+const LANGUAGES = [
+    'en' => 'English',
+    'de' => 'Deutsch',
+    'es' => 'Español',
+    'nb' => 'Norsk (bokmål)',
+    'pl' => 'Polski',
+    'uk' => 'Українська',
+];
+
+// browser language codes mapped to a supported language
+const LANGUAGE_ALIASES = ['no' => 'nb', 'nn' => 'nb'];
 
 function i18n_set_language($lang) {
     global $i18n_lang, $i18n_strings;
@@ -21,6 +31,7 @@ function i18n_language() {
 function i18n_detect($header) {
     foreach (explode(',', (string)$header) as $part) {
         $code = strtolower(substr(trim(explode(';', $part)[0]), 0, 2));
+        $code = LANGUAGE_ALIASES[$code] ?? $code;
         if (isset(LANGUAGES[$code])) {
             return $code;
         }

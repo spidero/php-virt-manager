@@ -5,7 +5,8 @@ Web panel for libvirt/KVM written in PHP (Smarty 5, Bootstrap 5).
 Manage virtual machines from the browser: live charts, snapshots with
 schedules, a noVNC console, machines from cloud images with cloud-init,
 cloning, users with roles, a REST API - deployable with one script on nginx
-or as a Docker container. English and Polish interface.
+or as a Docker container. Interface in English, German, Norwegian, Polish,
+Spanish and Ukrainian.
 
 ![Machine details](.github/screenshots/vm-details.png)
 
@@ -33,7 +34,8 @@ or as a Docker container. English and Polish interface.
 - users with roles (admin, operator, viewer), login lockout after repeated
   failures, CSRF protection, read-only connections
 - several hypervisors (local or `qemu+ssh://`) switchable in the menu
-- English and Polish interface (browser language, selectable in the profile)
+- interface in English, German, Norwegian (bokmål), Polish, Spanish and
+  Ukrainian (browser language, selectable in the profile)
 - light/dark theme following the system preference
 - REST API with per-user tokens (same permissions as the user's role)
 - background task queue with a status page
@@ -235,10 +237,12 @@ one-hour token; the websocket proxy additionally requires a logged in session.
 composer install
 vendor/bin/phpstan analyse
 vendor/bin/phpunit
-php bin/i18n-strings.php pl     # untranslated strings
+php bin/i18n-strings.php de     # untranslated strings of a language
 ```
 
-Translations live in `lang/<code>.php` (English source strings as keys).
+Translations live in `lang/<code>.php` (English source strings as keys); a new
+language is added to `LANGUAGES` in `lib/i18n.php`. Tests check that every
+language is complete and keeps the `%s`/`%d` placeholders.
 
 `composer install` also copies the Bootstrap CSS to `assets/css/` (the
 `vendor/` directory is not served).
