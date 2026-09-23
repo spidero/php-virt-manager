@@ -57,6 +57,17 @@ server {
         proxy_read_timeout 1h;
     }
 
+    # REST API: api.php/v1/... (path after the script name is PATH_INFO)
+    location ~ ^/api\.php(/|$) {
+        fastcgi_split_path_info ^(/api\.php)(/.*)$;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root/api.php;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+        fastcgi_param HTTP_AUTHORIZATION $http_authorization;
+        fastcgi_param HTTPS on;
+        fastcgi_pass unix:@FPM_SOCK@;
+    }
+
     location ~ \.php$ {
         try_files $uri =404;
         include fastcgi_params;

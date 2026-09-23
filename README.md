@@ -34,6 +34,7 @@ one script on nginx or as a Docker container.
 - several hypervisors (local or `qemu+ssh://`) switchable in the menu
 - English and Polish interface (browser language, selectable in the profile)
 - light/dark theme following the system preference
+- REST API with per-user tokens (same permissions as the user's role)
 - background task queue with a status page
 - action log (logins, power actions, snapshots, created machines, user changes)
   with automatic rotation
@@ -94,7 +95,8 @@ sudo phpenmod libvirt
 sudo deploy/install.sh
 ```
 
-The script installs nginx, php-fpm, websockify and noVNC, copies the panel to
+The nginx configuration also routes `api.php/v1/...` (PATH_INFO) and passes the
+`Authorization` header. The script installs nginx, php-fpm, websockify and noVNC, copies the panel to
 `/var/www/php-virt-manager`, creates `config.php` with a random password
 (printed at the end), a self-signed TLS certificate, a dedicated php-fpm pool
 running with the `libvirt` group, a systemd unit for websockify and a systemd
@@ -171,6 +173,42 @@ $cloud_images = [
 Files are copied into pools with `virsh vol-upload`, because the web server
 cannot write to pool directories and `libvirt_stream_send()` of libvirt-php
 0.5.x sends corrupted data.
+
+## REST API
+
+Create a token in your profile (it is shown once, only its hash is stored).
+Tokens act with the role of their owner; failed authentications count
+towards the login lockout.
+
+```sh
+TOKEN=pvm_...
+URL=https://panel.example.com:8443/api.php/v1
+
+curl -H "Authorization: Bearer $TOKEN" $URL/domains
+curl -H "Authorization: Bearer $TOKEN" -X POST $URL/domains/web-01/actions/start
+curl -H "Authorization: Bearer $TOKEN" -X POST $URL/domains/web-01/snapshots \
+     -d '{"name": "before-upgrade", "description": "manual"}'
+curl -H "Authorization: Bearer $TOKEN" -X POST $URL/cloud -d '{"image": "debian-13",
+     "name": "ci-runner", "memory": 2048, "vcpus": 2, "disk": 20, "user": "admin",
+     "ssh_keys": ["ssh-ed25519 AAAA... me@laptop"], "start": true}'
+```
+
+| Method | Path | Role |
+|--------|------|------|
+| GET | `/connections` | viewer |
+| GET | `/domains`, `/domains/{name}`, `/domains/{name}/stats` | viewer |
+| POST | `/domains/{name}/actions/{start,stop,destroy,reboot,suspend,resume}` | operator |
+| GET, POST | `/domains/{name}/snapshots` | viewer, operator |
+| POST | `/domains/{name}/snapshots/{snapshot}/revert` | operator |
+| DELETE | `/domains/{name}/snapshots/{snapshot}` | operator |
+| POST | `/domains/{name}/clone` (`{"name": ...}`, returns a job) | operator |
+| GET | `/cloud/images` | viewer |
+| POST | `/cloud` (returns a job) | operator |
+| GET | `/jobs`, `/jobs/{id}` | operator |
+| GET | `/networks`, `/pools` | viewer |
+
+Other connections are selected with `?conn=<key>` (keys from `$connections`).
+Errors are returned as `{"error": "..."}` with an HTTP status code.
 
 ## Console
 

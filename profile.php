@@ -16,6 +16,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash_set('success', t('Language changed.'));
         }
     }
+    elseif ($action === 'token_create') {
+        $name = trim((string)($_POST['name'] ?? ''));
+        if ($name === '' || mb_strlen($name) > 64) {
+            flash_set('danger', t('Enter a token name (up to 64 characters).'));
+        }
+        else {
+            // shown once on the next page load, only the hash is stored
+            $_SESSION['new_token'] = api_token_create($user['id'], $name);
+            action_log('api_token_create', $user['username'], true, $name);
+            flash_set('success', t('Token created. Copy it now, it will not be shown again.'));
+        }
+    }
+    elseif ($action === 'token_delete') {
+        if (api_token_delete($user['id'], (int)($_POST['id'] ?? 0))) {
+            action_log('api_token_delete', $user['username'], true);
+            flash_set('success', t('Token revoked.'));
+        }
+    }
     elseif ($action === 'password') {
         $current = (string)($_POST['current'] ?? '');
         $password = (string)($_POST['password'] ?? '');
@@ -38,6 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $smarty->assign('user', $user);
+$smarty->assign('tokens', api_token_list($user['id']));
+$smarty->assign('new_token', $_SESSION['new_token'] ?? null);
+unset($_SESSION['new_token']);
+$smarty->assign('api_url', (!empty($_SERVER['HTTPS']) ? 'https' : 'http').'://'.($_SERVER['HTTP_HOST'] ?? 'localhost')
+    .rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\').'/api.php/v1');
 $smarty->assign('languages', LANGUAGES);
 $smarty->assign('password_min', PASSWORD_MIN_LENGTH);
 $smarty->display('profile.tpl');

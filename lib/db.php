@@ -45,6 +45,17 @@ const DB_MIGRATIONS = [
             last_status TEXT
         )',
     ],
+    4 => [
+        'CREATE TABLE api_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            token_hash TEXT NOT NULL UNIQUE,
+            prefix TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            last_used INTEGER
+        )',
+    ],
 ];
 
 function db() {

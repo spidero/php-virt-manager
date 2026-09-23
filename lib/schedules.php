@@ -114,6 +114,8 @@ function schedule_run(array $s, $conn, $now) {
         if ($snap && libvirt_domain_snapshot_delete($snap)) {
             $deleted++;
         }
+        // release before the domain, see domain_snapshots()
+        unset($snap);
     }
     return ['ok' => true, 'message' => $name.' created'.($deleted ? ', '.$deleted.' old removed' : '')];
 }

@@ -2,15 +2,7 @@
 
 require_once 'function.php';
 
-// power action => [libvirt function, message on success]
-$power_actions = [
-    'start'   => ['libvirt_domain_create',   'Starting machine, it may take some time'],
-    'stop'    => ['libvirt_domain_shutdown', 'Shutting down machine, it may take some time'],
-    'destroy' => ['libvirt_domain_destroy',  'Machine forcibly stopped'],
-    'reboot'  => ['libvirt_domain_reboot',   'Rebooting machine, it may take some time'],
-    'suspend' => ['libvirt_domain_suspend',  'Suspending machine'],
-    'resume'  => ['libvirt_domain_resume',   'Resuming machine'],
-];
+$power_actions = DOMAIN_POWER_ACTIONS;
 
 $node = (string)($_GET['node'] ?? $_POST['node'] ?? '');
 if (!in_array($node, libvirt_list_domains($con) ?: [], true)) {
@@ -69,6 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ok = (bool)libvirt_domain_snapshot_delete($snap);
             $message = t('Snapshot %s deleted', $name);
         }
+        // release before the domain, see domain_snapshots()
+        unset($snap);
     }
     elseif (in_array($action, ['schedule_add', 'schedule_toggle', 'schedule_delete'], true)) {
         readonly_guard($node_url, 'admin');

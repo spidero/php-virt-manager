@@ -42,4 +42,38 @@
     </form>
   </div>
 </div>
+<div class="card mb-3">
+  <div class="card-header">{'API tokens'|t}</div>
+  <div class="card-body">
+{if $new_token}
+    <div class="alert alert-warning">
+      {'New token'|t}: <code class="user-select-all">{$new_token}</code>
+    </div>
+{/if}
+    <p class="small text-body-secondary">{'Tokens act with your role (%s). Example:'|t:({$user.role|t})}
+      <code class="d-block mt-1">curl -H "Authorization: Bearer pvm_..." {$api_url}/domains</code>
+    </p>
+    <table class="table table-sm align-middle">
+      <thead><tr><th>{'Name'|t}</th><th>{'Token'|t}</th><th>{'Created'|t}</th><th>{'Last used'|t}</th><th></th></tr></thead>
+      <tbody>
+{foreach $tokens as $tk}
+        <tr>
+          <td>{$tk.name}</td><td><code>{$tk.prefix}...</code></td>
+          <td class="text-nowrap"><small>{$tk.created_at|date_format:'%Y-%m-%d %H:%M'}</small></td>
+          <td class="text-nowrap"><small>{if $tk.last_used}{$tk.last_used|date_format:'%Y-%m-%d %H:%M'}{else}-{/if}</small></td>
+          <td class="text-end">{call post_button url='profile.php' action='token_delete' label={'Revoke'|t} class='btn-outline-danger btn-sm' extra=['id'=>$tk.id] confirm={'Revoke token %s?'|t:$tk.name}}</td>
+        </tr>
+{foreachelse}
+        <tr><td colspan="5">{'No tokens'|t}</td></tr>
+{/foreach}
+      </tbody>
+    </table>
+    <form method="post" action="profile.php" class="d-flex gap-2" style="max-width: 480px;">
+      <input type="hidden" name="csrf" value="{$csrf_token}">
+      <input type="hidden" name="action" value="token_create">
+      <input type="text" name="name" class="form-control form-control-sm" placeholder="{'token name, e.g. ansible'|t}" maxlength="64" required>
+      <button type="submit" class="btn btn-primary btn-sm text-nowrap">{'Create token'|t}</button>
+    </form>
+  </div>
+</div>
 {include file="footer.tpl"}

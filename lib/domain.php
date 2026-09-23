@@ -12,6 +12,16 @@ const DOMAIN_STATES = [
     7 => ['suspended', 'warning'],
 ];
 
+// power action => [libvirt function, message on success]
+const DOMAIN_POWER_ACTIONS = [
+    'start'   => ['libvirt_domain_create',   'Starting machine, it may take some time'],
+    'stop'    => ['libvirt_domain_shutdown', 'Shutting down machine, it may take some time'],
+    'destroy' => ['libvirt_domain_destroy',  'Machine forcibly stopped'],
+    'reboot'  => ['libvirt_domain_reboot',   'Rebooting machine, it may take some time'],
+    'suspend' => ['libvirt_domain_suspend',  'Suspending machine'],
+    'resume'  => ['libvirt_domain_resume',   'Resuming machine'],
+];
+
 // VM name allowed by the create wizard
 const DOMAIN_NAME_PATTERN = '/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/';
 
@@ -106,12 +116,17 @@ function domain_graphics(SimpleXMLElement $xml) {
     ];
 }
 
+// libvirt-php 0.5.x: a snapshot resource does not keep a reference to its
+// domain, so freeing the domain first makes the snapshot destructor crash PHP.
+// Every snapshot resource must be released (unset) while the domain is alive.
+
 // list of snapshots with details, newest first
 function domain_snapshots($res) {
     $snapshots = [];
     foreach (libvirt_list_domain_snapshots($res) ?: [] as $name) {
         $snap = libvirt_domain_snapshot_lookup_by_name($res, $name);
         $xml = $snap ? simplexml_load_string((string)libvirt_domain_snapshot_get_xml($snap)) : null;
+        unset($snap);
         $snapshots[] = [
             'name'        => $name,
             'description' => $xml ? (string)$xml->description : '',

@@ -357,4 +357,19 @@ return [
     'Thursday' => 'czwartek',
     'Friday' => 'piątek',
     'Saturday' => 'sobota',
+
+    // API tokens
+    'API tokens' => 'Tokeny API',
+    'Create token' => 'Utwórz token',
+    'Enter a token name (up to 64 characters).' => 'Podaj nazwę tokenu (do 64 znaków).',
+    'Last used' => 'Ostatnio użyty',
+    'New token' => 'Nowy token',
+    'No tokens' => 'Brak tokenów',
+    'Revoke' => 'Unieważnij',
+    'Revoke token %s?' => 'Unieważnić token %s?',
+    'Token' => 'Token',
+    'Token created. Copy it now, it will not be shown again.' => 'Token utworzony. Skopiuj go teraz, nie zostanie pokazany ponownie.',
+    'Token revoked.' => 'Token unieważniony.',
+    'Tokens act with your role (%s). Example:' => 'Tokeny działają z Twoją rolą (%s). Przykład:',
+    'token name, e.g. ansible' => 'nazwa tokenu, np. ansible',
 ];

@@ -12,3 +12,10 @@
 RedirectMatch 404 /(vendor|templates|templates_c|cache|configs|data|lib|lang|bin|tests|deploy|docs|stubs|\.git|\.github)(/|$)
 
 Options -Indexes
+
+# pass the Authorization header to PHP (REST API tokens)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>

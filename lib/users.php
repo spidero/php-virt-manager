@@ -75,13 +75,47 @@ function role_allows($role, $permission) {
     return (ROLES[$role] ?? 0) >= ROLES[$needed];
 }
 
-// user of the current session, reloaded on every request so role changes apply at once
+// user of the current session (or of the API token, see api_authenticate()),
+// reloaded on every request so role changes apply at once
 function current_user() {
     static $user = false;
+    if (isset($GLOBALS['api_user'])) {
+        return $GLOBALS['api_user'];
+    }
     if ($user === false) {
         $user = !empty($_SESSION['user_id']) ? user_find((int)$_SESSION['user_id']) : null;
     }
     return $user;
+}
+
+// API tokens: "pvm_" + 40 hex characters, only the SHA-256 hash is stored
+
+function api_token_create($user_id, $name) {
+    $token = 'pvm_'.bin2hex(random_bytes(20));
+    db_query('INSERT INTO api_tokens (user_id, name, token_hash, prefix, created_at) VALUES (?, ?, ?, ?, ?)',
+        [$user_id, $name, hash('sha256', $token), substr($token, 0, 10), time()]);
+    return $token;
+}
+
+function api_token_list($user_id) {
+    return db_query('SELECT id, name, prefix, created_at, last_used FROM api_tokens WHERE user_id = ? ORDER BY id', [$user_id])->fetchAll();
+}
+
+function api_token_delete($user_id, $id) {
+    return db_query('DELETE FROM api_tokens WHERE id = ? AND user_id = ?', [$id, $user_id])->rowCount() > 0;
+}
+
+// owner of a valid token, null otherwise
+function api_token_user($token) {
+    if (!preg_match('/^pvm_[0-9a-f]{40}$/', (string)$token)) {
+        return null;
+    }
+    $row = db_query('SELECT id, user_id FROM api_tokens WHERE token_hash = ?', [hash('sha256', $token)])->fetch();
+    if (!$row) {
+        return null;
+    }
+    db_query('UPDATE api_tokens SET last_used = ? WHERE id = ?', [time(), $row['id']]);
+    return user_find((int)$row['user_id']);
 }
 
 function can($permission) {

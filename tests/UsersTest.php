@@ -19,6 +19,8 @@ final class UsersTest extends TestCase
 
     public function testBootstrapCreatesFirstAdminOnce(): void
     {
+        // the bootstrap only acts on an empty user table
+        db_query('DELETE FROM users');
         users_bootstrap('boss', password_hash('secret-pass', PASSWORD_DEFAULT));
         users_bootstrap('other', password_hash('secret-pass', PASSWORD_DEFAULT));
         $boss = user_find_by_name('BOSS');
