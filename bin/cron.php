@@ -25,6 +25,10 @@ i18n_set_language('en');
 $tasks = [
     'action log rotation' => fn() => action_log_rotate($action_log_max_bytes, $action_log_keep) ? 'rotated' : '',
     'console tokens'      => fn() => ($n = console_tokens_cleanup()) ? $n.' removed' : '',
+    'stale jobs'          => fn() => ($n = job_fail_stale(6 * 3600)) ? $n.' marked failed' : '',
+    'old jobs'            => fn() => ($n = job_cleanup()) ? $n.' removed' : '',
+    // long-running jobs last, with a limit so the next minute's run is not delayed much
+    'jobs'                => fn() => implode(', ', job_run_queue(JOB_HANDLERS, 50)),
 ];
 
 $status = 0;

@@ -14,6 +14,21 @@ const DB_MIGRATIONS = [
             last_login INTEGER
         )',
     ],
+    2 => [
+        'CREATE TABLE jobs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type TEXT NOT NULL,
+            params TEXT NOT NULL,
+            conn TEXT NOT NULL,
+            username TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT \'queued\' CHECK (status IN (\'queued\', \'running\', \'done\', \'failed\')),
+            message TEXT,
+            created_at INTEGER NOT NULL,
+            started_at INTEGER,
+            finished_at INTEGER
+        )',
+        'CREATE INDEX jobs_status ON jobs (status, id)',
+    ],
 ];
 
 function db() {

@@ -42,7 +42,8 @@ const I18N_DYNAMIC = [
     'inactive', 'building', 'degraded', 'inaccessible',
     'viewer', 'operator', 'admin',
     'Starting machine, it may take some time', 'Shutting down machine, it may take some time',
-    'Machine forcibly stopped', 'Rebooting machine, it may take some time', 'Suspending machine', 'Resuming machine',
+    'Machine forcibly stopped',
+    'clone', 'Hard disk', 'CD/DVD', 'Network (PXE)', 'Rebooting machine, it may take some time', 'Suspending machine', 'Resuming machine',
 ];
 
 // all strings passed to t() in PHP files and to the |t modifier in templates

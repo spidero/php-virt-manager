@@ -199,6 +199,9 @@ function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $netwo
         ."<input type='tablet' bus='usb'/>"
         ."<console type='pty'/>"
         ."<memballoon model='virtio'/>"
+        // spare PCIe root ports: q35 needs a free port for every hot-plugged disk or NIC
+        ."<controller type='pci' index='0' model='pcie-root'/>"
+        .str_repeat("<controller type='pci' model='pcie-root-port'/>", 8)
         .'</devices></domain>';
 }
 

@@ -29,6 +29,7 @@
     {elseif $info['state']==5}
         {call action_button action='start' label={'Start'|t} class='btn-success'}
     {/if}
+        <a href="edit.php?node={$node|escape:'url'}" class="btn btn-outline-secondary mb-1">{'Edit'|t}</a>
     {if $graphics && $graphics.type=='vnc' && $active && $console_enabled}
         <a href="console.php?node={$node|escape:'url'}" target="_blank" class="btn btn-secondary mb-1">{'Console'|t}</a>
     {/if}

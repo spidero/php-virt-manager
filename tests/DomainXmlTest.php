@@ -17,6 +17,13 @@ final class DomainXmlTest extends TestCase
         $this->assertSame('127.0.0.1', (string)$doc->devices->graphics['listen']);
     }
 
+    public function testNewDomainHasSparePcieRootPorts(): void
+    {
+        $doc = simplexml_load_string(domain_new_xml('vm', 512, 1, '/d.qcow2', '', 'net'));
+        $this->assertSame('pcie-root', (string)$doc->xpath("/domain/devices/controller[@index='0']")[0]['model']);
+        $this->assertCount(8, $doc->xpath("/domain/devices/controller[@model='pcie-root-port']"));
+    }
+
     public function testNewDomainXmlWithoutIso(): void
     {
         $doc = simplexml_load_string(domain_new_xml('vm', 512, 1, '/d.qcow2', '', 'net'));

@@ -12,6 +12,10 @@ require_once __DIR__.'/actionlog.php';
 require_once __DIR__.'/connections.php';
 require_once __DIR__.'/domain.php';
 require_once __DIR__.'/console.php';
+require_once __DIR__.'/vmedit.php';
+require_once __DIR__.'/storage.php';
+require_once __DIR__.'/jobs.php';
+require_once __DIR__.'/jobhandlers.php';
 
 // $GLOBALS works both at file scope (web, cron) and when included from a function (tests)
 $GLOBALS['data_dir']             ??= dirname(__DIR__).'/data';

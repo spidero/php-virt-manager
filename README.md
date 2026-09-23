@@ -14,6 +14,10 @@ one script on nginx or as a Docker container.
 - machine details: memory, vCPUs, disks, network interfaces with guest IPs,
   autostart, live screen preview
 - power actions: start, shutdown, reboot, pause/resume, force stop
+- machine editing: memory, vCPUs, CD/DVD medium, boot order, new disks and
+  network interfaces (hot-plugged into running machines)
+- cloning (disks copied in the background) and deleting machines with a
+  choice of disks; disks used by other machines are protected
 - snapshots: create, revert, delete
 - browser console (noVNC via websockify), SPICE to VNC graphics switch
 - new machine wizard (qcow2 disk in any active pool, ISO from any pool, network)
@@ -23,6 +27,7 @@ one script on nginx or as a Docker container.
 - several hypervisors (local or `qemu+ssh://`) switchable in the menu
 - English and Polish interface (browser language, selectable in the profile)
 - light/dark theme following the system preference
+- background task queue with a status page
 - action log (logins, power actions, snapshots, created machines, user changes)
   with automatic rotation
 

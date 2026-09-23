@@ -30,6 +30,9 @@
     <a href="index.php" class="list-group-item list-group-item-action py-2{if $page=='index'} active{/if}">{'Hypervisor'|t}</a>
     <a href="storage.php" class="list-group-item list-group-item-action py-2{if $page=='storage'} active{/if}">{'Storage'|t}</a>
     <a href="network.php" class="list-group-item list-group-item-action py-2{if $page=='network'} active{/if}">{'Networks'|t}</a>
+{if $can.operate}
+    <a href="jobs.php" class="list-group-item list-group-item-action py-2{if $page=='jobs'} active{/if}">{'Background tasks'|t}</a>
+{/if}
 {if $can.admin}
     <a href="log.php" class="list-group-item list-group-item-action py-2{if $page=='log'} active{/if}">{'Action log'|t}</a>
     <a href="users.php" class="list-group-item list-group-item-action py-2{if $page=='users'} active{/if}">{'Users'|t}</a>
