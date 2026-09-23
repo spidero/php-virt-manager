@@ -1,10 +1,10 @@
 {include file="header.tpl"}
 <div class="row">
-{foreach [['running','success'],['paused','warning'],['shut off','danger']] as $s}
+{foreach [['running','success',1],['paused','warning',3],['shut off','danger',5]] as $s}
   <div class="col-4 mb-3">
     <div class="card text-center">
       <div class="card-body py-3">
-        <div class="fs-2 fw-bold text-{$s[1]}">{$state_counts[$s[0]]|default:0}</div>
+        <div class="fs-2 fw-bold text-{$s[1]}" data-count-state="{$s[2]}">{$state_counts[$s[0]]|default:0}</div>
         <div class="text-body-secondary">{$s[0]|t}</div>
       </div>
     </div>

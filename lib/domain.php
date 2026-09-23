@@ -46,7 +46,7 @@ function domain_disks($res, SimpleXMLElement $xml) {
         if ($source !== '' && (string)$disk['device'] === 'disk') {
             $block = @libvirt_domain_get_block_info($res, $dev);
             if (is_array($block)) {
-                $size = format_bytes($block['capacity']).' (used '.format_bytes($block['allocation']).')';
+                $size = t('%s (used %s)', format_bytes($block['capacity']), format_bytes($block['allocation']));
             }
         }
         $disks[] = [

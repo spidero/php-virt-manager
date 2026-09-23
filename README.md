@@ -10,7 +10,8 @@ one script on nginx or as a Docker container.
 
 ## Features
 
-- hypervisor overview, machine list with state indicators
+- hypervisor overview, machine list with state indicators refreshed live
+- live charts per machine: CPU, memory, disk and network throughput
 - machine details: memory, vCPUs, disks, network interfaces with guest IPs,
   autostart, live screen preview
 - power actions: start, shutdown, reboot, pause/resume, force stop

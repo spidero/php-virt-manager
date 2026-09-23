@@ -281,4 +281,15 @@ return [
     'Volume %s deleted.' => 'Wolumen %s usunięty.',
     'Volume %s is used by a machine.' => 'Wolumen %s jest używany przez maszynę.',
     'in use' => 'w użyciu',
+
+    // live charts
+    'Live usage' => 'Użycie na żywo',
+    'last 5 minutes, every 5 s' => 'ostatnie 5 minut, co 5 s',
+    'CPU' => 'CPU',
+    'Memory (host RSS)' => 'Pamięć (RSS na hoście)',
+    'Disk read' => 'Odczyt z dysku',
+    'Disk write' => 'Zapis na dysk',
+    'Network in' => 'Sieć - odbiór',
+    'Network out' => 'Sieć - wysyłanie',
+    '%s (used %s)' => '%s (zajęte %s)',
 ];

@@ -9,5 +9,8 @@
     if (msg && !window.confirm(msg)) e.preventDefault();
   });
 </script>
+{if $logged_user}
+<script src="assets/js/panel.js"></script>
+{/if}
 </body>
 </html>

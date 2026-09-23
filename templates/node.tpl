@@ -70,6 +70,20 @@
   </div>
 </div>
 
+{if $active}
+<div class="card mb-3">
+  <div class="card-header">{'Live usage'|t} <small class="text-body-secondary">({'last 5 minutes, every 5 s'|t})</small></div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6"><canvas class="w-100" style="height: 110px" data-series="cpu" data-labels="{'CPU'|t}" data-unit="%"></canvas></div>
+      <div class="col-md-6"><canvas class="w-100" style="height: 110px" data-series="mem" data-labels="{'Memory (host RSS)'|t}" data-unit="MB"></canvas></div>
+      <div class="col-md-6"><canvas class="w-100" style="height: 110px" data-series="disk_rd,disk_wr" data-labels="{'Disk read'|t},{'Disk write'|t}" data-unit="MB/s"></canvas></div>
+      <div class="col-md-6"><canvas class="w-100" style="height: 110px" data-series="net_rx,net_tx" data-labels="{'Network in'|t},{'Network out'|t}" data-unit="MB/s"></canvas></div>
+    </div>
+  </div>
+</div>
+{/if}
+
 <div class="card mb-3">
   <div class="card-header">{'Disks'|t}</div>
   <table class="table table-sm mb-0">

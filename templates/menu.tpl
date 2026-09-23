@@ -16,7 +16,7 @@
   <div class="card-body px-3 py-2">
 {foreach from=$domains item=d}
     <div class="text-truncate">
-      <span class="text-{$d.color}" title="{$d.label|t}">&#9679;</span>
+      <span class="text-{$d.color}" title="{$d.label|t}" data-domain-dot="{$d.name}">&#9679;</span>
       <a href="node.php?node={$d.name|escape:'url'}"{if isset($node) && $node==$d.name} class="fw-bold"{/if}>{$d.name}</a>
     </div>
 {foreachelse}

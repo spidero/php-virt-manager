@@ -32,7 +32,7 @@
 
     <title>PHP virt-manager</title>
   </head>
-  <body>
+  <body{if isset($node) && isset($state)} data-node="{$node}" data-state="{$state.id}"{/if}>
   <br>
 <div class="container">
   <div class="row">

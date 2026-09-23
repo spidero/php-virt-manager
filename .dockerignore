@@ -10,6 +10,6 @@ docs
 config.php
 *.md
 !README.md
-assets
+assets/css
 tests
 .phpunit.result.cache
