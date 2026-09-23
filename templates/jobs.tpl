@@ -12,7 +12,7 @@
 {foreach $jobs as $j}
       <tr>
         <td>{$j.id}</td>
-        <td>{$j.type|t}</td>
+        <td>{$j.label|t}</td>
         <td class="text-nowrap">{$j.params.name|default:'-'}</td>
         <td>{$j.username}</td>
         <td class="text-nowrap"><small>{$j.created_at|date_format:'%Y-%m-%d %H:%M:%S'}</small></td>

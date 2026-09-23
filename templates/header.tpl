@@ -23,6 +23,8 @@
         window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     </script>
     <style>
+      /* let the content column shrink (long table cells must not push it below the menu) */
+      .row > .col { min-width: 0; }
       /* tables placed directly in cards: align cell padding with the card body */
       .card > .table > :not(caption) > * > :first-child,
       .card > .table-responsive > .table > :not(caption) > * > :first-child { padding-left: 1rem; }

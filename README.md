@@ -2,9 +2,10 @@
 
 Web panel for libvirt/KVM written in PHP (Smarty 5, Bootstrap 5).
 
-Manage virtual machines from the browser: power actions, snapshots, a noVNC
-console, a new machine wizard, storage and network overview - deployable with
-one script on nginx or as a Docker container.
+Manage virtual machines from the browser: live charts, snapshots with
+schedules, a noVNC console, machines from cloud images with cloud-init,
+cloning, users with roles, a REST API - deployable with one script on nginx
+or as a Docker container. English and Polish interface.
 
 ![Machine details](.github/screenshots/vm-details.png)
 
@@ -45,10 +46,14 @@ one script on nginx or as a Docker container.
 |---|---|
 | ![Dashboard](.github/screenshots/hypervisor.png) | ![Browser console](.github/screenshots/console.png) |
 | **Dashboard** - machine states and host info | **Console** - noVNC in the browser |
-| ![New machine wizard](.github/screenshots/new-machine.png) | ![Dark theme](.github/screenshots/vm-details-dark.png) |
-| **New machine wizard** | **Dark theme** follows the system setting |
-| ![Networks](.github/screenshots/networks.png) | ![Action log](.github/screenshots/action-log.png) |
-| **Networks** with DHCP leases | **Action log** - who did what and when |
+| ![Cloud images](.github/screenshots/cloud.png) | ![Dark theme](.github/screenshots/vm-details-dark.png) |
+| **Cloud images** - a new machine with cloud-init in a minute | **Dark theme** follows the system setting |
+| ![Editing a machine](.github/screenshots/edit.png) | ![Users and roles](.github/screenshots/users.png) |
+| **Editing** - resources, CD/DVD, hot-plugged disks and NICs, clone, delete | **Users** with admin, operator and viewer roles |
+| ![Background tasks](.github/screenshots/jobs.png) | ![Action log](.github/screenshots/action-log.png) |
+| **Background tasks** - downloads, clones, cloud machines | **Action log** - who did what and when |
+| ![Networks](.github/screenshots/networks.png) | |
+| **Networks** with DHCP leases | |
 
 ## Requirements
 

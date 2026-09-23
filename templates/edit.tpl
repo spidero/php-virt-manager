@@ -61,11 +61,11 @@
       <div class="card-body">
         {call form_start action='add_disk'}
           <div class="row">
-            <div class="col-5 mb-3">
+            <div class="col-sm-4 mb-3">
               <label class="form-label" for="size">{'Size (GB)'|t}</label>
               <input type="number" class="form-control" id="size" name="size" value="10" min="1" max="4096" required>
             </div>
-            <div class="col-7 mb-3">
+            <div class="col-sm-8 mb-3">
               <label class="form-label" for="pool">{'Storage pool'|t}</label>
               <select class="form-select" id="pool" name="pool">
 {foreach $pools as $name => $free}
@@ -104,19 +104,17 @@
       <div class="card-header">{'Boot order'|t}</div>
       <div class="card-body">
         {call form_start action='boot'}
-          <div class="row">
 {foreach [0,1,2] as $i}
-            <div class="col-4 mb-3">
-              <label class="form-label" for="boot{$i}">{$i+1}.</label>
-              <select class="form-select" id="boot{$i}" name="boot[]">
-                <option value="">-</option>
+          <div class="input-group input-group-sm mb-2">
+            <label class="input-group-text" for="boot{$i}">{$i+1}.</label>
+            <select class="form-select" id="boot{$i}" name="boot[]">
+              <option value="">-</option>
 {foreach ['hd' => 'Hard disk', 'cdrom' => 'CD/DVD', 'network' => 'Network (PXE)'] as $dev => $label}
-                <option value="{$dev}"{if ($boot[$i]|default:'')==$dev} selected{/if}>{$label|t}</option>
+              <option value="{$dev}"{if ($boot[$i]|default:'')==$dev} selected{/if}>{$label|t}</option>
 {/foreach}
-              </select>
-            </div>
-{/foreach}
+            </select>
           </div>
+{/foreach}
           <button type="submit" class="btn btn-primary">{'Save'|t}</button>
         </form>
       </div>

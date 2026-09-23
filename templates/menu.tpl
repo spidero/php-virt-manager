@@ -23,10 +23,8 @@
     {'No machines found'|t}
 {/foreach}
 {if $allow.operate}
-    <div class="d-flex gap-1 mt-2">
-      <a href="create.php" class="btn btn-outline-primary btn-sm flex-fill">+ {'From ISO'|t}</a>
-      <a href="cloud.php" class="btn btn-outline-primary btn-sm flex-fill">+ {'From cloud image'|t}</a>
-    </div>
+    <a href="cloud.php" class="btn btn-outline-primary btn-sm w-100 mt-2">+ {'From cloud image'|t}</a>
+    <a href="create.php" class="btn btn-outline-secondary btn-sm w-100 mt-1">+ {'From ISO'|t}</a>
 {/if}
   </div>
   <div class="list-group list-group-flush">

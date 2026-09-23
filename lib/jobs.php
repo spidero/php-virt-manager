@@ -5,6 +5,13 @@
 
 const JOB_KEEP_SECONDS = 7 * 24 * 3600;
 
+// job type => label shown on the tasks page (translated)
+const JOB_LABELS = [
+    'clone'          => 'Cloning',
+    'image_download' => 'Image download',
+    'cloud_create'   => 'Machine from cloud image',
+];
+
 function job_create($type, array $params) {
     db_query('INSERT INTO jobs (type, params, conn, username, created_at) VALUES (?, ?, ?, ?, ?)', [
         $type, json_encode($params), connection_current_key(), current_user()['username'] ?? '-', time(),
@@ -16,6 +23,7 @@ function job_list($limit = 50) {
     $jobs = db_query('SELECT * FROM jobs ORDER BY id DESC LIMIT '.(int)$limit)->fetchAll();
     foreach ($jobs as &$job) {
         $job['params'] = json_decode($job['params'], true) ?: [];
+        $job['label'] = JOB_LABELS[$job['type']] ?? $job['type'];
     }
     return $jobs;
 }
