@@ -79,8 +79,14 @@ available there.
 
 ### Enabling the libvirt extension
 
-On Ubuntu the `php8.x-libvirt-php` package ships only the `.so` file without
-an ini file:
+On Ubuntu the module and its ini file are in separate packages:
+
+```sh
+sudo apt install php-libvirt-php php8.5-libvirt-php    # use your PHP version
+sudo phpenmod libvirt-php
+```
+
+If `php-libvirt-php` is not available, enable the module manually:
 
 ```sh
 echo "extension=libvirt-php.so" | sudo tee /etc/php/8.5/mods-available/libvirt.ini

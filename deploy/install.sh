@@ -17,16 +17,24 @@ SSL_DIR=/etc/ssl/php-virt-manager
 
 echo "== packages"
 apt-get update -q
-apt-get install -y -q nginx php-fpm php-cli php-xml php-mbstring php-sqlite3 php-curl php-libvirt-php libvirt-clients xorriso composer novnc websockify rsync openssl
+apt-get install -y -q php-cli
 PHP_VERSION=${PHP_VERSION:-$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
+# php-libvirt-php ships only the ini file, the module is in php<version>-libvirt-php
+apt-get install -y -q nginx "php$PHP_VERSION-fpm" php-xml php-mbstring php-sqlite3 php-curl \
+    php-libvirt-php "php$PHP_VERSION-libvirt-php" libvirt-clients xorriso composer novnc websockify rsync openssl
 FPM_SOCK=/run/php/php-virt-manager.sock
 
 echo "== libvirt extension"
-# Ubuntu package ships libvirt-php.so without an ini file
-if [ ! -f "/etc/php/$PHP_VERSION/mods-available/libvirt.ini" ]; then
+if [ -f "/etc/php/$PHP_VERSION/mods-available/libvirt-php.ini" ]; then
+    # a manually created libvirt.ini would load the module twice
+    [ -f "/etc/php/$PHP_VERSION/mods-available/libvirt.ini" ] && phpdismod -v "$PHP_VERSION" libvirt
+    phpenmod -v "$PHP_VERSION" libvirt-php
+else
+    # older packages ship the module without an ini file
     echo "extension=libvirt-php.so" > "/etc/php/$PHP_VERSION/mods-available/libvirt.ini"
+    phpenmod -v "$PHP_VERSION" libvirt
 fi
-phpenmod -v "$PHP_VERSION" libvirt
+php -m | grep -qx libvirt || { echo "libvirt PHP extension not loaded" >&2; exit 1; }
 
 echo "== application in $APP_DIR"
 mkdir -p "$APP_DIR"
