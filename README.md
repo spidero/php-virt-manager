@@ -236,3 +236,10 @@ Docker image build.
   password, do not expose it to untrusted networks.
 - VNC listens on 127.0.0.1 only; remote access goes through the authenticated
   websocket proxy.
+
+## License
+
+php-virt-manager is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version. See [LICENSE](LICENSE).

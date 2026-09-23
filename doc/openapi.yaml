@@ -1,7 +1,10 @@
 openapi: 3.1.0
 info:
   title: php-virt-manager REST API
-  version: "1.0"
+  version: "1.0.0"
+  license:
+    name: GNU General Public License v3.0 or later
+    identifier: GPL-3.0-or-later
   description: |
     Manage libvirt/KVM machines of php-virt-manager. Authenticate with a
     personal token created in the panel profile (`Authorization: Bearer pvm_...`).

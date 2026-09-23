@@ -1,4 +1,6 @@
 {
+    "description": "Web panel for libvirt/KVM virtual machines",
+    "license": "GPL-3.0-or-later",
     "require": {
         "smarty/smarty": "^5.8",
         "twbs/bootstrap": "^5.3"
