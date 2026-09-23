@@ -7,6 +7,7 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
+      TZ: Europe/Warsaw                  # time zone of the panel and snapshot schedules
       PVM_USER: admin
       # PVM_PASSWORD: change-me          # or PVM_PASSWORD_HASH
       PVM_READONLY: "0"

@@ -47,3 +47,11 @@
 {if $flash}
     <div class="alert alert-{$flash.type}" role="alert">{$flash.message}</div>
 {/if}
+{if $cron_warning|default:false}
+    <div class="alert alert-warning" role="alert">
+      <b>{'Background tasks are not being processed.'|t}</b>
+      {if $cron_last_run}{'bin/cron.php last ran at %s.'|t:($cron_last_run|date_format:'%Y-%m-%d %H:%M')}{else}{'bin/cron.php has never run.'|t}{/if}
+      {'It is started by the systemd timer (deploy/install.sh) or in the Docker image; on the development server run:'|t}
+      <code class="d-block mt-1">php -d extension=libvirt-php bin/cron.php --loop</code>
+    </div>
+{/if}

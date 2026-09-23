@@ -373,4 +373,8 @@ return [
     'Machine from cloud image' => 'Maszyna z obrazu chmurowego',
     'Cloning' => 'Klonowanie',
     'progress' => 'postęp',
+    'Background tasks are not being processed.' => 'Zadania w tle nie są wykonywane.',
+    'bin/cron.php has never run.' => 'bin/cron.php nie został jeszcze uruchomiony.',
+    'bin/cron.php last ran at %s.' => 'bin/cron.php ostatnio działał: %s.',
+    'It is started by the systemd timer (deploy/install.sh) or in the Docker image; on the development server run:' => 'Uruchamia go timer systemd (deploy/install.sh) lub obraz Dockera; na serwerze deweloperskim uruchom:',
 ];

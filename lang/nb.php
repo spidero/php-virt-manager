@@ -360,4 +360,8 @@ return [
     'xorriso or genisoimage is required to build the cloud-init ISO.' => 'xorriso eller genisoimage kreves for å bygge cloud-init-ISO-en.',
     'you' => 'deg',
     'progress' => 'fremdrift',
+    'Background tasks are not being processed.' => 'Bakgrunnsoppgaver blir ikke behandlet.',
+    'bin/cron.php has never run.' => 'bin/cron.php har aldri kjørt.',
+    'bin/cron.php last ran at %s.' => 'bin/cron.php kjørte sist %s.',
+    'It is started by the systemd timer (deploy/install.sh) or in the Docker image; on the development server run:' => 'Den startes av systemd-timeren (deploy/install.sh) eller i Docker-bildet; på utviklingsserveren kjører du:',
 ];

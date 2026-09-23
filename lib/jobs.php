@@ -12,6 +12,29 @@ const JOB_LABELS = [
     'cloud_create'   => 'Machine from cloud image',
 ];
 
+// bin/cron.php is considered stopped when it has not run for this long
+const CRON_STALE_SECONDS = 180;
+
+function cron_heartbeat() {
+    touch(data_path('cron.heartbeat'));
+}
+
+// time of the last bin/cron.php run, 0 when it never ran
+function cron_last_run() {
+    $file = data_path('cron.heartbeat');
+    clearstatcache(true, $file);
+    return is_file($file) ? (int)filemtime($file) : 0;
+}
+
+// stopped: no recent heartbeat and no job being worked on (a long job keeps
+// bin/cron.php busy, job_progress() also refreshes the heartbeat)
+function cron_stale() {
+    if (time() - cron_last_run() <= CRON_STALE_SECONDS) {
+        return false;
+    }
+    return !db_query("SELECT COUNT(*) FROM jobs WHERE status = 'running'")->fetchColumn();
+}
+
 function job_create($type, array $params) {
     db_query('INSERT INTO jobs (type, params, conn, username, created_at) VALUES (?, ?, ?, ?, ?)', [
         $type, json_encode($params), connection_current_key(), current_user()['username'] ?? '-', time(),
@@ -50,6 +73,7 @@ function job_claim() {
 // progress of a running job shown on the tasks page: text of the current phase
 // and its percent (null = unknown, shown as an animated bar)
 function job_progress($id, $message, $percent = null) {
+    cron_heartbeat();
     db_query("UPDATE jobs SET message = ?, progress = ? WHERE id = ? AND status = 'running'",
         [mb_substr((string)$message, 0, 2000), $percent === null ? null : max(0, min(100, (int)$percent)), $id]);
 }

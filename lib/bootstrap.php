@@ -33,3 +33,7 @@ $GLOBALS['auth_user']            ??= 'admin';
 $GLOBALS['auth_password_hash']   ??= '';
 $GLOBALS['action_log_max_bytes'] ??= 5 * 1024 * 1024;
 $GLOBALS['action_log_keep']      ??= 5;
+$GLOBALS['timezone']             ??= system_timezone();
+
+// all times in the panel, the logs and the snapshot schedules use this zone
+date_default_timezone_set(in_array($GLOBALS['timezone'], timezone_identifiers_list(), true) ? $GLOBALS['timezone'] : 'UTC');

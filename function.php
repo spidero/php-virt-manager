@@ -69,6 +69,12 @@ if (!defined('PUBLIC_PAGE')) {
         exit('Cannot connect to '.htmlspecialchars($connection).': '.htmlspecialchars((string)libvirt_get_last_error()));
     }
     $smarty->assign('domains', domain_list($con));
+
+    // background tasks are queued but bin/cron.php does not run (e.g. development server)
+    $cron_pages = ['jobs', 'cloud', 'schedules'];
+    $smarty->assign('cron_warning', can('operate') && cron_stale()
+        && (in_array(basename($_SERVER['SCRIPT_NAME'], '.php'), $cron_pages, true) || job_active_count() > 0));
+    $smarty->assign('cron_last_run', cron_last_run());
 }
 
 // stops a state-changing request when the connection is read-only

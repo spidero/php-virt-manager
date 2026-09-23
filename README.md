@@ -77,8 +77,9 @@ php -r 'echo password_hash("your-password", PASSWORD_DEFAULT), PHP_EOL;'
 # paste the hash into $auth_password_hash in config.php - this account becomes
 # the first administrator, further users are managed in the panel
 php -d extension=libvirt-php -S 127.0.0.1:8099
-# periodic tasks (log rotation, cleanup), normally run every minute:
-php -d extension=libvirt-php bin/cron.php
+# background jobs (image downloads, clones), snapshot schedules and cleanup;
+# on a server this runs every minute from systemd/Docker, here keep it running:
+php -d extension=libvirt-php bin/cron.php --loop
 ```
 
 The built-in server is for development only; the browser console is not
@@ -138,6 +139,7 @@ socket's group automatically. Panel: `https://<host>:9443/`.
 | `PVM_USER`          | `admin`          | first administrator (created on first start) |
 | `PVM_PASSWORD`      | random           | its password (or `PVM_PASSWORD_HASH`)    |
 | `PVM_READONLY`      | `0`              | `1` = view only                          |
+| `TZ`                | `UTC`            | time zone (logs, snapshot schedules)     |
 | `HTTPS_PORT`        | `9443`           | HTTPS port                               |
 | `HTTP_PORT`         | `9080`           | HTTP port (redirects to HTTPS)           |
 | `WS_PORT`           | `6081`           | websockify port on 127.0.0.1             |
@@ -156,7 +158,7 @@ supported only with the nginx configuration from `deploy/`.
 
 ## Configuration
 
-See `config-default.php`: libvirt connections (`$connections`, each can be
+See `config-default.php`: time zone (default: the system zone), libvirt connections (`$connections`, each can be
 read-only), first administrator, login lockout (`$login_max_attempts`,
 `$login_lock_seconds`), data directory, action log rotation and console
 settings.

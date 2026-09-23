@@ -77,3 +77,19 @@ function json_file_update($path, callable $callback) {
     fclose($fh);
     return $data;
 }
+
+// time zone of the operating system: $TZ, /etc/timezone or the /etc/localtime link
+// (php.ini often says UTC while the host runs in local time)
+function system_timezone() {
+    $candidates = [(string)getenv('TZ'), trim((string)@file_get_contents('/etc/timezone'))];
+    $link = @readlink('/etc/localtime');
+    if ($link && preg_match('#zoneinfo/(.+)$#', $link, $m)) {
+        $candidates[] = $m[1];
+    }
+    foreach ($candidates as $tz) {
+        if ($tz !== '' && in_array($tz, timezone_identifiers_list(), true)) {
+            return $tz;
+        }
+    }
+    return date_default_timezone_get();
+}

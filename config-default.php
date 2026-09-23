@@ -16,6 +16,10 @@ $connections = [
 $auth_user = 'admin';
 $auth_password_hash = '';
 
+// time zone for the panel and snapshot schedules, e.g. 'Europe/Warsaw';
+// default: the zone of the operating system
+// $timezone = 'Europe/Warsaw';
+
 // failed logins allowed per IP before it is locked for $login_lock_seconds
 $login_max_attempts = 5;
 $login_lock_seconds = 900;
