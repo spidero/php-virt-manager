@@ -4,10 +4,10 @@ parameters:
         - .
     excludePaths:
         - vendor
-        - templates_c
-        - cache
+        - templates_c (?)
+        - cache (?)
         - stubs
-        - config.php
+        - config.php (?)
     scanFiles:
         - stubs/libvirt.stub.php
         - config-default.php
