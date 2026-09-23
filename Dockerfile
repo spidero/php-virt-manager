@@ -6,7 +6,7 @@ FROM ubuntu:26.04
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        nginx php8.5-fpm php8.5-cli php8.5-xml php8.5-mbstring php8.5-libvirt-php \
+        nginx php8.5-fpm php8.5-cli php8.5-xml php8.5-mbstring php8.5-sqlite3 php8.5-libvirt-php \
         novnc websockify imagemagick supervisor openssl ca-certificates composer unzip \
     && rm -rf /var/lib/apt/lists/* \
     && echo "extension=libvirt-php.so" > /etc/php/8.5/mods-available/libvirt.ini \

@@ -14,7 +14,7 @@ $power_actions = [
 
 $node = (string)($_GET['node'] ?? $_POST['node'] ?? '');
 if (!in_array($node, libvirt_list_domains($con) ?: [], true)) {
-    flash_set('danger', 'Unknown machine: '.$node);
+    flash_set('danger', t('Unknown machine: %s', $node));
     redirect('index.php');
 }
 $node_url = 'node.php?node='.urlencode($node);
@@ -30,13 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (isset($power_actions[$action])) {
         [$function, $message] = $power_actions[$action];
+        $message = t($message);
         $ok = (bool)$function($res);
     }
     elseif ($action === 'autostart') {
         $enable = !empty($_POST['enable']);
         $details = $enable ? 'on' : 'off';
         $ok = (bool)libvirt_domain_set_autostart($res, $enable);
-        $message = 'Autostart '.$details;
+        $message = $enable ? t('Autostart enabled') : t('Autostart disabled');
     }
     elseif ($action === 'snapshot_create') {
         $name = trim((string)($_POST['name'] ?? ''));
@@ -45,49 +46,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $details = $name;
         if (!preg_match(DOMAIN_NAME_PATTERN, $name)) {
-            flash_set('danger', 'Invalid snapshot name (letters, digits, . _ - only).');
+            flash_set('danger', t('Invalid snapshot name (letters, digits, . _ - only).'));
             redirect($node_url);
         }
         $xml = domain_snapshot_xml($name, (string)($_POST['description'] ?? ''));
         $ok = (bool)libvirt_domain_snapshot_create_xml($res, $xml);
-        $message = 'Snapshot '.$name.' created';
+        $message = t('Snapshot %s created', $name);
     }
     elseif ($action === 'snapshot_revert' || $action === 'snapshot_delete') {
         $name = (string)($_POST['snapshot'] ?? '');
         $details = $name;
         if (!in_array($name, libvirt_list_domain_snapshots($res) ?: [], true)) {
-            flash_set('danger', 'Unknown snapshot: '.$name);
+            flash_set('danger', t('Unknown snapshot: %s', $name));
             redirect($node_url);
         }
         $snap = libvirt_domain_snapshot_lookup_by_name($res, $name);
         if ($action === 'snapshot_revert') {
             $ok = (bool)libvirt_domain_snapshot_revert($snap);
-            $message = 'Reverted to snapshot '.$name;
+            $message = t('Reverted to snapshot %s', $name);
         }
         else {
             $ok = (bool)libvirt_domain_snapshot_delete($snap);
-            $message = 'Snapshot '.$name.' deleted';
+            $message = t('Snapshot %s deleted', $name);
         }
     }
     elseif ($action === 'switch_vnc') {
         $new_xml = domain_xml_spice_to_vnc((string)libvirt_domain_get_xml_desc($res, null, VIR_DOMAIN_XML_INACTIVE));
         if ($new_xml === null) {
-            flash_set('danger', 'Machine has no SPICE graphics to switch.');
+            flash_set('danger', t('Machine has no SPICE graphics to switch.'));
             redirect($node_url);
         }
         $ok = (bool)libvirt_domain_define_xml($con, $new_xml);
         $message = libvirt_domain_is_active($res)
-            ? 'Graphics switched to VNC - takes effect after the machine is shut down and started again'
-            : 'Graphics switched to VNC';
+            ? t('Graphics switched to VNC - takes effect after the machine is shut down and started again')
+            : t('Graphics switched to VNC');
     }
     else {
-        flash_set('danger', 'Unknown action: '.$action);
+        flash_set('danger', t('Unknown action: %s', $action));
         redirect($node_url);
     }
 
     $error = $ok ? '' : (string)libvirt_get_last_error();
     action_log($action, $node, $ok, trim($details.' '.$error));
-    flash_set($ok ? 'success' : 'danger', $ok ? $message : 'Error: '.$error);
+    flash_set($ok ? 'success' : 'danger', $ok ? $message : t('Error: %s', $error));
     // Post/Redirect/Get - a page refresh must not repeat the action
     redirect($node_url);
 }
@@ -111,6 +112,7 @@ $smarty->assign('snapshots', domain_snapshots($res));
 // spice in the persistent definition decides whether the switch button is shown
 $inactive_xml = domain_xml($res, true);
 $smarty->assign('persistent_graphics', $inactive_xml ? domain_graphics($inactive_xml) : null);
-$smarty->assign('console_enabled', $console_enabled);
+// VNC listens on the hypervisor's localhost, so the console works for local connections only
+$smarty->assign('console_enabled', $console_enabled && connection_is_local($connection));
 
 $smarty->display('node.tpl');

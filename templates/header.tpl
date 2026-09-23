@@ -1,7 +1,6 @@
 <!doctype html>
-<html lang="en">
+<html lang="{$lang}">
   <head>
-    <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
@@ -12,7 +11,6 @@
       document.documentElement.setAttribute('data-bs-theme',
         window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     </script>
-
     <style>
       /* tables placed directly in cards: align cell padding with the card body */
       .card > .table > :not(caption) > * > :first-child,

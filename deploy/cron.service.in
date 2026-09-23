@@ -1,0 +1,11 @@
+[Unit]
+Description=php-virt-manager periodic tasks
+After=libvirtd.service
+
+[Service]
+Type=oneshot
+User=@USER@
+Group=@GROUP@
+ExecStart=/usr/bin/php @ROOT@/bin/cron.php
+NoNewPrivileges=true
+PrivateTmp=true

@@ -1,6 +1,7 @@
 <?php
 
 require_once 'function.php';
+require_permission('operate');
 
 $node_info = libvirt_node_get_info($con);
 $max_memory_mb = (int)floor($node_info['memory'] / 1024);
@@ -55,42 +56,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
 
     if (!preg_match(DOMAIN_NAME_PATTERN, $form['name'])) {
-        $errors[] = 'Name: 1-64 characters, letters, digits, . _ - (must start with a letter or digit).';
+        $errors[] = t('Name: 1-64 characters, letters, digits, . _ - (must start with a letter or digit).');
     }
     elseif (in_array($form['name'], libvirt_list_domains($con) ?: [], true)) {
-        $errors[] = 'A machine with this name already exists.';
+        $errors[] = t('A machine with this name already exists.');
     }
     if ($form['memory'] < 256 || $form['memory'] > $max_memory_mb) {
-        $errors[] = 'Memory must be between 256 and '.$max_memory_mb.' MB.';
+        $errors[] = t('Memory must be between %d and %d MB.', 256, $max_memory_mb);
     }
     if ($form['vcpus'] < 1 || $form['vcpus'] > $max_vcpus) {
-        $errors[] = 'vCPUs must be between 1 and '.$max_vcpus.'.';
+        $errors[] = t('vCPUs must be between %d and %d.', 1, $max_vcpus);
     }
     if ($form['disk'] < 1 || $form['disk'] > 4096) {
-        $errors[] = 'Disk size must be between 1 and 4096 GB.';
+        $errors[] = t('Disk size must be between %d and %d GB.', 1, 4096);
     }
     if (!isset($pools[$form['pool']])) {
-        $errors[] = 'Select an active storage pool.';
+        $errors[] = t('Select an active storage pool.');
     }
     if ($form['iso'] !== '' && !isset($isos[$form['iso']])) {
-        $errors[] = 'Unknown ISO image.';
+        $errors[] = t('Unknown ISO image.');
     }
     if (!in_array($form['network'], $networks, true)) {
-        $errors[] = 'Select a network.';
+        $errors[] = t('Select a network.');
     }
 
     if (!$errors) {
         $pool = libvirt_storagepool_lookup_by_name($con, $form['pool']);
         $vol_name = $form['name'].'.qcow2';
         if (in_array($vol_name, libvirt_storagepool_list_volumes($pool) ?: [], true)) {
-            $errors[] = 'Volume '.$vol_name.' already exists in pool '.$form['pool'].'.';
+            $errors[] = t('Volume %s already exists in pool %s.', $vol_name, $form['pool']);
         }
     }
 
     if (!$errors) {
         $vol = libvirt_storagevolume_create_xml($pool, volume_new_xml($vol_name, $form['disk']));
         if (!$vol) {
-            $errors[] = 'Cannot create disk: '.libvirt_get_last_error();
+            $errors[] = t('Cannot create disk: %s', libvirt_get_last_error());
         }
     }
 
@@ -99,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             (string)libvirt_storagevolume_get_path($vol), $form['iso'], $form['network']);
         $res = libvirt_domain_define_xml($con, $xml);
         if (!$res) {
-            $errors[] = 'Cannot define machine: '.libvirt_get_last_error();
+            $errors[] = t('Cannot define machine: %s', libvirt_get_last_error());
             // do not leave an orphaned disk behind
             libvirt_storagevolume_delete($vol, 0);
         }
@@ -112,14 +113,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     else {
         action_log('create', $form['name'], true, $details);
-        $message = 'Machine '.$form['name'].' created';
+        $message = t('Machine %s created', $form['name']);
         if ($form['start']) {
             if (libvirt_domain_create($res)) {
                 action_log('start', $form['name'], true);
-                $message .= ' and started';
+                $message .= t(' and started');
             }
             else {
-                $message .= ', but start failed: '.libvirt_get_last_error();
+                $message .= t(', but start failed: %s', libvirt_get_last_error());
             }
         }
         flash_set('success', $message);

@@ -140,7 +140,11 @@ function domain_xml_spice_to_vnc($xml) {
     $doc = new DOMDocument();
     $doc->preserveWhiteSpace = false;
     $doc->formatOutput = true;
-    if (!$doc->loadXML($xml)) {
+    $previous = libxml_use_internal_errors(true);
+    $loaded = $doc->loadXML($xml);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+    if (!$loaded) {
         return null;
     }
     $xpath = new DOMXPath($doc);

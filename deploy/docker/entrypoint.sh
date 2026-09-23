@@ -32,15 +32,15 @@ if [ ! -f "$APP_DIR/config.php" ] || [ -n "${PVM_PASSWORD:-}${PVM_PASSWORD_HASH:
     PVM_HASH="$HASH" php -r '
         $c = file_get_contents("/app/config-default.php");
         $set = [
-            "connection"         => getenv("LIBVIRT_URI"),
-            "readonly"           => (int)getenv("PVM_READONLY"),
+            "connections"        => ["local" => ["uri" => getenv("LIBVIRT_URI"), "label" => getenv("LIBVIRT_URI"), "readonly" => (int)getenv("PVM_READONLY")]],
             "auth_user"          => getenv("PVM_USER"),
             "auth_password_hash" => getenv("PVM_HASH"),
             "console_enabled"    => true,
         ];
         foreach ($set as $k => $v) {
-            // callback: a bcrypt hash contains "$2y$..." which would be read as backreferences
-            $c = preg_replace_callback("/^\\\$$k = .*;$/m", fn() => "\$$k = ".var_export($v, true).";", $c);
+            // callback: a bcrypt hash contains "$2y$..." which would be read as backreferences;
+            // /s: the $connections array spans several lines
+            $c = preg_replace_callback("/^\\\$$k = .*?;$/ms", fn() => "\$$k = ".var_export($v, true).";", $c);
         }
         file_put_contents("/app/config.php", $c);'
     chown root:www-data "$APP_DIR/config.php"

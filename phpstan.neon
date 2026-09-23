@@ -14,5 +14,5 @@ parameters:
     ignoreErrors:
         # globals set up by function.php / config.php, included at page start
         -
-            message: '#^Variable \$(con|smarty|connection|readonly|auth_user|auth_password_hash|data_dir|console_[a-z_]+|login_[a-z_]+|smarty_caching) might not be defined\.$#'
+            message: '#^Variable \$(con|smarty|connection|readonly|auth_user|auth_password_hash|data_dir|console_[a-z_]+|login_[a-z_]+|action_log_[a-z_]+|smarty_caching) might not be defined\.$#'
             identifier: variable.undefined

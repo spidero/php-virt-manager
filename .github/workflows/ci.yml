@@ -27,6 +27,12 @@ jobs:
       - name: PHPStan
         run: vendor/bin/phpstan analyse --no-progress --memory-limit=512M
 
+      - name: PHPUnit
+        run: vendor/bin/phpunit
+
+      - name: Translations complete
+        run: php bin/i18n-strings.php pl
+
       - name: Shell scripts syntax
         run: sh -n deploy/install.sh && sh -n deploy/docker/entrypoint.sh
 

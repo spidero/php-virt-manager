@@ -1,5 +1,8 @@
 <?php
 
+// bcrypt hash of a random string, verified for unknown usernames
+const LOGIN_DUMMY_HASH = '$2y$12$.G2zPy9Hv5WA/V/S5nrhq.u2Ldq06Gqmz/i/emRPU2Xw4MW2iVMK2';
+
 // brute force protection: after $login_max_attempts failures within
 // $login_lock_seconds the client IP is locked for $login_lock_seconds
 

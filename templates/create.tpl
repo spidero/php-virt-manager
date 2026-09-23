@@ -1,35 +1,35 @@
 {include file="header.tpl"}
 <div class="card">
-  <div class="card-header">New machine</div>
+  <div class="card-header">{'New machine'|t}</div>
   <div class="card-body">
 {if $errors}
     <div class="alert alert-danger">{foreach $errors as $e}{$e}<br>{/foreach}</div>
 {/if}
 {if !$pools}
-    <div class="alert alert-warning">No active storage pool - start a pool first.</div>
+    <div class="alert alert-warning">{'No active storage pool - start a pool first.'|t}</div>
 {/if}
     <form method="post" action="create.php">
       <input type="hidden" name="csrf" value="{$csrf_token}">
       <div class="mb-3">
-        <label class="form-label" for="name">Name</label>
+        <label class="form-label" for="name">{'Name'|t}</label>
         <input type="text" class="form-control" id="name" name="name" value="{$form.name}" required pattern="[A-Za-z0-9][A-Za-z0-9._\-]{ldelim}0,63{rdelim}">
       </div>
       <div class="row">
         <div class="col-md-4 mb-3">
-          <label class="form-label" for="memory">Memory (MB)</label>
+          <label class="form-label" for="memory">{'Memory (MB)'|t}</label>
           <input type="number" class="form-control" id="memory" name="memory" value="{$form.memory}" min="256" max="{$max_memory_mb}" step="256" required>
         </div>
         <div class="col-md-4 mb-3">
-          <label class="form-label" for="vcpus">vCPUs</label>
+          <label class="form-label" for="vcpus">{'vCPUs'|t}</label>
           <input type="number" class="form-control" id="vcpus" name="vcpus" value="{$form.vcpus}" min="1" max="{$max_vcpus}" required>
         </div>
         <div class="col-md-4 mb-3">
-          <label class="form-label" for="disk">Disk (GB, qcow2)</label>
+          <label class="form-label" for="disk">{'Disk (GB, qcow2)'|t}</label>
           <input type="number" class="form-control" id="disk" name="disk" value="{$form.disk}" min="1" max="4096" required>
         </div>
       </div>
       <div class="mb-3">
-        <label class="form-label" for="pool">Disk storage pool</label>
+        <label class="form-label" for="pool">{'Disk storage pool'|t}</label>
         <select class="form-select" id="pool" name="pool">
 {foreach $pools as $name => $free}
           <option value="{$name}"{if $form.pool==$name} selected{/if}>{$name} ({$free})</option>
@@ -37,16 +37,16 @@
         </select>
       </div>
       <div class="mb-3">
-        <label class="form-label" for="iso">Installation ISO</label>
+        <label class="form-label" for="iso">{'Installation ISO'|t}</label>
         <select class="form-select" id="iso" name="iso">
-          <option value="">- none -</option>
+          <option value="">- {'none'|t} -</option>
 {foreach $isos as $path => $label}
           <option value="{$path}"{if $form.iso==$path} selected{/if}>{$label}</option>
 {/foreach}
         </select>
       </div>
       <div class="mb-3">
-        <label class="form-label" for="network">Network</label>
+        <label class="form-label" for="network">{'Network'|t}</label>
         <select class="form-select" id="network" name="network">
 {foreach $networks as $n}
           <option value="{$n}"{if $form.network==$n} selected{/if}>{$n}</option>
@@ -55,10 +55,10 @@
       </div>
       <div class="form-check mb-3">
         <input type="checkbox" class="form-check-input" id="start" name="start" value="1"{if $form.start} checked{/if}>
-        <label class="form-check-label" for="start">Start after creation</label>
+        <label class="form-check-label" for="start">{'Start after creation'|t}</label>
       </div>
-      <p class="text-muted"><small>q35, host-passthrough CPU, virtio disk and network, VNC graphics on localhost.</small></p>
-      <button type="submit" class="btn btn-primary">Create</button>
+      <p class="text-body-secondary"><small>{'q35, host-passthrough CPU, virtio disk and network, VNC graphics on localhost.'|t}</small></p>
+      <button type="submit" class="btn btn-primary">{'Create'|t}</button>
     </form>
   </div>
 </div>

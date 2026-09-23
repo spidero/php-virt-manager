@@ -11,3 +11,5 @@ config.php
 *.md
 !README.md
 assets
+tests
+.phpunit.result.cache

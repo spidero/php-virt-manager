@@ -2,11 +2,12 @@
 
 // audit log of user actions, one JSON object per line
 
-function action_log($action, $target, $ok, $details = '') {
+function action_log($action, $target, $ok, $details = '', $user = null) {
     $entry = [
         'time'    => date('c'),
-        'user'    => $_SESSION['user'] ?? '-',
+        'user'    => $user ?? (current_user()['username'] ?? '-'),
         'ip'      => client_ip(),
+        'conn'    => function_exists('connection_current_key') ? connection_current_key() : '',
         'action'  => $action,
         'target'  => $target,
         'ok'      => (bool)$ok,
@@ -30,4 +31,22 @@ function action_log_read($limit = 200) {
         }
     }
     return $entries;
+}
+
+// renames actions.log to actions.log.1 (shifting older files) when it exceeds
+// $max_bytes; keeps $keep rotated files
+function action_log_rotate($max_bytes, $keep) {
+    $path = data_path('actions.log');
+    clearstatcache(true, $path);
+    if (!is_file($path) || filesize($path) < $max_bytes) {
+        return false;
+    }
+    @unlink($path.'.'.$keep);
+    for ($i = $keep - 1; $i >= 1; $i--) {
+        if (is_file($path.'.'.$i)) {
+            rename($path.'.'.$i, $path.'.'.($i + 1));
+        }
+    }
+    rename($path, $path.'.1');
+    return true;
 }

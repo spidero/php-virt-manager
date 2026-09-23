@@ -18,9 +18,13 @@ one script on nginx or as a Docker container.
 - browser console (noVNC via websockify), SPICE to VNC graphics switch
 - new machine wizard (qcow2 disk in any active pool, ISO from any pool, network)
 - storage pools with volumes, libvirt networks with DHCP leases
-- login with lockout after repeated failures, CSRF protection, read-only mode
+- users with roles (admin, operator, viewer), login lockout after repeated
+  failures, CSRF protection, read-only connections
+- several hypervisors (local or `qemu+ssh://`) switchable in the menu
+- English and Polish interface (browser language, selectable in the profile)
 - light/dark theme following the system preference
-- action log (logins, power actions, snapshots, created machines)
+- action log (logins, power actions, snapshots, created machines, user changes)
+  with automatic rotation
 
 ## Screenshots
 
@@ -35,7 +39,8 @@ one script on nginx or as a Docker container.
 
 ## Requirements
 
-- PHP >= 8.0 with the libvirt extension (Debian/Ubuntu: `php-libvirt-php`)
+- PHP >= 8.2 with the libvirt and SQLite extensions (Debian/Ubuntu:
+  `php-libvirt-php`, `php-sqlite3`)
 - composer
 - access to the libvirt socket (the PHP user must be in the `libvirt` group)
 - for the browser console: nginx, websockify and noVNC (see Deployment)
@@ -47,8 +52,11 @@ composer install
 mkdir -p templates_c configs cache
 cp config-default.php config.php
 php -r 'echo password_hash("your-password", PASSWORD_DEFAULT), PHP_EOL;'
-# paste the hash into $auth_password_hash in config.php
+# paste the hash into $auth_password_hash in config.php - this account becomes
+# the first administrator, further users are managed in the panel
 php -d extension=libvirt-php -S 127.0.0.1:8099
+# periodic tasks (log rotation, cleanup), normally run every minute:
+php -d extension=libvirt-php bin/cron.php
 ```
 
 The built-in server is for development only; the browser console is not
@@ -75,7 +83,8 @@ sudo deploy/install.sh
 The script installs nginx, php-fpm, websockify and noVNC, copies the panel to
 `/var/www/php-virt-manager`, creates `config.php` with a random password
 (printed at the end), a self-signed TLS certificate, a dedicated php-fpm pool
-running with the `libvirt` group and a systemd unit for websockify.
+running with the `libvirt` group, a systemd unit for websockify and a systemd
+timer running `bin/cron.php` every minute.
 
 Defaults: HTTPS on port 8443 (HTTP 8090 redirects), websockify on
 127.0.0.1:6080. Override with environment variables `APP_DIR`, `HTTPS_PORT`,
@@ -96,14 +105,17 @@ socket's group automatically. Panel: `https://<host>:9443/`.
 | Variable            | Default          | Description                              |
 |---------------------|------------------|------------------------------------------|
 | `LIBVIRT_URI`       | `qemu:///system` | libvirt connection                       |
-| `PVM_USER`          | `admin`          | login name                               |
-| `PVM_PASSWORD`      | random           | login password (or `PVM_PASSWORD_HASH`)  |
+| `PVM_USER`          | `admin`          | first administrator (created on first start) |
+| `PVM_PASSWORD`      | random           | its password (or `PVM_PASSWORD_HASH`)    |
 | `PVM_READONLY`      | `0`              | `1` = view only                          |
 | `HTTPS_PORT`        | `9443`           | HTTPS port                               |
 | `HTTP_PORT`         | `9080`           | HTTP port (redirects to HTTPS)           |
 | `WS_PORT`           | `6081`           | websockify port on 127.0.0.1             |
 
-Volumes: `/app/data` (action log, login lock data, console tokens),
+The first administrator is stored in the user database on the first start;
+later password changes are made in the panel.
+
+Volumes: `/app/data` (user database, action log, login lock data, console tokens),
 `/etc/nginx/ssl` (`cert.pem`, `key.pem` - self-signed generated if missing).
 
 ### Apache
@@ -114,9 +126,18 @@ supported only with the nginx configuration from `deploy/`.
 
 ## Configuration
 
-See `config-default.php`: libvirt URI, read-only mode, credentials, login
-lockout (`$login_max_attempts`, `$login_lock_seconds`), data directory and
-console settings.
+See `config-default.php`: libvirt connections (`$connections`, each can be
+read-only), first administrator, login lockout (`$login_max_attempts`,
+`$login_lock_seconds`), data directory, action log rotation and console
+settings.
+
+### Users and roles
+
+| Role       | Permissions |
+|------------|-------------|
+| `viewer`   | read-only access |
+| `operator` | power actions, snapshots, console, creating and editing machines |
+| `admin`    | everything, including deleting machines, storage and network management, users and the action log |
 
 ## Console
 
@@ -131,13 +152,18 @@ one-hour token; the websocket proxy additionally requires a logged in session.
 ```sh
 composer install
 vendor/bin/phpstan analyse
+vendor/bin/phpunit
+php bin/i18n-strings.php pl     # untranslated strings
 ```
+
+Translations live in `lang/<code>.php` (English source strings as keys).
 
 `composer install` also copies the Bootstrap CSS to `assets/css/` (the
 `vendor/` directory is not served).
 
 `stubs/libvirt.stub.php` declares the libvirt extension API for static
-analysis. CI (GitHub Actions) runs lint, PHPStan and a Docker image build.
+analysis. CI (GitHub Actions) runs lint, PHPStan, PHPUnit, a translation check and a
+Docker image build.
 
 ## Security notes
 

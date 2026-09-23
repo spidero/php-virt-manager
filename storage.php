@@ -25,7 +25,7 @@ if ($storage === '') {
 }
 else {
     if (!in_array($storage, $pools, true)) {
-        flash_set('danger', 'Unknown storage pool: '.$storage);
+        flash_set('danger', t('Unknown storage pool: %s', $storage));
         redirect('storage.php');
     }
     $pool = libvirt_storagepool_lookup_by_name($con, $storage);

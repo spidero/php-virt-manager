@@ -5,14 +5,24 @@
 
 const CONSOLE_TOKEN_TTL = 3600;
 
-function console_token_create($host, $port) {
-    $dir = dirname(data_path('tokens/.keep'));
-    // remove expired tokens
-    foreach (glob($dir.'/*') ?: [] as $file) {
-        if (filemtime($file) < time() - CONSOLE_TOKEN_TTL) {
-            @unlink($file);
+function console_tokens_dir() {
+    return dirname(data_path('tokens/.keep'));
+}
+
+// removes expired tokens, returns their number
+function console_tokens_cleanup() {
+    $removed = 0;
+    foreach (glob(console_tokens_dir().'/*') ?: [] as $file) {
+        if (filemtime($file) < time() - CONSOLE_TOKEN_TTL && @unlink($file)) {
+            $removed++;
         }
     }
+    return $removed;
+}
+
+function console_token_create($host, $port) {
+    $dir = console_tokens_dir();
+    console_tokens_cleanup();
     $token = bin2hex(random_bytes(24));
     file_put_contents($dir.'/'.$token, $token.': '.$host.':'.(int)$port."\n");
     return $token;

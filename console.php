@@ -1,10 +1,11 @@
 <?php
 
 require_once 'function.php';
+require_permission('operate');
 
 $node = (string)($_GET['node'] ?? '');
 if (!in_array($node, libvirt_list_domains($con) ?: [], true)) {
-    flash_set('danger', 'Unknown machine: '.$node);
+    flash_set('danger', t('Unknown machine: %s', $node));
     redirect('index.php');
 }
 $node_url = 'node.php?node='.urlencode($node);
@@ -12,12 +13,12 @@ $res = libvirt_domain_lookup_by_name($con, $node);
 $xml = domain_xml($res);
 $graphics = $xml ? domain_graphics($xml) : null;
 
-if (!$console_enabled) {
-    flash_set('warning', 'Browser console is disabled ($console_enabled in config.php).');
+if (!$console_enabled || !connection_is_local($connection)) {
+    flash_set('warning', t('Browser console is disabled ($console_enabled in config.php).'));
     redirect($node_url);
 }
 if (!libvirt_domain_is_active($res) || !$graphics || $graphics['type'] !== 'vnc' || $graphics['port'] <= 0) {
-    flash_set('warning', 'Console needs a running machine with VNC graphics.');
+    flash_set('warning', t('Console needs a running machine with VNC graphics.'));
     redirect($node_url);
 }
 

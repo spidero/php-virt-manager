@@ -9,6 +9,6 @@
 </FilesMatch>
 
 # Deny access to internal directories
-RedirectMatch 404 /(vendor|templates|templates_c|cache|configs|data|lib|deploy|docs|stubs|\.git|\.github)(/|$)
+RedirectMatch 404 /(vendor|templates|templates_c|cache|configs|data|lib|lang|bin|tests|deploy|docs|stubs|\.git|\.github)(/|$)
 
 Options -Indexes

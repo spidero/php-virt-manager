@@ -17,7 +17,7 @@ SSL_DIR=/etc/ssl/php-virt-manager
 
 echo "== packages"
 apt-get update -q
-apt-get install -y -q nginx php-fpm php-cli php-xml php-mbstring php-libvirt-php composer novnc websockify rsync openssl
+apt-get install -y -q nginx php-fpm php-cli php-xml php-mbstring php-sqlite3 php-libvirt-php composer novnc websockify rsync openssl
 PHP_VERSION=${PHP_VERSION:-$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
 FPM_SOCK=/run/php/php-virt-manager.sock
 
@@ -32,7 +32,7 @@ echo "== application in $APP_DIR"
 mkdir -p "$APP_DIR"
 rsync -a --delete \
     --exclude .git --exclude .github --exclude vendor --exclude templates_c --exclude cache \
-    --exclude configs --exclude data --exclude assets --exclude config.php --exclude '*.md' --exclude docs \
+    --exclude configs --exclude data --exclude assets --exclude tests --exclude config.php --exclude '*.md' --exclude docs \
     --include README.md "$SRC_DIR/" "$APP_DIR/"
 (cd "$APP_DIR" && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-progress -q)
 mkdir -p "$APP_DIR/templates_c" "$APP_DIR/cache" "$APP_DIR/configs" "$APP_DIR/data/tokens"
@@ -76,6 +76,12 @@ fill "$SRC_DIR/deploy/websockify.service.in" > /etc/systemd/system/php-virt-mana
 systemctl daemon-reload
 systemctl enable --now php-virt-manager-websockify.service
 systemctl restart php-virt-manager-websockify.service
+
+echo "== periodic tasks timer"
+fill "$SRC_DIR/deploy/cron.service.in" > /etc/systemd/system/php-virt-manager-cron.service
+fill "$SRC_DIR/deploy/cron.timer.in" > /etc/systemd/system/php-virt-manager-cron.timer
+systemctl daemon-reload
+systemctl enable --now php-virt-manager-cron.timer
 
 echo "== nginx"
 fill "$SRC_DIR/deploy/nginx.conf.in" > /etc/nginx/sites-available/php-virt-manager

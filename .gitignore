@@ -11,3 +11,4 @@
 !/README.md
 /.claude/
 /docs/
+/.phpunit.result.cache
