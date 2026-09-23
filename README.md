@@ -1,6 +1,6 @@
 # php-virt-manager
 
-Web panel for libvirt/KVM written in PHP (Smarty 4, Bootstrap 4).
+Web panel for libvirt/KVM written in PHP (Smarty 5, Bootstrap 5).
 
 ## Features
 
@@ -13,6 +13,7 @@ Web panel for libvirt/KVM written in PHP (Smarty 4, Bootstrap 4).
 - new machine wizard (qcow2 disk in any active pool, ISO from any pool, network)
 - storage pools with volumes, libvirt networks with DHCP leases
 - login with lockout after repeated failures, CSRF protection, read-only mode
+- light/dark theme following the system preference
 - action log (logins, power actions, snapshots, created machines)
 
 ## Requirements
@@ -114,6 +115,9 @@ one-hour token; the websocket proxy additionally requires a logged in session.
 composer install
 vendor/bin/phpstan analyse
 ```
+
+`composer install` also copies the Bootstrap CSS to `assets/css/` (the
+`vendor/` directory is not served).
 
 `stubs/libvirt.stub.php` declares the libvirt extension API for static
 analysis. CI (GitHub Actions) runs lint, PHPStan and a Docker image build.

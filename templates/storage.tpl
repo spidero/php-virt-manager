@@ -33,7 +33,7 @@
   </tbody>
 </table>
 <h6>XML definition</h6>
-<pre class="bg-light p-2"><code>{$xml}</code></pre>
+<pre class="bg-body-tertiary p-2"><code>{$xml}</code></pre>
 {/if}
 
   </div>

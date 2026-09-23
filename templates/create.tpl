@@ -10,44 +10,44 @@
 {/if}
     <form method="post" action="create.php">
       <input type="hidden" name="csrf" value="{$csrf_token}">
-      <div class="form-group">
-        <label for="name">Name</label>
+      <div class="mb-3">
+        <label class="form-label" for="name">Name</label>
         <input type="text" class="form-control" id="name" name="name" value="{$form.name}" required pattern="[A-Za-z0-9][A-Za-z0-9._\-]{ldelim}0,63{rdelim}">
       </div>
-      <div class="form-row">
-        <div class="form-group col-md-4">
-          <label for="memory">Memory (MB)</label>
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label class="form-label" for="memory">Memory (MB)</label>
           <input type="number" class="form-control" id="memory" name="memory" value="{$form.memory}" min="256" max="{$max_memory_mb}" step="256" required>
         </div>
-        <div class="form-group col-md-4">
-          <label for="vcpus">vCPUs</label>
+        <div class="col-md-4 mb-3">
+          <label class="form-label" for="vcpus">vCPUs</label>
           <input type="number" class="form-control" id="vcpus" name="vcpus" value="{$form.vcpus}" min="1" max="{$max_vcpus}" required>
         </div>
-        <div class="form-group col-md-4">
-          <label for="disk">Disk (GB, qcow2)</label>
+        <div class="col-md-4 mb-3">
+          <label class="form-label" for="disk">Disk (GB, qcow2)</label>
           <input type="number" class="form-control" id="disk" name="disk" value="{$form.disk}" min="1" max="4096" required>
         </div>
       </div>
-      <div class="form-group">
-        <label for="pool">Disk storage pool</label>
-        <select class="form-control" id="pool" name="pool">
+      <div class="mb-3">
+        <label class="form-label" for="pool">Disk storage pool</label>
+        <select class="form-select" id="pool" name="pool">
 {foreach $pools as $name => $free}
           <option value="{$name}"{if $form.pool==$name} selected{/if}>{$name} ({$free})</option>
 {/foreach}
         </select>
       </div>
-      <div class="form-group">
-        <label for="iso">Installation ISO</label>
-        <select class="form-control" id="iso" name="iso">
+      <div class="mb-3">
+        <label class="form-label" for="iso">Installation ISO</label>
+        <select class="form-select" id="iso" name="iso">
           <option value="">- none -</option>
 {foreach $isos as $path => $label}
           <option value="{$path}"{if $form.iso==$path} selected{/if}>{$label}</option>
 {/foreach}
         </select>
       </div>
-      <div class="form-group">
-        <label for="network">Network</label>
-        <select class="form-control" id="network" name="network">
+      <div class="mb-3">
+        <label class="form-label" for="network">Network</label>
+        <select class="form-select" id="network" name="network">
 {foreach $networks as $n}
           <option value="{$n}"{if $form.network==$n} selected{/if}>{$n}</option>
 {/foreach}

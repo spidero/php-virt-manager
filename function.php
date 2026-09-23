@@ -28,7 +28,7 @@ session_set_cookie_params([
 ]);
 session_start();
 
-$smarty = new Smarty();
+$smarty = new \Smarty\Smarty();
 $smarty->setTemplateDir(__DIR__.'/templates');
 $smarty->setCompileDir(__DIR__.'/templates_c');
 $smarty->setCacheDir(__DIR__.'/cache');

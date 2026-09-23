@@ -3,8 +3,8 @@
 <div class="card mb-3">
   <div class="card-header">
     <b>{$n.name}</b>
-    <span class="badge badge-{if $n.active}success{else}danger{/if}">{if $n.active}active{else}inactive{/if}</span>
-    {if $n.autostart}<span class="badge badge-info">autostart</span>{/if}
+    <span class="badge text-bg-{if $n.active}success{else}danger{/if}">{if $n.active}active{else}inactive{/if}</span>
+    {if $n.autostart}<span class="badge text-bg-info">autostart</span>{/if}
   </div>
   <div class="card-body">
     <table class="table table-sm">

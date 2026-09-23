@@ -32,7 +32,7 @@ echo "== application in $APP_DIR"
 mkdir -p "$APP_DIR"
 rsync -a --delete \
     --exclude .git --exclude .github --exclude vendor --exclude templates_c --exclude cache \
-    --exclude configs --exclude data --exclude config.php --exclude '*.md' --exclude docs \
+    --exclude configs --exclude data --exclude assets --exclude config.php --exclude '*.md' --exclude docs \
     --include README.md "$SRC_DIR/" "$APP_DIR/"
 (cd "$APP_DIR" && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-progress -q)
 mkdir -p "$APP_DIR/templates_c" "$APP_DIR/cache" "$APP_DIR/configs" "$APP_DIR/data/tokens"

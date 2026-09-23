@@ -10,3 +10,4 @@ docs
 config.php
 *.md
 !README.md
+assets

@@ -7,12 +7,12 @@
 {/if}
     <form method="post" action="login.php">
       <input type="hidden" name="csrf" value="{$csrf_token}">
-      <div class="form-group">
-        <label for="user">User</label>
+      <div class="mb-3">
+        <label class="form-label" for="user">User</label>
         <input type="text" class="form-control" id="user" name="user" autocomplete="username" required autofocus>
       </div>
-      <div class="form-group">
-        <label for="password">Password</label>
+      <div class="mb-3">
+        <label class="form-label" for="password">Password</label>
         <input type="password" class="form-control" id="password" name="password" autocomplete="current-password" required>
       </div>
       <button type="submit" class="btn btn-primary">Login</button>

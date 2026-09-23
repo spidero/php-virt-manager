@@ -1,9 +1,20 @@
 {
-"require": {
-        "smarty/smarty": "~4.5",
-        "twbs/bootstrap": "^4.1"
-},
-        "require-dev": {
-                "phpstan/phpstan": "^2.2"
-        }
+    "require": {
+        "smarty/smarty": "^5.8",
+        "twbs/bootstrap": "^5.3"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.2"
+    },
+    "scripts": {
+        "assets": [
+            "@php -r \"is_dir('assets/css') || mkdir('assets/css', 0755, true); copy('vendor/twbs/bootstrap/dist/css/bootstrap.min.css', 'assets/css/bootstrap.min.css');\""
+        ],
+        "post-install-cmd": [
+            "@assets"
+        ],
+        "post-update-cmd": [
+            "@assets"
+        ]
+    }
 }

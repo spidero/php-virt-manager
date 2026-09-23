@@ -1,7 +1,7 @@
 {include file="header.tpl"}
 {* form posting an action to node.php; $confirm adds a JS confirmation *}
 {function name=action_button action='' label='' class='btn-info' confirm='' extra=[]}
-<form method="post" action="node.php" class="d-inline"{if $confirm} onsubmit="return confirm('{$confirm|escape:'javascript'}');"{/if}>
+<form method="post" action="node.php" class="d-inline-block me-1 mb-1"{if $confirm} data-confirm="{$confirm}"{/if}>
   <input type="hidden" name="csrf" value="{$csrf_token}">
   <input type="hidden" name="node" value="{$node}">
   <input type="hidden" name="action" value="{$action}">
@@ -13,7 +13,7 @@
 {/function}
 <div class="card mb-3">
   <div class="card-body">
-    <h5>{$node} <span class="badge badge-{$state.color}">{$state.label}</span></h5>
+    <h5>{$node} <span class="badge text-bg-{$state.color}">{$state.label}</span></h5>
     <p class="text-muted mb-3"><small>UUID: {$domain_uuid}</small></p>
 
 {if !$readonly}
@@ -44,7 +44,7 @@
           <tr><th>Autostart</th><td>
             {if $autostart}on{else}off{/if}
             {if !$readonly}
-              {call action_button action='autostart' label=($autostart)?'disable':'enable' class='btn-link btn-sm p-0 ml-2' extra=['enable'=>($autostart)?'0':'1']}
+              {call action_button action='autostart' label=($autostart)?'disable':'enable' class='btn-link btn-sm p-0 ms-2' extra=['enable'=>($autostart)?'0':'1']}
             {/if}
           </td></tr>
           <tr><th>Graphics</th><td>
@@ -54,7 +54,7 @@
             none
 {/if}
 {if $persistent_graphics && $persistent_graphics.type=='spice' && !$readonly}
-            {call action_button action='switch_vnc' label='switch to VNC' class='btn-link btn-sm p-0 ml-2' confirm="Switch `$node` from SPICE to VNC? SPICE agent channels and USB redirection will be removed. Takes effect after the machine is shut down and started again."}
+            {call action_button action='switch_vnc' label='switch to VNC' class='btn-link btn-sm p-0 ms-2' confirm="Switch `$node` from SPICE to VNC? SPICE agent channels and USB redirection will be removed. Takes effect after the machine is shut down and started again."}
 {/if}
           </td></tr>
         </table>
@@ -108,7 +108,7 @@
 {foreach from=$snapshots item=s}
       <tr>
         <td>{$s.name}</td><td>{$s.created|date_format:'%Y-%m-%d %H:%M'}</td><td>{$s.state}</td><td>{$s.description}</td>
-        <td class="text-right text-nowrap">
+        <td class="text-end text-nowrap">
 {if !$readonly}
           {call action_button action='snapshot_revert' label='Revert' class='btn-outline-warning btn-sm' extra=['snapshot'=>$s.name] confirm="Revert `$node` to snapshot `$s.name`? Current state will be lost."}
           {call action_button action='snapshot_delete' label='Delete' class='btn-outline-danger btn-sm' extra=['snapshot'=>$s.name] confirm="Delete snapshot `$s.name`?"}
@@ -122,12 +122,12 @@
   </table>
 {if !$readonly}
   <div class="card-body">
-    <form method="post" action="node.php" class="form-inline">
+    <form method="post" action="node.php" class="d-flex flex-wrap align-items-center">
       <input type="hidden" name="csrf" value="{$csrf_token}">
       <input type="hidden" name="node" value="{$node}">
       <input type="hidden" name="action" value="snapshot_create">
-      <input type="text" name="name" class="form-control form-control-sm mr-2 mb-1" placeholder="name (default: date)" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{ldelim}0,63{rdelim}">
-      <input type="text" name="description" class="form-control form-control-sm mr-2 mb-1" placeholder="description">
+      <input type="text" name="name" class="form-control form-control-sm w-auto me-2 mb-1" placeholder="name (default: date)" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{ldelim}0,63{rdelim}">
+      <input type="text" name="description" class="form-control form-control-sm w-auto me-2 mb-1" placeholder="description">
       <button type="submit" class="btn btn-primary btn-sm mb-1">Create snapshot</button>
     </form>
   </div>

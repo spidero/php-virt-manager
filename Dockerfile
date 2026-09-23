@@ -15,7 +15,7 @@ RUN apt-get update \
 
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-progress --no-scripts \
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-progress \
     && rm -rf /root/.cache/composer
 COPY . .
 RUN mkdir -p templates_c cache configs data/tokens \

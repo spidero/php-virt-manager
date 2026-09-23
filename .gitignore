@@ -4,6 +4,7 @@
 /configs/
 /config.php
 /data/
+/assets/
 
 # Local notes - markdown is not committed (except README)
 *.md
