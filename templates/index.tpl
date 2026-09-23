@@ -1,7 +1,7 @@
 {include file="header.tpl"}
 <div class="card">
   <div class="card-body">
-    <h6>Connected: <b>{$connection}</b><h6>
+    <h6>Connected: <b>{$connection}</b></h6>
     <br>
     <h5>Hypervisor info:</h5>
     <h6>Version: <b>{$get_hypervisor['hypervisor_string']}</b></h6>

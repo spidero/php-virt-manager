@@ -1,0 +1,14 @@
+# Deny access to documentation and markdown files
+<FilesMatch "\.md$">
+    Require all denied
+</FilesMatch>
+
+# Deny access to local config, composer files and dotfiles
+<FilesMatch "^(config\.php|config-default\.php|function\.php|composer\.(json|lock)|\..+)$">
+    Require all denied
+</FilesMatch>
+
+# Deny access to internal directories
+RedirectMatch 404 /(vendor|templates|templates_c|cache|configs|docs|\.git)(/|$)
+
+Options -Indexes

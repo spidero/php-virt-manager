@@ -1,0 +1,11 @@
+/vendor/
+/templates_c/
+/cache/
+/configs/
+/config.php
+
+# Local notes - markdown is not committed (except README)
+*.md
+!/README.md
+/.claude/
+/docs/
