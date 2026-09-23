@@ -1,6 +1,6 @@
 <?php
 
-function redirect($url) {
+function redirect($url): never {
     header('Location: '.$url);
     exit;
 }

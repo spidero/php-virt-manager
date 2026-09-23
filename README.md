@@ -21,7 +21,9 @@ one script on nginx or as a Docker container.
 - snapshots: create, revert, delete
 - browser console (noVNC via websockify), SPICE to VNC graphics switch
 - new machine wizard (qcow2 disk in any active pool, ISO from any pool, network)
-- storage pools with volumes, libvirt networks with DHCP leases
+- storage pools (start/stop, autostart, refresh) with volumes (create, delete;
+  volumes used by machines are protected), libvirt networks (start/stop,
+  autostart) with DHCP leases
 - users with roles (admin, operator, viewer), login lockout after repeated
   failures, CSRF protection, read-only connections
 - several hypervisors (local or `qemu+ssh://`) switchable in the menu

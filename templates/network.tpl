@@ -5,6 +5,16 @@
     <b>{$n.name}</b>
     <span class="badge text-bg-{if $n.active}success{else}danger{/if}">{if $n.active}{'active'|t}{else}{'inactive'|t}{/if}</span>
     {if $n.autostart}<span class="badge text-bg-info">{'autostart'|t}</span>{/if}
+{if $allow.admin}
+    <span class="float-end">
+    {if $n.active}
+      {call post_button url='network.php' action='stop' label={'Stop'|t} extra=['network'=>$n.name] confirm={'Stop network %s? Machines connected to it lose connectivity.'|t:$n.name}}
+    {else}
+      {call post_button url='network.php' action='start' label={'Start'|t} class='btn-outline-success btn-sm' extra=['network'=>$n.name]}
+    {/if}
+      {call post_button url='network.php' action='autostart' label=($n.autostart)?{'Disable autostart'|t}:{'Enable autostart'|t} extra=['network'=>$n.name, 'enable'=>($n.autostart)?'0':'1']}
+    </span>
+{/if}
   </div>
   <div class="card-body">
     <table class="table table-sm">

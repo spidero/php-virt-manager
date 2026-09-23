@@ -1,3 +1,14 @@
+{* POST form with a single button; $extra adds hidden fields, $confirm asks first *}
+{function name=post_button url='' action='' label='' class='btn-outline-secondary btn-sm' confirm='' extra=[]}
+<form method="post" action="{$url}" class="d-inline-block me-1 mb-1"{if $confirm} data-confirm="{$confirm}"{/if}>
+  <input type="hidden" name="csrf" value="{$csrf_token}">
+  <input type="hidden" name="action" value="{$action}">
+{foreach $extra as $k => $v}
+  <input type="hidden" name="{$k}" value="{$v}">
+{/foreach}
+  <button type="submit" class="btn {$class}">{$label}</button>
+</form>
+{/function}
 <!doctype html>
 <html lang="{$lang}">
   <head>
