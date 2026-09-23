@@ -3,6 +3,7 @@
 /cache/
 /configs/
 /config.php
+/data/
 
 # Local notes - markdown is not committed (except README)
 *.md

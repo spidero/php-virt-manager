@@ -2,5 +2,8 @@
 "require": {
         "smarty/smarty": "~4.5",
         "twbs/bootstrap": "^4.1"
-}
+},
+        "require-dev": {
+                "phpstan/phpstan": "^2.2"
+        }
 }

@@ -15,7 +15,7 @@
 <div class="container">
   <div class="row">
 {if $logged_user}
-    <div class="col col-lg-2">
+    <div class="col-12 col-lg-3">
     {include file="menu.tpl"}
     </div>
 {/if}

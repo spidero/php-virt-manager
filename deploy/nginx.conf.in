@@ -1,0 +1,68 @@
+# php-virt-manager - nginx site, placeholders @...@ are filled by install.sh
+# or the Docker entrypoint
+
+server {
+    listen @HTTP_PORT@;
+    listen [::]:@HTTP_PORT@;
+    server_name _;
+    return 301 https://$host:@HTTPS_PORT@$request_uri;
+}
+
+server {
+    listen @HTTPS_PORT@ ssl;
+    listen [::]:@HTTPS_PORT@ ssl;
+    http2 on;
+    server_name _;
+
+    ssl_certificate     @CERT@;
+    ssl_certificate_key @KEY@;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    root  @ROOT@;
+    index index.php;
+
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy same-origin always;
+
+    # internal files and directories
+    location ~ /\. { deny all; }
+    location ~ ^/(vendor|templates|templates_c|cache|configs|data|lib|deploy|docs|stubs)(/|$) { deny all; }
+    location ~ \.(md|neon|lock|json|tpl|in|yml)$ { deny all; }
+    location ~ ^/(config|config-default|function)\.php$ { deny all; }
+
+    # noVNC client files
+    location /novnc/ {
+        alias @NOVNC_DIR@/;
+    }
+
+    # session check used by auth_request below
+    location = /console-auth.php {
+        internal;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root/console-auth.php;
+        fastcgi_param HTTPS on;
+        fastcgi_pass_request_body off;
+        fastcgi_param CONTENT_LENGTH "";
+        fastcgi_pass unix:@FPM_SOCK@;
+    }
+
+    # websocket proxy to websockify, only for logged in users
+    location /websockify {
+        auth_request /console-auth.php;
+        proxy_pass http://127.0.0.1:@WS_PORT@;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 1h;
+    }
+
+    location ~ \.php$ {
+        try_files $uri =404;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTPS on;
+        fastcgi_pass unix:@FPM_SOCK@;
+        fastcgi_read_timeout 300;
+    }
+}

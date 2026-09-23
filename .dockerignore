@@ -1,0 +1,12 @@
+.git
+.github
+.claude
+vendor
+templates_c
+cache
+configs
+data
+docs
+config.php
+*.md
+!README.md

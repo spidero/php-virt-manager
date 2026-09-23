@@ -1,0 +1,23 @@
+# php-virt-manager in Docker, managing libvirt of the host.
+# Host networking is required: VNC consoles listen on the host's 127.0.0.1.
+services:
+  php-virt-manager:
+    build: .
+    image: php-virt-manager
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      PVM_USER: admin
+      # PVM_PASSWORD: change-me          # or PVM_PASSWORD_HASH
+      PVM_READONLY: "0"
+      HTTP_PORT: "9080"
+      HTTPS_PORT: "9443"
+      WS_PORT: "6081"
+    volumes:
+      - /var/run/libvirt:/var/run/libvirt
+      - pvm-data:/app/data
+      - pvm-ssl:/etc/nginx/ssl
+
+volumes:
+  pvm-data:
+  pvm-ssl:

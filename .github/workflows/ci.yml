@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  php:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.5']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress
+
+      - name: Lint
+        run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=512M
+
+      - name: Shell scripts syntax
+        run: sh -n deploy/install.sh && sh -n deploy/docker/entrypoint.sh
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t php-virt-manager .
+
+      - name: Validate nginx and php-fpm config
+        run: |
+          docker run --rm --entrypoint sh php-virt-manager -c \
+            '/app/deploy/docker/entrypoint.sh true && nginx -t && php-fpm8.5 -t && php -m | grep -q libvirt'

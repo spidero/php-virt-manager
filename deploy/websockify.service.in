@@ -1,0 +1,16 @@
+[Unit]
+Description=php-virt-manager websockify (noVNC console proxy)
+After=network.target libvirtd.service
+
+[Service]
+User=@USER@
+Group=@GROUP@
+ExecStart=/usr/bin/websockify --token-plugin TokenFile --token-source @ROOT@/data/tokens 127.0.0.1:@WS_PORT@
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

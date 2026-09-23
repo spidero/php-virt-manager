@@ -1,0 +1,14 @@
+; php-virt-manager - dedicated php-fpm pool, the group grants access
+; to the libvirt socket without adding it to other PHP applications
+[php-virt-manager]
+user = @USER@
+group = @GROUP@
+listen = @FPM_SOCK@
+listen.owner = @NGINX_USER@
+listen.group = @NGINX_USER@
+listen.mode = 0660
+pm = ondemand
+pm.max_children = 5
+pm.process_idle_timeout = 60s
+php_admin_value[error_log] = /dev/stderr
+php_admin_flag[display_errors] = off

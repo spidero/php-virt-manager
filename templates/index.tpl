@@ -12,8 +12,6 @@
     <h6>Sockets: <b>{$node_info['sockets']}</b></h6>
     <h6>Cores: <b>{$node_info['cores']}</b></h6>
     <h6>MHz: <b>{$node_info['mhz']}</b></h6>
-    <hr>
-    <a href="storage.php">Storage</a>
   </div>
 </div>
 {include file="footer.tpl"}

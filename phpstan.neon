@@ -1,0 +1,18 @@
+parameters:
+    level: 5
+    paths:
+        - .
+    excludePaths:
+        - vendor
+        - templates_c
+        - cache
+        - stubs
+        - config.php
+    scanFiles:
+        - stubs/libvirt.stub.php
+        - config-default.php
+    ignoreErrors:
+        # globals set up by function.php / config.php, included at page start
+        -
+            message: '#^Variable \$(con|smarty|connection|readonly|auth_user|auth_password_hash|data_dir|console_[a-z_]+|login_[a-z_]+|smarty_caching) might not be defined\.$#'
+            identifier: variable.undefined
