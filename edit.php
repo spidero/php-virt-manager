@@ -154,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException(t('Shut the machine down first.'));
             }
             $selected = array_map('strval', (array)($_POST['disks'] ?? []));
-            $disk_paths = vm_disk_paths($xml);
+            $disk_paths = vm_disk_paths($xml) + vm_seed_paths($xml);
             $shared = storage_sources_in_use($con, $node);
             if (!libvirt_domain_undefine_flags($res, UNDEFINE_ALL_METADATA)) {
                 throw new RuntimeException(t('Error: %s', libvirt_get_last_error()));
@@ -197,7 +197,7 @@ $doc = simplexml_load_string($xml);
 $cdrom = $doc->xpath("/domain/devices/disk[@device='cdrom']")[0] ?? null;
 $shared = storage_sources_in_use($con, $node);
 $disks = [];
-foreach (vm_disk_paths($xml) as $target => $path) {
+foreach (vm_disk_paths($xml) + vm_seed_paths($xml) as $target => $path) {
     $disks[] = ['target' => $target, 'path' => $path, 'shared' => in_array($path, $shared, true)];
 }
 

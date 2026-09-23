@@ -167,7 +167,7 @@
 {foreachelse}
       <p class="text-body-secondary">{'No disks'|t}</p>
 {/foreach}
-      <p class="form-text">{'CD/DVD images are never deleted.'|t}</p>
+      <p class="form-text">{'CD/DVD images are never deleted (except the cloud-init ISO of this machine).'|t}</p>
       <button type="submit" class="btn btn-danger">{'Delete machine'|t}</button>
     </form>
 {/if}

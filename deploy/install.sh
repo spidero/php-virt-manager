@@ -17,7 +17,7 @@ SSL_DIR=/etc/ssl/php-virt-manager
 
 echo "== packages"
 apt-get update -q
-apt-get install -y -q nginx php-fpm php-cli php-xml php-mbstring php-sqlite3 php-libvirt-php composer novnc websockify rsync openssl
+apt-get install -y -q nginx php-fpm php-cli php-xml php-mbstring php-sqlite3 php-curl php-libvirt-php libvirt-clients xorriso composer novnc websockify rsync openssl
 PHP_VERSION=${PHP_VERSION:-$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
 FPM_SOCK=/run/php/php-virt-manager.sock
 

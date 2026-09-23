@@ -169,6 +169,21 @@ function vm_disk_paths($xml) {
     return $paths;
 }
 
+// cloud-init seed ISOs created for this machine (<name>-seed.iso): [target => path];
+// unlike other CD/DVD images they may be deleted together with the machine
+function vm_seed_paths($xml) {
+    $paths = [];
+    $xpath = new DOMXPath(vm_dom($xml));
+    foreach ($xpath->query("/domain/devices/disk[@device='cdrom']") ?: [] as $disk) {
+        $source = $xpath->query('source/@file', $disk)->item(0);
+        $target = $xpath->query('target/@dev', $disk)->item(0);
+        if ($source && $target && str_ends_with($source->nodeValue, '-seed.iso')) {
+            $paths[$target->nodeValue] = $source->nodeValue;
+        }
+    }
+    return $paths;
+}
+
 // all file sources (disks and CD-ROMs), used to detect disks shared between machines
 function vm_all_sources($xml) {
     $paths = [];

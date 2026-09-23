@@ -1,7 +1,7 @@
 <?php
 
 // background jobs (long-running libvirt operations) executed by bin/cron.php;
-// handlers are registered in JOB_HANDLERS as type => function(array $params, $con): string
+// handlers are registered in JOB_HANDLERS as type => function(array $params, $con, int $job_id, string $uri): string
 
 const JOB_KEEP_SECONDS = 7 * 24 * 3600;
 
@@ -44,6 +44,11 @@ function job_claim() {
     return $claimed->rowCount() ? $job : null;
 }
 
+// progress text of a running job, shown on the tasks page
+function job_progress($id, $message) {
+    db_query("UPDATE jobs SET message = ? WHERE id = ? AND status = 'running'", [mb_substr((string)$message, 0, 2000), $id]);
+}
+
 function job_finish($id, $ok, $message) {
     db_query('UPDATE jobs SET status = ?, message = ?, finished_at = ? WHERE id = ?',
         [$ok ? 'done' : 'failed', mb_substr((string)$message, 0, 2000), time(), $id]);
@@ -77,7 +82,7 @@ function job_run_queue(array $handlers, $time_limit) {
             if (!$con) {
                 throw new RuntimeException('cannot connect: '.libvirt_get_last_error());
             }
-            $message = $handlers[$job['type']]($params, $con);
+            $message = $handlers[$job['type']]($params, $con, (int)$job['id'], $conn['uri']);
             job_finish($job['id'], true, $message);
             action_log($job['type'], $params['name'] ?? '', true, $message, $job['username']);
         }

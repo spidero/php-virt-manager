@@ -34,5 +34,10 @@ $console_enabled = false;
 $console_novnc_url = 'novnc/vnc_lite.html';
 $console_ws_path = 'websockify';
 
+// additional cloud images (key => label, qcow2 URL), added to the built-in list
+// $cloud_images = [
+//     'fedora-43' => ['label' => 'Fedora 43', 'url' => 'https://.../Fedora-Cloud-Base-43.qcow2'],
+// ];
+
 // enable/disable smarty caching
 $smarty_caching = 0;

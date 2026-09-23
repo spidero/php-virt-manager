@@ -174,7 +174,7 @@ function domain_xml_spice_to_vnc($xml) {
 }
 
 // XML definition for a new VM created by the wizard
-function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $network) {
+function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $network, array $boot = ['cdrom', 'hd']) {
     $iso = '';
     if ($iso_path !== '') {
         $iso = "<disk type='file' device='cdrom'><driver name='qemu' type='raw'/>"
@@ -184,7 +184,8 @@ function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $netwo
         .'<name>'.xml_escape($name).'</name>'
         ."<memory unit='MiB'>".(int)$memory_mb.'</memory>'
         .'<vcpu>'.(int)$vcpus.'</vcpu>'
-        ."<os><type arch='x86_64' machine='q35'>hvm</type><boot dev='cdrom'/><boot dev='hd'/></os>"
+        ."<os><type arch='x86_64' machine='q35'>hvm</type>"
+        .implode('', array_map(fn($dev) => "<boot dev='".xml_escape($dev)."'/>", $boot)).'</os>'
         .'<features><acpi/><apic/></features>'
         ."<cpu mode='host-passthrough'/>"
         ."<clock offset='utc'/>"
@@ -198,6 +199,8 @@ function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $netwo
         ."<video><model type='virtio'/></video>"
         ."<input type='tablet' bus='usb'/>"
         ."<console type='pty'/>"
+        // guest agent channel: IP addresses and clean shutdown when qemu-guest-agent runs in the guest
+        ."<channel type='unix'><target type='virtio' name='org.qemu.guest_agent.0'/></channel>"
         ."<memballoon model='virtio'/>"
         // spare PCIe root ports: q35 needs a free port for every hot-plugged disk or NIC
         ."<controller type='pci' index='0' model='pcie-root'/>"

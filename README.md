@@ -22,6 +22,9 @@ one script on nginx or as a Docker container.
 - snapshots: create, revert, delete
 - browser console (noVNC via websockify), SPICE to VNC graphics switch
 - new machine wizard (qcow2 disk in any active pool, ISO from any pool, network)
+- machines from cloud images with cloud-init: Ubuntu 26.04/24.04, Debian 13/12,
+  AlmaLinux 10, Rocky Linux 10 (downloaded in the background), user with SSH
+  keys and/or password, hostname, disk size - ready to log in within a minute
 - storage pools (start/stop, autostart, refresh) with volumes (create, delete;
   volumes used by machines are protected), libvirt networks (start/stop,
   autostart) with DHCP leases
@@ -52,6 +55,8 @@ one script on nginx or as a Docker container.
 - composer
 - access to the libvirt socket (the PHP user must be in the `libvirt` group)
 - for the browser console: nginx, websockify and noVNC (see Deployment)
+- for cloud images: `xorriso` (or `genisoimage`), `virsh` (`libvirt-clients`)
+  and the PHP curl extension
 
 ## Quick start (development)
 
@@ -146,6 +151,24 @@ settings.
 | `viewer`   | read-only access |
 | `operator` | power actions, snapshots, console, creating and editing machines |
 | `admin`    | everything, including deleting machines, storage and network management, users and the action log |
+
+## Cloud images
+
+Base images are downloaded by an administrator (Cloud images page) into a
+storage pool as `cloud-<name>.qcow2`. A new machine gets a full copy of the
+image grown to the requested size and a small `<name>-seed.iso` with the
+cloud-init configuration (NoCloud); the ISO is deleted together with the
+machine. More images can be added in `config.php`:
+
+```php
+$cloud_images = [
+    'fedora-43' => ['label' => 'Fedora 43', 'url' => 'https://.../Fedora-Cloud-Base-43.qcow2'],
+];
+```
+
+Files are copied into pools with `virsh vol-upload`, because the web server
+cannot write to pool directories and `libvirt_stream_send()` of libvirt-php
+0.5.x sends corrupted data.
 
 ## Console
 
