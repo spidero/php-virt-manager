@@ -135,6 +135,46 @@
 {/foreach}
     </tbody>
   </table>
+{if $schedules || $allow.admin}
+  <div class="card-body border-bottom">
+    <h6>{'Automatic snapshots'|t}</h6>
+{foreach $schedules as $s}
+    <div class="d-flex flex-wrap align-items-center mb-1">
+      <span class="me-2">{include file="schedule_text.tpl"}</span>
+      {if !$s.enabled}<span class="badge text-bg-secondary me-2">{'paused'|t}</span>{/if}
+      <small class="text-body-secondary me-2">{if $s.last_run}{'last: %s'|t:($s.last_run|date_format:'%Y-%m-%d %H:%M')} - {$s.last_status}{/if}</small>
+{if $allow.admin}
+      {call action_button action='schedule_toggle' label=($s.enabled)?{'Pause'|t}:{'Resume'|t} class='btn-outline-secondary btn-sm' extra=['schedule'=>$s.id]}
+      {call action_button action='schedule_delete' label={'Delete'|t} class='btn-outline-danger btn-sm' extra=['schedule'=>$s.id] confirm={'Delete this schedule? Its snapshots are kept.'|t}}
+{/if}
+    </div>
+{/foreach}
+{if $allow.admin}
+    <form method="post" action="node.php" class="d-flex flex-wrap align-items-center gap-1 mt-2">
+      <input type="hidden" name="csrf" value="{$csrf_token}">
+      <input type="hidden" name="node" value="{$node}">
+      <input type="hidden" name="action" value="schedule_add">
+      <select name="frequency" class="form-select form-select-sm w-auto" aria-label="{'Frequency'|t}">
+        <option value="daily">{'daily'|t}</option><option value="hourly">{'hourly'|t}</option><option value="weekly">{'weekly'|t}</option>
+      </select>
+      <select name="weekday" class="form-select form-select-sm w-auto" aria-label="{'Weekday'|t}">
+{foreach $weekdays as $i => $day}
+        <option value="{$i}"{if $i==0} selected{/if}>{$day|t}</option>
+{/foreach}
+      </select>
+      <select name="hour" class="form-select form-select-sm w-auto" aria-label="{'Hour'|t}">
+{for $h=0 to 23}
+        <option value="{$h}"{if $h==2} selected{/if}>{$h|string_format:'%02d'}:00</option>
+{/for}
+      </select>
+      <label class="small ms-1" for="keep">{'keep'|t}</label>
+      <input type="number" id="keep" name="keep" value="7" min="1" max="100" class="form-control form-control-sm" style="width: 5rem">
+      <button type="submit" class="btn btn-outline-primary btn-sm">{'Add schedule'|t}</button>
+    </form>
+    <div class="form-text">{'Hour and weekday are ignored where they do not apply. Only the automatic snapshots of a schedule are removed by its retention.'|t}</div>
+{/if}
+  </div>
+{/if}
 {if $allow.operate}
   <div class="card-body">
     <form method="post" action="node.php" class="d-flex flex-wrap align-items-center">

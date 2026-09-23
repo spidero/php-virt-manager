@@ -53,8 +53,8 @@ final class I18nTest extends TestCase
     {
         $translations = require dirname(__DIR__).'/lang/pl.php';
         foreach ($translations as $source => $translated) {
-            preg_match_all('/%[sd]/', $source, $a);
-            preg_match_all('/%[sd]/', $translated, $b);
+            preg_match_all('/%[0-9]*[sd]/', $source, $a);
+            preg_match_all('/%[0-9]*[sd]/', $translated, $b);
             $this->assertSame($a[0], $b[0], 'Placeholders differ for: '.$source);
         }
     }

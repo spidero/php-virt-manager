@@ -1,0 +1,1 @@
+{if $s.frequency=='hourly'}{'every hour'|t}{elseif $s.frequency=='daily'}{'daily at %02d:00'|t:$s.hour}{else}{'weekly on %s at %02d:00'|t:({$weekdays[$s.weekday]|t}):$s.hour}{/if}, {'keep %d'|t:$s.keep}

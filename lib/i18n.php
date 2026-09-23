@@ -43,6 +43,7 @@ const I18N_DYNAMIC = [
     'viewer', 'operator', 'admin',
     'Starting machine, it may take some time', 'Shutting down machine, it may take some time',
     'Machine forcibly stopped',
+    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
     'clone', 'image_download', 'cloud_create', 'Hard disk', 'CD/DVD', 'Network (PXE)', 'Rebooting machine, it may take some time', 'Suspending machine', 'Resuming machine',
 ];
 

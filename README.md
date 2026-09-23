@@ -19,7 +19,8 @@ one script on nginx or as a Docker container.
   network interfaces (hot-plugged into running machines)
 - cloning (disks copied in the background) and deleting machines with a
   choice of disks; disks used by other machines are protected
-- snapshots: create, revert, delete
+- snapshots: create, revert, delete; automatic snapshots hourly, daily or
+  weekly with retention (keep the newest N)
 - browser console (noVNC via websockify), SPICE to VNC graphics switch
 - new machine wizard (qcow2 disk in any active pool, ISO from any pool, network)
 - machines from cloud images with cloud-init: Ubuntu 26.04/24.04, Debian 13/12,
@@ -97,7 +98,8 @@ The script installs nginx, php-fpm, websockify and noVNC, copies the panel to
 `/var/www/php-virt-manager`, creates `config.php` with a random password
 (printed at the end), a self-signed TLS certificate, a dedicated php-fpm pool
 running with the `libvirt` group, a systemd unit for websockify and a systemd
-timer running `bin/cron.php` every minute.
+timer running `bin/cron.php` every minute (background jobs, snapshot schedules,
+log rotation).
 
 Defaults: HTTPS on port 8443 (HTTP 8090 redirects), websockify on
 127.0.0.1:6080. Override with environment variables `APP_DIR`, `HTTPS_PORT`,

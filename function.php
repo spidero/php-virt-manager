@@ -54,6 +54,7 @@ $smarty->assign('allow', ['operate' => can('operate') && !$readonly, 'admin' => 
 $smarty->assign('lang', i18n_language());
 $smarty->assign('flash', flash_get());
 $smarty->assign('page', basename($_SERVER['SCRIPT_NAME'], '.php'));
+$smarty->assign('weekdays', ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
 
 // every page except login.php requires an authenticated session
 if (!defined('PUBLIC_PAGE') && $user === null) {

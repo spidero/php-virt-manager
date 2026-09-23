@@ -29,6 +29,22 @@ const DB_MIGRATIONS = [
         )',
         'CREATE INDEX jobs_status ON jobs (status, id)',
     ],
+    3 => [
+        'CREATE TABLE schedules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conn TEXT NOT NULL,
+            domain TEXT NOT NULL,
+            frequency TEXT NOT NULL CHECK (frequency IN (\'hourly\', \'daily\', \'weekly\')),
+            hour INTEGER NOT NULL DEFAULT 0,
+            weekday INTEGER NOT NULL DEFAULT 0,
+            keep INTEGER NOT NULL DEFAULT 7,
+            enabled INTEGER NOT NULL DEFAULT 1,
+            created_by TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            last_run INTEGER,
+            last_status TEXT
+        )',
+    ],
 ];
 
 function db() {

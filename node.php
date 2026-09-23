@@ -70,6 +70,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = t('Snapshot %s deleted', $name);
         }
     }
+    elseif (in_array($action, ['schedule_add', 'schedule_toggle', 'schedule_delete'], true)) {
+        readonly_guard($node_url, 'admin');
+        if ($action === 'schedule_add') {
+            $frequency = (string)($_POST['frequency'] ?? '');
+            $hour = (int)($_POST['hour'] ?? 0);
+            $weekday = (int)($_POST['weekday'] ?? 0);
+            $keep = (int)($_POST['keep'] ?? 0);
+            if (!in_array($frequency, SCHEDULE_FREQUENCIES, true) || $hour < 0 || $hour > 23 || $weekday < 0 || $weekday > 6 || $keep < 1 || $keep > 100) {
+                flash_set('danger', t('Invalid schedule.'));
+                redirect($node_url);
+            }
+            $id = schedule_create(connection_current_key(), $node, $frequency, $hour, $weekday, $keep, current_user()['username']);
+            $details = '#'.$id.' '.$frequency.', keep '.$keep;
+            $message = t('Snapshot schedule added.');
+            $ok = true;
+        }
+        else {
+            $schedule = schedule_find((int)($_POST['schedule'] ?? 0));
+            if (!$schedule || $schedule['domain'] !== $node || $schedule['conn'] !== connection_current_key()) {
+                flash_set('danger', t('Unknown schedule.'));
+                redirect($node_url);
+            }
+            if ($action === 'schedule_toggle') {
+                schedule_set_enabled($schedule['id'], !$schedule['enabled']);
+                $message = $schedule['enabled'] ? t('Schedule paused.') : t('Schedule resumed.');
+            }
+            else {
+                schedule_delete($schedule['id']);
+                $message = t('Schedule deleted. Its snapshots were kept.');
+            }
+            $details = '#'.$schedule['id'];
+            $ok = true;
+        }
+    }
     elseif ($action === 'switch_vnc') {
         $new_xml = domain_xml_spice_to_vnc((string)libvirt_domain_get_xml_desc($res, null, VIR_DOMAIN_XML_INACTIVE));
         if ($new_xml === null) {
@@ -109,6 +143,7 @@ $smarty->assign('disks', $xml ? domain_disks($res, $xml) : []);
 $smarty->assign('interfaces', $xml ? domain_interfaces($res, $xml, $active) : []);
 $smarty->assign('graphics', $xml ? domain_graphics($xml) : null);
 $smarty->assign('snapshots', domain_snapshots($res));
+$smarty->assign('schedules', schedule_list(connection_current_key(), $node));
 // spice in the persistent definition decides whether the switch button is shown
 $inactive_xml = domain_xml($res, true);
 $smarty->assign('persistent_graphics', $inactive_xml ? domain_graphics($inactive_xml) : null);
