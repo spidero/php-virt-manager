@@ -8,7 +8,7 @@
 {foreach from=$entries item=e}
       <tr>
         <td class="text-nowrap"><small>{$e.time|date_format:'%Y-%m-%d %H:%M:%S'}</small></td>
-        <td>{$e.user}</td><td><small>{$e.ip}</small></td><td>{$e.action}</td><td>{$e.target}</td>
+        <td>{$e.user}</td><td><small>{$e.ip}</small></td><td>{$e.action}</td><td class="text-nowrap">{$e.target}</td>
         <td>{if $e.ok}<span class="badge text-bg-success">ok</span>{else}<span class="badge text-bg-danger">failed</span>{/if}</td>
         <td><small>{$e.details}</small></td>
       </tr>

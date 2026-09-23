@@ -30,7 +30,7 @@
         {call action_button action='start' label='Start' class='btn-success'}
     {/if}
     {if $graphics && $graphics.type=='vnc' && $active && $console_enabled}
-        <a href="console.php?node={$node|escape:'url'}" target="_blank" class="btn btn-dark">Console</a>
+        <a href="console.php?node={$node|escape:'url'}" target="_blank" class="btn btn-secondary">Console</a>
     {/if}
     </div>
 {/if}

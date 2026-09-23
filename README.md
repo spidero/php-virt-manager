@@ -2,6 +2,12 @@
 
 Web panel for libvirt/KVM written in PHP (Smarty 5, Bootstrap 5).
 
+Manage virtual machines from the browser: power actions, snapshots, a noVNC
+console, a new machine wizard, storage and network overview - deployable with
+one script on nginx or as a Docker container.
+
+![Machine details](.github/screenshots/vm-details.png)
+
 ## Features
 
 - hypervisor overview, machine list with state indicators
@@ -15,6 +21,17 @@ Web panel for libvirt/KVM written in PHP (Smarty 5, Bootstrap 5).
 - login with lockout after repeated failures, CSRF protection, read-only mode
 - light/dark theme following the system preference
 - action log (logins, power actions, snapshots, created machines)
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Dashboard](.github/screenshots/hypervisor.png) | ![Browser console](.github/screenshots/console.png) |
+| **Dashboard** - machine states and host info | **Console** - noVNC in the browser |
+| ![New machine wizard](.github/screenshots/new-machine.png) | ![Dark theme](.github/screenshots/vm-details-dark.png) |
+| **New machine wizard** | **Dark theme** follows the system setting |
+| ![Networks](.github/screenshots/networks.png) | ![Action log](.github/screenshots/action-log.png) |
+| **Networks** with DHCP leases | **Action log** - who did what and when |
 
 ## Requirements
 

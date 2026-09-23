@@ -1,17 +1,25 @@
 {include file="header.tpl"}
-<div class="card">
-  <div class="card-body">
-    <h6>Connected: <b>{$connection}</b></h6>
-    <br>
-    <h5>Hypervisor info:</h5>
-    <h6>Version: <b>{$get_hypervisor['hypervisor_string']}</b></h6>
-    <h6>Architecture: <b>{$node_info['model']}</b></h6>
-    <h6>Memory: <b>{$node_info['memory']}</b> GB</h6>
-    <h6>CPUs: <b>{$node_info['cpus']}</b></h6>
-    <h6>Nodes: <b>{$node_info['nodes']}</b></h6>
-    <h6>Sockets: <b>{$node_info['sockets']}</b></h6>
-    <h6>Cores: <b>{$node_info['cores']}</b></h6>
-    <h6>MHz: <b>{$node_info['mhz']}</b></h6>
+<div class="row">
+{foreach [['running','success'],['paused','warning'],['shut off','danger']] as $s}
+  <div class="col-4 mb-3">
+    <div class="card text-center">
+      <div class="card-body py-3">
+        <div class="fs-2 fw-bold text-{$s[1]}">{$state_counts[$s[0]]|default:0}</div>
+        <div class="text-body-secondary">{$s[0]}</div>
+      </div>
+    </div>
   </div>
+{/foreach}
+</div>
+<div class="card">
+  <div class="card-header">Hypervisor</div>
+  <table class="table table-sm mb-0">
+    <tr><th style="width: 30%">Connection</th><td>{$connection}</td></tr>
+    <tr><th>Version</th><td>{$get_hypervisor['hypervisor_string']}</td></tr>
+    <tr><th>Architecture</th><td>{$node_info['model']}</td></tr>
+    <tr><th>Memory</th><td>{$node_info['memory']} GB</td></tr>
+    <tr><th>CPUs</th><td>{$node_info['cpus']} ({$node_info['sockets']} socket, {$node_info['cores']} cores, {$node_info['mhz']} MHz)</td></tr>
+    <tr><th>NUMA nodes</th><td>{$node_info['nodes']}</td></tr>
+  </table>
 </div>
 {include file="footer.tpl"}

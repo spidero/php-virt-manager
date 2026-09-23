@@ -13,6 +13,14 @@
         window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     </script>
 
+    <style>
+      /* tables placed directly in cards: align cell padding with the card body */
+      .card > .table > :not(caption) > * > :first-child,
+      .card > .table-responsive > .table > :not(caption) > * > :first-child { padding-left: 1rem; }
+      .card > .table > :not(caption) > * > :last-child,
+      .card > .table-responsive > .table > :not(caption) > * > :last-child { padding-right: 1rem; }
+    </style>
+
     <title>PHP virt-manager</title>
   </head>
   <body>
