@@ -1,0 +1,54 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Security vulnerabilities must be reported privately**, see the security policy.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Release (e.g. 1.0.0) or commit
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - deploy/install.sh (nginx on the host)
+        - Docker
+        - Development server (php -S)
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Distribution, PHP version, libvirt and QEMU versions (`virsh version`), browser
+      placeholder: Ubuntu 26.04, PHP 8.5, libvirt 11.x, QEMU 10.2, Firefox
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Click ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Error messages, the action log entry, web server / php-fpm log, `bin/cron.php` output. Remove passwords and tokens.
+      render: text

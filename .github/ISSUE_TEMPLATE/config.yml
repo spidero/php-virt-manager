@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/spidero/php-virt-manager/security/advisories/new
+    about: Report security problems privately, not in a public issue.
+  - name: REST API documentation
+    url: https://github.com/spidero/php-virt-manager/blob/master/doc/api.md
+    about: Questions about the API may be answered in the guide.

@@ -10,6 +10,7 @@
 *.md
 !/README.md
 !/doc/*.md
+!/.github/*.md
 /.claude/
 /docs/
 /.phpunit.result.cache
