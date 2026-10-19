@@ -125,13 +125,18 @@ application and keeps `config.php`, the certificate and `data/`.
 ### Docker
 
 ```sh
-docker compose up -d --build
+docker compose up -d                 # pulls ghcr.io/spidero/php-virt-manager:latest
 docker compose logs | grep login     # generated password, unless PVM_PASSWORD is set
 ```
 
 The container uses host networking (VNC consoles listen on the host's
 127.0.0.1) and the host libvirt socket (`/var/run/libvirt`); it joins the
 socket's group automatically. Panel: `https://<host>:9443/`.
+
+The image is published to GitHub Container Registry on every push to
+`master` (`latest`, `sha-<commit>`) and for `v*` tags (`1.2.3`, `1.2`).
+To build it from source instead: `docker compose up -d --build`.
+Update: `docker compose pull && docker compose up -d`.
 
 | Variable            | Default          | Description                              |
 |---------------------|------------------|------------------------------------------|
@@ -228,7 +233,7 @@ language is complete and keeps the `%s`/`%d` placeholders.
 
 `stubs/libvirt.stub.php` declares the libvirt extension API for static
 analysis. CI (GitHub Actions) runs lint, PHPStan, PHPUnit, a translation check and a
-Docker image build.
+Docker image build; pushes to `master` publish the image to `ghcr.io`.
 
 ## Security notes
 

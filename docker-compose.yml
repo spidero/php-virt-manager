@@ -2,8 +2,8 @@
 # Host networking is required: VNC consoles listen on the host's 127.0.0.1.
 services:
   php-virt-manager:
+    image: ghcr.io/spidero/php-virt-manager:latest
     build: .
-    image: php-virt-manager
     network_mode: host
     restart: unless-stopped
     environment:
