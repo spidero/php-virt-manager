@@ -1,7 +1,7 @@
 # php-virt-manager
 
-[![CI](https://github.com/spidero/php-virt-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/spidero/php-virt-manager/actions/workflows/ci.yml)
-[![Docker image](https://github.com/spidero/php-virt-manager/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/spidero/php-virt-manager/pkgs/container/php-virt-manager)
+[![CI](https://github.com/spidero/php-virt-manager/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/spidero/php-virt-manager/actions/workflows/ci.yml)
+[![Docker image](https://img.shields.io/badge/image-ghcr.io-blue?logo=docker)](https://github.com/spidero/php-virt-manager/pkgs/container/php-virt-manager)
 
 Web panel for libvirt/KVM written in PHP (Smarty 5, Bootstrap 5).
 
@@ -159,7 +159,7 @@ Image tags:
 | `1.0.0`  | release tag `v1.0.0` (pin this to stay on a version) |
 
 A release is published by pushing a tag: `git tag v1.0.1 && git push origin v1.0.1`.
-An existing tag can be rebuilt from Actions → Docker image → Run workflow.
+An existing tag can be rebuilt from Actions → CI → Run workflow.
 
 Update: `docker compose pull && docker compose up -d`. To build the image
 from source instead: `docker compose up -d --build`. `data/` and the
@@ -260,7 +260,8 @@ language is complete and keeps the `%s`/`%d` placeholders.
 
 `stubs/libvirt.stub.php` declares the libvirt extension API for static
 analysis. CI (GitHub Actions) runs lint, PHPStan, PHPUnit, a translation check and a
-Docker image build; pushes to `master` publish the image to `ghcr.io`.
+Docker image build; once they pass, pushes to `master` and `v*` tags publish
+the image to `ghcr.io`.
 
 ## Security notes
 
