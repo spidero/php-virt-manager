@@ -13,6 +13,125 @@ Spanish and Ukrainian.
 
 ![Machine details](.github/screenshots/vm-details.png)
 
+## Quick start with Docker
+
+The panel ships as a ready image:
+[`ghcr.io/spidero/php-virt-manager`](https://github.com/spidero/php-virt-manager/pkgs/container/php-virt-manager)
+(linux/amd64, nginx + php-fpm + websockify/noVNC in one container). It runs on
+the KVM host itself and manages that host's libvirt.
+
+**Host requirements:** Linux with KVM and libvirt running (`libvirtd` or
+`virtqemud`, socket in `/var/run/libvirt`), Docker with the Compose plugin.
+
+### 1. Start
+
+With `docker run`:
+
+```sh
+docker run -d --name php-virt-manager \
+  --network host \
+  --restart unless-stopped \
+  -e TZ=Europe/Warsaw \
+  -e HTTPS_PORT=9443 \
+  -e HTTP_PORT=9080 \
+  -e WS_PORT=6081 \
+  -e PVM_USER=admin \
+  -e PVM_PASSWORD=change-me \
+  -v /var/run/libvirt:/var/run/libvirt \
+  -v pvm-data:/app/data \
+  -v pvm-ssl:/etc/nginx/ssl \
+  ghcr.io/spidero/php-virt-manager:latest
+```
+
+or with Compose, using [`docker-compose.yml`](docker-compose.yml) from this
+repository (edit the `environment:` section first):
+
+```sh
+curl -O https://raw.githubusercontent.com/spidero/php-virt-manager/master/docker-compose.yml
+docker compose up -d
+```
+
+### 2. Log in
+
+Open `https://<host>:9443/` (self-signed certificate - accept the browser
+warning, or mount your own, see below) and log in as `PVM_USER` /
+`PVM_PASSWORD`. Without `PVM_PASSWORD` a random password is generated and
+printed once in the log:
+
+```sh
+docker logs php-virt-manager 2>&1 | grep login    # Compose: docker compose logs | grep login
+```
+
+The first administrator is created on the first start and stored in the
+`pvm-data` volume; change the password and add further users in the panel.
+
+### Ports
+
+The container uses **host networking** (`--network host`), so there is no
+`-p` mapping: VNC consoles of the machines listen on the host's `127.0.0.1`
+and the container must reach them. The ports are set with environment
+variables and opened directly on the host:
+
+| Variable     | Default | Listens on        | Purpose                               |
+|--------------|---------|-------------------|---------------------------------------|
+| `HTTPS_PORT` | `9443`  | all interfaces    | the panel (open it in the firewall)   |
+| `HTTP_PORT`  | `9080`  | all interfaces    | redirects to HTTPS                    |
+| `WS_PORT`    | `6081`  | `127.0.0.1` only  | websockify for the noVNC console (nginx proxies it, do not expose) |
+
+Choose ports that are free on the host (`ss -tlnp`).
+
+### Configuration
+
+| Variable            | Default          | Description                              |
+|---------------------|------------------|------------------------------------------|
+| `LIBVIRT_URI`       | `qemu:///system` | libvirt connection                       |
+| `PVM_USER`          | `admin`          | first administrator (created on first start) |
+| `PVM_PASSWORD`      | random           | its password (or `PVM_PASSWORD_HASH`, a `password_hash()` bcrypt hash) |
+| `PVM_READONLY`      | `0`              | `1` = view only                          |
+| `TZ`                | `UTC`            | time zone (logs, snapshot schedules)     |
+| `HTTPS_PORT`, `HTTP_PORT`, `WS_PORT` | see [Ports](#ports) | |
+
+| Volume                    | Contents                                               |
+|---------------------------|--------------------------------------------------------|
+| `/var/run/libvirt` (bind) | host libvirt socket; the container joins its group automatically |
+| `/app/data`               | user database, action log, login lock data, console tokens |
+| `/etc/nginx/ssl`          | `cert.pem`, `key.pem` - a self-signed pair is generated if missing |
+
+Your own certificate: put `cert.pem` (full chain) and `key.pem` into a host
+directory and mount it instead of the volume, e.g.
+`-v /etc/php-virt-manager/ssl:/etc/nginx/ssl:ro`.
+
+### Update
+
+```sh
+docker pull ghcr.io/spidero/php-virt-manager:latest
+docker rm -f php-virt-manager && docker run ...       # same command as above
+# Compose: docker compose pull && docker compose up -d
+```
+
+Users, logs and the certificate stay in the volumes.
+
+### Versions
+
+| Tag      | Built from                                           |
+|----------|------------------------------------------------------|
+| `latest` | every push to `master` and every release tag         |
+| `1.0.0`  | release tag `v1.0.0` (pin it to stay on a version)   |
+
+Images are published by CI after the tests pass. A release is made by pushing
+a tag (`git tag v1.0.1 && git push origin v1.0.1`); an existing tag can be
+rebuilt from Actions → CI → Run workflow. To build the image from source:
+`docker compose up -d --build`.
+
+### Troubleshooting
+
+- `WARNING: /var/run/libvirt/libvirt-sock not found` - libvirt is not running
+  on the host or the socket is not mounted (`-v /var/run/libvirt:/var/run/libvirt`).
+- the panel does not open - check `docker logs php-virt-manager`, whether the
+  port is free and allowed in the firewall.
+- the console does not connect - the machine needs a VNC graphics device; the
+  container must run with `--network host`.
+
 ## Features
 
 - hypervisor overview, machine list with state indicators refreshed live
@@ -60,7 +179,7 @@ Spanish and Ukrainian.
 | ![Networks](.github/screenshots/networks.png) | |
 | **Networks** with DHCP leases | |
 
-## Requirements
+## Requirements (without Docker)
 
 - PHP >= 8.2 with the libvirt and SQLite extensions (Debian/Ubuntu:
   `php-libvirt-php`, `php-sqlite3`)
@@ -70,7 +189,7 @@ Spanish and Ukrainian.
 - for cloud images: `xorriso` (or `genisoimage`), `virsh` (`libvirt-clients`)
   and the PHP curl extension
 
-## Quick start (development)
+## Development setup
 
 ```sh
 composer install
@@ -127,60 +246,7 @@ application and keeps `config.php`, the certificate and `data/`.
 
 ### Docker
 
-A ready image is published at
-[`ghcr.io/spidero/php-virt-manager`](https://github.com/spidero/php-virt-manager/pkgs/container/php-virt-manager)
-(linux/amd64). With the bundled `docker-compose.yml`:
-
-```sh
-docker compose up -d                 # pulls ghcr.io/spidero/php-virt-manager:latest
-docker compose logs | grep login     # generated password, unless PVM_PASSWORD is set
-```
-
-or without Compose:
-
-```sh
-docker run -d --name php-virt-manager --network host --restart unless-stopped \
-  -e TZ=Europe/Warsaw \
-  -v /var/run/libvirt:/var/run/libvirt \
-  -v pvm-data:/app/data -v pvm-ssl:/etc/nginx/ssl \
-  ghcr.io/spidero/php-virt-manager:latest
-docker logs php-virt-manager | grep login
-```
-
-The container uses host networking (VNC consoles listen on the host's
-127.0.0.1) and the host libvirt socket (`/var/run/libvirt`); it joins the
-socket's group automatically. Panel: `https://<host>:9443/`.
-
-Image tags:
-
-| Tag      | Built from                                         |
-|----------|----------------------------------------------------|
-| `latest` | every push to `master` and every release tag       |
-| `1.0.0`  | release tag `v1.0.0` (pin this to stay on a version) |
-
-A release is published by pushing a tag: `git tag v1.0.1 && git push origin v1.0.1`.
-An existing tag can be rebuilt from Actions → CI → Run workflow.
-
-Update: `docker compose pull && docker compose up -d`. To build the image
-from source instead: `docker compose up -d --build`. `data/` and the
-certificate are kept in the `pvm-data` and `pvm-ssl` volumes across updates.
-
-| Variable            | Default          | Description                              |
-|---------------------|------------------|------------------------------------------|
-| `LIBVIRT_URI`       | `qemu:///system` | libvirt connection                       |
-| `PVM_USER`          | `admin`          | first administrator (created on first start) |
-| `PVM_PASSWORD`      | random           | its password (or `PVM_PASSWORD_HASH`)    |
-| `PVM_READONLY`      | `0`              | `1` = view only                          |
-| `TZ`                | `UTC`            | time zone (logs, snapshot schedules)     |
-| `HTTPS_PORT`        | `9443`           | HTTPS port                               |
-| `HTTP_PORT`         | `9080`           | HTTP port (redirects to HTTPS)           |
-| `WS_PORT`           | `6081`           | websockify port on 127.0.0.1             |
-
-The first administrator is stored in the user database on the first start;
-later password changes are made in the panel.
-
-Volumes: `/app/data` (user database, action log, login lock data, console tokens),
-`/etc/nginx/ssl` (`cert.pem`, `key.pem` - self-signed generated if missing).
+See [Quick start with Docker](#quick-start-with-docker) above.
 
 ### Apache
 
