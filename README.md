@@ -153,11 +153,13 @@ socket's group automatically. Panel: `https://<host>:9443/`.
 
 Image tags:
 
-| Tag            | Built from                                   |
-|----------------|----------------------------------------------|
-| `latest`       | every push to `master`                       |
-| `sha-<commit>` | a specific `master` commit (pin a version)   |
-| `1.2.3`, `1.2` | release tags `v1.2.3`                        |
+| Tag      | Built from                                         |
+|----------|----------------------------------------------------|
+| `latest` | every push to `master` and every release tag       |
+| `1.0.0`  | release tag `v1.0.0` (pin this to stay on a version) |
+
+A release is published by pushing a tag: `git tag v1.0.1 && git push origin v1.0.1`.
+An existing tag can be rebuilt from Actions → Docker image → Run workflow.
 
 Update: `docker compose pull && docker compose up -d`. To build the image
 from source instead: `docker compose up -d --build`. `data/` and the
