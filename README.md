@@ -1,11 +1,14 @@
 # php-virt-manager
 
+[![CI](https://github.com/spidero/php-virt-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/spidero/php-virt-manager/actions/workflows/ci.yml)
+[![Docker image](https://github.com/spidero/php-virt-manager/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/spidero/php-virt-manager/pkgs/container/php-virt-manager)
+
 Web panel for libvirt/KVM written in PHP (Smarty 5, Bootstrap 5).
 
 Manage virtual machines from the browser: live charts, snapshots with
 schedules, a noVNC console, machines from cloud images with cloud-init,
 cloning, users with roles, a REST API - deployable with one script on nginx
-or as a Docker container. Interface in English, German, Norwegian, Polish,
+or as a Docker container (`ghcr.io/spidero/php-virt-manager`). Interface in English, German, Norwegian, Polish,
 Spanish and Ukrainian.
 
 ![Machine details](.github/screenshots/vm-details.png)
@@ -124,19 +127,41 @@ application and keeps `config.php`, the certificate and `data/`.
 
 ### Docker
 
+A ready image is published at
+[`ghcr.io/spidero/php-virt-manager`](https://github.com/spidero/php-virt-manager/pkgs/container/php-virt-manager)
+(linux/amd64). With the bundled `docker-compose.yml`:
+
 ```sh
 docker compose up -d                 # pulls ghcr.io/spidero/php-virt-manager:latest
 docker compose logs | grep login     # generated password, unless PVM_PASSWORD is set
+```
+
+or without Compose:
+
+```sh
+docker run -d --name php-virt-manager --network host --restart unless-stopped \
+  -e TZ=Europe/Warsaw \
+  -v /var/run/libvirt:/var/run/libvirt \
+  -v pvm-data:/app/data -v pvm-ssl:/etc/nginx/ssl \
+  ghcr.io/spidero/php-virt-manager:latest
+docker logs php-virt-manager | grep login
 ```
 
 The container uses host networking (VNC consoles listen on the host's
 127.0.0.1) and the host libvirt socket (`/var/run/libvirt`); it joins the
 socket's group automatically. Panel: `https://<host>:9443/`.
 
-The image is published to GitHub Container Registry on every push to
-`master` (`latest`, `sha-<commit>`) and for `v*` tags (`1.2.3`, `1.2`).
-To build it from source instead: `docker compose up -d --build`.
-Update: `docker compose pull && docker compose up -d`.
+Image tags:
+
+| Tag            | Built from                                   |
+|----------------|----------------------------------------------|
+| `latest`       | every push to `master`                       |
+| `sha-<commit>` | a specific `master` commit (pin a version)   |
+| `1.2.3`, `1.2` | release tags `v1.2.3`                        |
+
+Update: `docker compose pull && docker compose up -d`. To build the image
+from source instead: `docker compose up -d --build`. `data/` and the
+certificate are kept in the `pvm-data` and `pvm-ssl` volumes across updates.
 
 | Variable            | Default          | Description                              |
 |---------------------|------------------|------------------------------------------|
