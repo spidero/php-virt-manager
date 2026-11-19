@@ -8,6 +8,17 @@ FPM_SOCK=/run/php/php-virt-manager.sock
 SSL_DIR=/etc/nginx/ssl
 SOCK=/var/run/libvirt/libvirt-sock
 
+# system time zone from $TZ: php-fpm clears the environment (clear_env), so the
+# panel pages only see the zone through /etc/localtime and /etc/timezone
+if [ -n "${TZ:-}" ]; then
+    if [ -f "/usr/share/zoneinfo/$TZ" ]; then
+        ln -sf "/usr/share/zoneinfo/$TZ" /etc/localtime
+        echo "$TZ" > /etc/timezone
+    else
+        echo "WARNING: unknown time zone TZ=$TZ, using UTC" >&2
+    fi
+fi
+
 # access to the host libvirt socket: join a group with the socket's gid
 if [ -S "$SOCK" ]; then
     GID=$(stat -c %g "$SOCK")
