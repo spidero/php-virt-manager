@@ -40,7 +40,22 @@ final class MiscTest extends TestCase
         $connections = null;
         $connection = 'qemu:///system';
         $readonly = 1;
-        $this->assertSame(['default' => ['uri' => 'qemu:///system', 'label' => 'qemu:///system', 'readonly' => 1]], connections_list());
+        db_query('DELETE FROM connections');
+        $this->assertSame(['default' => ['uri' => 'qemu:///system', 'label' => 'qemu:///system', 'readonly' => 1, 'source' => 'config']], connections_list());
+
+        // connections added in the panel
+        $this->assertSame([], connection_add('Lab KVM 2', 'qemu+ssh://root@kvm2.example.com/system?no_verify=1', true));
+        $this->assertSame([], connection_add('lab kvm 2', 'qemu+ssh://root@kvm3.example.com/system', false));
+        $list = connections_list();
+        $this->assertSame(['default', 'lab-kvm-2', 'lab-kvm-2-2'], array_keys($list));
+        $this->assertSame(['panel', 1], [$list['lab-kvm-2']['source'], $list['lab-kvm-2']['readonly']]);
+        $this->assertNotEmpty(connection_add('dup', 'qemu+ssh://root@kvm2.example.com/system?no_verify=1', false), 'same URI');
+        $this->assertNotEmpty(connection_add('x', 'http://evil/', false));
+        $this->assertNotEmpty(connection_add('x', 'qemu:///system; rm -rf /', false));
+        $this->assertNotEmpty(connection_add('', 'qemu:///session', false));
+        $this->assertTrue(connection_delete('lab-kvm-2'));
+        $this->assertFalse(connection_delete('default'), 'config connections are not stored');
+        db_query('DELETE FROM connections');
 
         $this->assertTrue(connection_is_local('qemu:///system'));
         $this->assertTrue(connection_is_local('qemu+ssh://localhost/system'));

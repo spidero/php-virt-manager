@@ -234,7 +234,9 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 
 - users with roles (admin, operator, viewer), personal SSH keys, login
   lockout, CSRF protection, read-only connections
-- several hypervisors (local or `qemu+ssh://`) switchable in the menu
+- several hypervisors (local or `qemu+ssh://`) switchable in the menu; added,
+  tested and removed by administrators on the *Connections* page (or fixed in
+  `config.php`)
 - REST API with per-user tokens (same permissions as the user's role)
 - background task queue with progress bars, action log with rotation
 
@@ -347,6 +349,15 @@ connections (`$connections`, each can be read-only), first administrator,
 login lockout (`$login_max_attempts`, `$login_lock_seconds`), data directory,
 action log rotation, console settings and the cloud image catalog
 (`$cloud_catalog_url`, `$cloud_catalog_auto_sync`, `$cloud_images`).
+
+### Remote hypervisors
+
+Administrators add connections such as `qemu+ssh://root@kvm2.example.com/system`
+on the *Connections* page (*Test* checks them with `virsh`). SSH connections
+use the key of the panel user: `www-data` on a host install, inside the
+container for Docker (mount a key, e.g. `-v /srv/pvm-ssh:/var/www/.ssh:ro`
+with `id_ed25519` and `known_hosts`); `?no_verify=1` in the URI skips the host
+key check. Consoles work only for local connections.
 
 ### Users and roles
 

@@ -97,6 +97,16 @@ const DB_MIGRATIONS = [
             PRIMARY KEY (user_id, conn, name)
         )',
     ],
+    9 => [
+        // hypervisor connections added in the panel (those of config.php are not stored)
+        'CREATE TABLE connections (
+            key TEXT PRIMARY KEY,
+            uri TEXT NOT NULL,
+            label TEXT NOT NULL,
+            readonly INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL
+        )',
+    ],
 ];
 
 function db() {

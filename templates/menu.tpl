@@ -40,6 +40,7 @@
     <a href="log.php" class="list-group-item list-group-item-action py-2{if $page=='log'} active{/if}">{'Action log'|t}</a>
     <a href="schedules.php" class="list-group-item list-group-item-action py-2{if $page=='schedules'} active{/if}">{'Snapshot schedules'|t}</a>
     <a href="users.php" class="list-group-item list-group-item-action py-2{if $page=='users'} active{/if}">{'Users'|t}</a>
+    <a href="connections.php" class="list-group-item list-group-item-action py-2{if $page=='connections'} active{/if}">{'Connections'|t}</a>
 {/if}
   </div>
   <div class="card-footer">
