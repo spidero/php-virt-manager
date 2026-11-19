@@ -11,6 +11,7 @@
 </script>
 {if $logged_user}
 <script src="assets/js/panel.js"></script>
+<script src="assets/js/sendkey.js"></script>
 {/if}
 </body>
 </html>

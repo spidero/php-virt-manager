@@ -30,5 +30,6 @@ $base = trim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 $ws_path = ltrim(($base !== '' ? $base.'/' : '').$console_ws_path, '/').'?token='.$token;
 
 $smarty->assign('node', $node);
+$smarty->assign('key_combos', DOMAIN_KEY_COMBOS);
 $smarty->assign('console_url', $console_novnc_url.'?autoconnect=true&scale=true&path='.rawurlencode($ws_path));
 $smarty->display('console.tpl');

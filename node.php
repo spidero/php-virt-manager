@@ -128,6 +128,7 @@ $active = (bool)libvirt_domain_is_active($res);
 $xml = domain_xml($res);
 
 $smarty->assign('node', $node);
+$smarty->assign('key_combos', DOMAIN_KEY_COMBOS);
 $smarty->assign('domain_uuid', libvirt_domain_get_uuid_string($res));
 $smarty->assign('active', $active);
 $smarty->assign('info', $info);

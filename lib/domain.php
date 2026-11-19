@@ -13,6 +13,16 @@ const DOMAIN_STATES = [
 ];
 
 // power action => [libvirt function, message on success]
+// key combinations sent to the guest (Linux input key codes): label, codes
+const DOMAIN_KEY_COMBOS = [
+    'ctrl-alt-del'       => ['Ctrl+Alt+Del', [29, 56, 111]],
+    'ctrl-alt-backspace' => ['Ctrl+Alt+Backspace', [29, 56, 14]],
+    'ctrl-alt-f1'        => ['Ctrl+Alt+F1', [29, 56, 59]],
+    'ctrl-alt-f2'        => ['Ctrl+Alt+F2', [29, 56, 60]],
+    'ctrl-alt-f3'        => ['Ctrl+Alt+F3', [29, 56, 61]],
+    'ctrl-alt-f7'        => ['Ctrl+Alt+F7', [29, 56, 65]],
+];
+
 const DOMAIN_POWER_ACTIONS = [
     'start'   => ['libvirt_domain_create',   'Starting machine, it may take some time'],
     'stop'    => ['libvirt_domain_shutdown', 'Shutting down machine, it may take some time'],

@@ -34,6 +34,9 @@
         <a href="console.php?node={$node|escape:'url'}" target="_blank" class="btn btn-secondary mb-1">{'Console'|t}</a>
     {/if}
     </div>
+    {if $info['state']==1 && !$readonly}
+    <div class="mb-3">{include file="sendkeys.tpl"}</div>
+    {/if}
 {/if}
 
     <div class="row">
