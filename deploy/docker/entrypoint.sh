@@ -8,9 +8,21 @@ FPM_SOCK=/run/php/php-virt-manager.sock
 
 # start banner: version (from the image build), author and where to report problems
 read -r PVM_VERSION PVM_REVISION < "$APP_DIR/VERSION" 2>/dev/null || { PVM_VERSION=dev; PVM_REVISION=unknown; }
-echo "php-virt-manager $PVM_VERSION (revision $(printf '%.7s' "$PVM_REVISION"), $(php -r 'echo "PHP ", PHP_VERSION;'))"
-echo "Author: Piotr Skwarna (spidero) - https://github.com/spidero"
-echo "Project, ideas and bug reports: https://github.com/spidero/php-virt-manager"
+# in a plain ASCII frame sized to the longest line
+awk '{ line[NR] = $0; if (length($0) > w) w = length($0) }
+     END {
+         border = "+"; for (i = 0; i < w + 2; i++) border = border "-"; border = border "+"
+         print border
+         for (i = 1; i <= NR; i++) printf "| %-" w "s |\n", line[i]
+         print border
+     }' <<EOF
+php-virt-manager $PVM_VERSION
+revision $(printf '%.7s' "$PVM_REVISION"), $(php -r 'echo "PHP ", PHP_VERSION;')
+
+Author:  Piotr Skwarna (spidero) - https://github.com/spidero
+Project: https://github.com/spidero/php-virt-manager
+Ideas and bug reports: https://github.com/spidero/php-virt-manager/issues
+EOF
 SSL_DIR=/etc/nginx/ssl
 SOCK=/var/run/libvirt/libvirt-sock
 
