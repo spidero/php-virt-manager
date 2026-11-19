@@ -16,7 +16,7 @@ steps to reproduce.
 
 ## Development setup
 
-Requirements: PHP 8.4+ with the libvirt, SQLite and curl extensions, composer,
+Requirements: PHP 8.2+ with the libvirt, SQLite and curl extensions, composer,
 a local libvirt (`qemu:///system`) and a user in the `libvirt` group.
 
 ```sh
@@ -48,7 +48,7 @@ vendor/bin/phpstan analyse          # static analysis, level 5
 for lang in de es nb pl uk; do php bin/i18n-strings.php $lang; done   # missing translations
 ```
 
-CI runs the same checks on PHP 8.4 and 8.5 and builds the Docker image.
+CI runs the same checks on PHP 8.2 (the minimum) and 8.5 and builds the Docker image.
 
 ## Code conventions
 

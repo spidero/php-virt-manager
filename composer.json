@@ -2,7 +2,7 @@
     "description": "Web panel for libvirt/KVM virtual machines",
     "license": "GPL-3.0-or-later",
     "require": {
-        "php": ">=8.4",
+        "php": ">=8.2",
         "smarty/smarty": "^5.8",
         "twbs/bootstrap": "^5.3"
     },
