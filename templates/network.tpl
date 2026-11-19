@@ -105,12 +105,12 @@
 {/if}
     <h6>{'DHCP leases'|t}</h6>
     <table class="table table-sm mb-0">
-      <thead><tr><th>IP</th><th>{'Mask'|t}</th><th>MAC</th><th>{'Hostname'|t}</th><th>{'Expires'|t}</th></tr></thead>
+      <thead><tr><th>IP</th><th>MAC</th><th>{'Hostname'|t}</th><th>{'Expires'|t}</th></tr></thead>
       <tbody>
 {foreach from=$n.leases item=l}
-        <tr><td><span class="user-select-all">{$l.ip}</span></td><td class="text-body-secondary">{$l.prefix|default:'-'}</td><td><code>{$l.mac}</code></td><td>{$l.hostname|default:'-'}</td><td>{$l.expires}</td></tr>
+        <tr><td><span class="user-select-all">{$l.ip}</span></td><td><code>{$l.mac}</code></td><td>{$l.hostname|default:'-'}</td><td>{$l.expires}</td></tr>
 {foreachelse}
-        <tr><td colspan="5">{'No leases'|t}</td></tr>
+        <tr><td colspan="4">{'No leases'|t}</td></tr>
 {/foreach}
       </tbody>
     </table>

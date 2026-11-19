@@ -288,7 +288,6 @@ return [
     'Machine state saved; the next start restores it' => 'Estado de la máquina guardado; el próximo arranque lo restaura',
     'Machines' => 'Máquinas',
     'Manage your SSH keys' => 'Gestionar claves SSH',
-    'Mask' => 'Máscara',
     'Maximum memory (MB)' => 'Memoria máxima (MB)',
     'Medium' => 'Medio',
     'Memory' => 'Memoria',

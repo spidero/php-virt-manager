@@ -288,7 +288,6 @@ return [
     'Machine state saved; the next start restores it' => 'Maskintilstanden er lagret; neste oppstart gjenoppretter den',
     'Machines' => 'Maskiner',
     'Manage your SSH keys' => 'Administrer SSH-nøkler',
-    'Mask' => 'Maske',
     'Maximum memory (MB)' => 'Maksimalt minne (MB)',
     'Medium' => 'Medium',
     'Memory' => 'Minne',
