@@ -171,7 +171,8 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 - several hypervisors (local or `qemu+ssh://`) switchable in the menu
 - interface in English, German, Norwegian (bokmål), Polish, Spanish and
   Ukrainian (browser language, selectable in the profile)
-- light/dark theme following the system preference
+- light/dark theme following the system preference, or chosen with the icon
+  in the menu (remembered by the browser)
 - REST API with per-user tokens (same permissions as the user's role)
 - background task queue with a status page
 - action log (logins, power actions, snapshots, created machines, user changes)

@@ -162,6 +162,41 @@
       .catch(function () {});
   }
 
+  // theme toggle in the menu: automatic (system) -> light -> dark; stored in the browser
+  var THEMES = ['auto', 'light', 'dark'];
+  var systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+  function themeMode() {
+    var mode = null;
+    try { mode = localStorage.getItem('pvm-theme'); } catch (e) {}
+    return mode === 'light' || mode === 'dark' ? mode : 'auto';
+  }
+  function applyTheme() {
+    var mode = themeMode();
+    document.documentElement.setAttribute('data-bs-theme', mode === 'auto' ? (systemDark.matches ? 'dark' : 'light') : mode);
+    document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
+      var label = btn.getAttribute('data-label-' + mode);
+      btn.setAttribute('title', label);
+      btn.setAttribute('aria-label', label);
+      btn.querySelectorAll('[data-theme-icon]').forEach(function (icon) {
+        icon.classList.toggle('d-none', icon.getAttribute('data-theme-icon') !== mode);
+      });
+    });
+    // charts read their colors from the theme
+    document.querySelectorAll('canvas[data-series]').forEach(draw);
+  }
+  document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var next = THEMES[(THEMES.indexOf(themeMode()) + 1) % THEMES.length];
+      try {
+        if (next === 'auto') localStorage.removeItem('pvm-theme');
+        else localStorage.setItem('pvm-theme', next);
+      } catch (e) {}
+      applyTheme();
+    });
+  });
+  if (systemDark.addEventListener) systemDark.addEventListener('change', applyTheme);
+  applyTheme();
+
   poll();
   setInterval(poll, INTERVAL);
   pollJobs();

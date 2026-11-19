@@ -18,9 +18,14 @@
     <!-- Bootstrap CSS, copied from vendor/ by composer (see composer.json scripts) -->
     <link rel="stylesheet" href="assets/css/bootstrap.min.css">
     <script>
-      // follow the system light/dark preference
-      document.documentElement.setAttribute('data-bs-theme',
-        window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      // theme chosen with the menu toggle (light/dark), otherwise the system preference;
+      // set before the page renders so it does not flash
+      (function () {
+        var mode = null;
+        try { mode = localStorage.getItem('pvm-theme'); } catch (e) {}
+        document.documentElement.setAttribute('data-bs-theme', mode === 'light' || mode === 'dark' ? mode
+          : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+      })();
     </script>
     <style>
       /* let the content column shrink (long table cells must not push it below the menu) */
