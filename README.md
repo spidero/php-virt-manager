@@ -233,16 +233,18 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 
 | | |
 |---|---|
-| ![Dashboard](.github/screenshots/hypervisor.png) | ![Browser console](.github/screenshots/console.png) |
-| **Dashboard** - machine states and host info | **Console** - noVNC in the browser |
-| ![Cloud images](.github/screenshots/cloud.png) | ![Dark theme](.github/screenshots/vm-details-dark.png) |
-| **Cloud images** - a new machine with cloud-init in a minute | **Dark theme** follows the system setting |
-| ![Editing a machine](.github/screenshots/edit.png) | ![Users and roles](.github/screenshots/users.png) |
-| **Editing** - resources, CD/DVD, hot-plugged disks and NICs, clone, delete | **Users** with admin, operator and viewer roles |
-| ![Background tasks](.github/screenshots/jobs.png) | ![Action log](.github/screenshots/action-log.png) |
-| **Background tasks** - downloads, clones, cloud machines | **Action log** - who did what and when |
-| ![Networks](.github/screenshots/networks.png) | |
-| **Networks** with DHCP leases | |
+| ![Dashboard](.github/screenshots/hypervisor.png) | ![Machine details](.github/screenshots/vm-details-dark.png) |
+| **Dashboard** - machine table with live CPU, memory and disk use, host charts, starred machines in the menu | **Machine page** in the dark theme - actions, live charts, disks, snapshots |
+| ![Browser console](.github/screenshots/console.png) | ![Text console](.github/screenshots/text-console.png) |
+| **Console** - noVNC with key combinations | **Text console** - the serial port in the browser |
+| ![Editing a machine](.github/screenshots/edit.png) | ![Cloud images](.github/screenshots/cloud.png) |
+| **Editing** - disks, interfaces, host devices, memory and CPU topology | **Cloud images** - a new machine with cloud-init in a minute |
+| ![Cloud image catalog](.github/screenshots/catalog.png) | ![Networks](.github/screenshots/networks.png) |
+| **Catalog** of cloud images, synchronized from GitHub | **Networks** - new networks, DHCP range, static addresses |
+| ![Background tasks](.github/screenshots/jobs.png) | ![Users and roles](.github/screenshots/users.png) |
+| **Background tasks** with progress | **Users** with admin, operator and viewer roles |
+| ![Action log](.github/screenshots/action-log.png) | |
+| **Action log** - who did what and when | |
 
 ## Requirements (without Docker)
 
