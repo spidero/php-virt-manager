@@ -31,5 +31,9 @@ $ws_path = ltrim(($base !== '' ? $base.'/' : '').$console_ws_path, '/').'?token=
 
 $smarty->assign('node', $node);
 $smarty->assign('key_combos', DOMAIN_KEY_COMBOS);
-$smarty->assign('console_url', $console_novnc_url.'?autoconnect=true&scale=true&path='.rawurlencode($ws_path));
+// a VNC password (only visible with the "secure" XML flag) is passed to noVNC
+$secure = @simplexml_load_string((string)libvirt_domain_get_xml_desc($res, null, 1));
+$vnc_password = $secure ? (string)($secure->xpath("/domain/devices/graphics[@type='vnc']")[0]['passwd'] ?? '') : '';
+$smarty->assign('console_url', $console_novnc_url.'?autoconnect=true&scale=true&path='.rawurlencode($ws_path)
+    .($vnc_password !== '' ? '&password='.rawurlencode($vnc_password) : ''));
 $smarty->display('console.tpl');

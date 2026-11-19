@@ -530,3 +530,93 @@ function vm_clone_disk_modes($xml, array $input) {
     }
     return $modes;
 }
+
+const VM_VIDEO_MODELS = ['virtio' => 'virtio', 'qxl' => 'QXL', 'vga' => 'VGA', 'bochs' => 'Bochs', 'none' => 'none'];
+const VM_SOUND_MODELS = ['' => 'none', 'ich9' => 'Intel HDA (ich9)', 'ich6' => 'Intel HDA (ich6)', 'ac97' => 'AC97'];
+const VM_WATCHDOG_ACTIONS = ['' => 'none', 'reset' => 'reset', 'poweroff' => 'power off', 'pause' => 'pause'];
+const VM_FS_TAG_PATTERN = '/^[A-Za-z0-9_-]{1,36}$/';
+
+// hardware settings of a definition: video model, sound model, watchdog action,
+// virtio-rng, whether VNC has a password, shared folders [tag => host directory]
+function vm_hardware($xml) {
+    $doc = vm_dom($xml);
+    $xpath = new DOMXPath($doc);
+    $value = fn($query) => ($node = $xpath->query($query)->item(0)) ? $node->nodeValue : '';
+    $filesystems = [];
+    foreach ($xpath->query("/domain/devices/filesystem[driver/@type='virtiofs']") ?: [] as $fs) {
+        $tag = $xpath->query('target/@dir', $fs)->item(0);
+        $dir = $xpath->query('source/@dir', $fs)->item(0);
+        $filesystems[$tag ? $tag->nodeValue : ''] = $dir ? $dir->nodeValue : '';
+    }
+    return [
+        'video'        => $value('/domain/devices/video/model/@type') ?: 'none',
+        'sound'        => $value('/domain/devices/sound/@model'),
+        'watchdog'     => $value('/domain/devices/watchdog/@action') ?: ($xpath->query('/domain/devices/watchdog')->length ? 'reset' : ''),
+        'rng'          => $xpath->query('/domain/devices/rng')->length > 0,
+        'vnc_password' => $value("/domain/devices/graphics[@type='vnc']/@passwd") !== '',
+        'filesystems'  => $filesystems,
+    ];
+}
+
+// replaces the video, sound, watchdog and rng devices
+function vm_xml_set_hardware($xml, $video, $sound, $watchdog, $rng) {
+    $doc = vm_dom($xml);
+    $xpath = new DOMXPath($doc);
+    foreach (iterator_to_array($xpath->query('/domain/devices/video | /domain/devices/sound | /domain/devices/watchdog | /domain/devices/rng') ?: []) as $node) {
+        $node->parentNode->removeChild($node);
+    }
+    $devices = vm_first($doc, '/domain/devices');
+    $add = fn($device) => $devices->appendChild(vm_element($doc, $device));
+    if ($video !== 'none') {
+        $add("<video><model type='".xml_escape($video)."'/></video>");
+    }
+    if ($sound !== '') {
+        $add("<sound model='".xml_escape($sound)."'/>");
+    }
+    if ($watchdog !== '') {
+        $add("<watchdog model='i6300esb' action='".xml_escape($watchdog)."'/>");
+    }
+    if ($rng) {
+        $add("<rng model='virtio'><backend model='random'>/dev/urandom</backend></rng>");
+    }
+    return vm_xml($doc);
+}
+
+// VNC password ('' removes it); VNC keeps listening on 127.0.0.1 only
+function vm_xml_set_vnc_password($xml, $password) {
+    $doc = vm_dom($xml);
+    foreach ((new DOMXPath($doc))->query("/domain/devices/graphics[@type='vnc']") ?: [] as $graphics) {
+        if ($graphics instanceof DOMElement) {
+            if ($password === '') {
+                $graphics->removeAttribute('passwd');
+            }
+            else {
+                $graphics->setAttribute('passwd', $password);
+            }
+        }
+    }
+    return vm_xml($doc);
+}
+
+// shares a host directory with the guest (virtiofs, mount -t virtiofs <tag> /mnt);
+// virtiofs needs shared memory, added when missing
+function vm_xml_add_filesystem($xml, $source, $tag) {
+    $doc = vm_dom($xml);
+    if (!vm_first($doc, '/domain/memoryBacking')) {
+        $backing = vm_element($doc, "<memoryBacking><source type='memfd'/><access mode='shared'/></memoryBacking>");
+        $devices = vm_first($doc, '/domain/devices');
+        $doc->documentElement->insertBefore($backing, $devices);
+    }
+    $devices = vm_first($doc, '/domain/devices');
+    $devices->appendChild(vm_element($doc, "<filesystem type='mount' accessmode='passthrough'><driver type='virtiofs'/>"
+        ."<source dir='".xml_escape($source)."'/><target dir='".xml_escape($tag)."'/></filesystem>"));
+    return vm_xml($doc);
+}
+
+function vm_xml_remove_filesystem($xml, $tag) {
+    $doc = vm_dom($xml);
+    foreach (iterator_to_array((new DOMXPath($doc))->query("/domain/devices/filesystem[target/@dir=".vm_xpath_literal($tag).']') ?: []) as $fs) {
+        $fs->parentNode->removeChild($fs);
+    }
+    return vm_xml($doc);
+}

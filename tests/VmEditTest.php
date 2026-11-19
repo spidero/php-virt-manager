@@ -284,4 +284,31 @@ final class VmEditTest extends TestCase
         $this->assertSame('/p/vm-2.qcow2', (string)$clone->devices->disk[0]->source['file'], 'copied');
         $this->assertSame('/p/data.qcow2', (string)$clone->devices->disk[1]->source['file'], 'shared');
     }
+
+    public function testHardwareSettings(): void
+    {
+        $xml = "<domain><name>vm</name><memory>1048576</memory><devices>
+            <graphics type='vnc' port='-1' listen='127.0.0.1'/><video><model type='virtio'/></video></devices></domain>";
+        $this->assertSame(['video' => 'virtio', 'sound' => '', 'watchdog' => '', 'rng' => false, 'vnc_password' => false, 'filesystems' => []], vm_hardware($xml));
+
+        $xml = vm_xml_set_hardware($xml, 'qxl', 'ich9', 'poweroff', true);
+        $hw = vm_hardware($xml);
+        $this->assertSame(['qxl', 'ich9', 'poweroff', true], [$hw['video'], $hw['sound'], $hw['watchdog'], $hw['rng']]);
+        $this->assertCount(1, simplexml_load_string($xml)->devices->video, 'replaced, not added');
+        $none = vm_hardware(vm_xml_set_hardware($xml, 'none', '', '', false));
+        $this->assertSame(['none', '', '', false], [$none['video'], $none['sound'], $none['watchdog'], $none['rng']]);
+
+        $with = vm_xml_set_vnc_password($xml, 'secret1');
+        $this->assertTrue(vm_hardware($with)['vnc_password']);
+        $this->assertSame('127.0.0.1', (string)simplexml_load_string($with)->devices->graphics['listen']);
+        $this->assertFalse(vm_hardware(vm_xml_set_vnc_password($with, ''))['vnc_password']);
+
+        $fs = vm_xml_add_filesystem($xml, '/srv/share', 'share');
+        $doc = simplexml_load_string($fs);
+        $this->assertSame(['memfd', 'shared'], [(string)$doc->memoryBacking->source['type'], (string)$doc->memoryBacking->access['mode']]);
+        $this->assertSame(['share' => '/srv/share'], vm_hardware($fs)['filesystems']);
+        $two = vm_xml_add_filesystem($fs, '/srv/b', 'b');
+        $this->assertCount(1, simplexml_load_string($two)->memoryBacking, 'memory backing added once');
+        $this->assertSame(['b' => '/srv/b'], vm_hardware(vm_xml_remove_filesystem($two, 'share'))['filesystems']);
+    }
 }

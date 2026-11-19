@@ -358,6 +358,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $details = $key;
         }
+        elseif ($action === 'hardware') {
+            $video = (string)($_POST['video'] ?? 'virtio');
+            $sound = (string)($_POST['sound'] ?? '');
+            $watchdog = (string)($_POST['watchdog'] ?? '');
+            if (!isset(VM_VIDEO_MODELS[$video]) || !isset(VM_SOUND_MODELS[$sound]) || !isset(VM_WATCHDOG_ACTIONS[$watchdog])) {
+                throw new RuntimeException(t('Unknown device model.'));
+            }
+            define_or_fail($con, vm_xml_set_hardware($xml, $video, $sound, $watchdog, !empty($_POST['rng'])));
+            $details = 'video '.$video.', sound '.($sound ?: '-').', watchdog '.($watchdog ?: '-').', rng '.(empty($_POST['rng']) ? 'off' : 'on');
+            $message = t('Hardware saved.').$after_restart;
+        }
+        elseif ($action === 'vnc_password') {
+            $password = (string)($_POST['vnc_password'] ?? '');
+            // VNC passwords are limited to 8 characters by the protocol
+            if ($password !== '' && !preg_match('/^[\x21-\x7e]{1,8}$/', $password)) {
+                throw new RuntimeException(t('VNC password: 1-8 printable characters without spaces.'));
+            }
+            define_or_fail($con, vm_xml_set_vnc_password($xml, $password));
+            $details = $password === '' ? 'removed' : 'set';
+            $message = ($password === '' ? t('VNC password removed.') : t('VNC password set; the browser console uses it automatically.')).$after_restart;
+        }
+        elseif ($action === 'fs_add' || $action === 'fs_remove') {
+            if (!can('admin')) {
+                throw new RuntimeException(t('You do not have permission for this action.'));
+            }
+            $tag = (string)($_POST['tag'] ?? '');
+            if (!preg_match(VM_FS_TAG_PATTERN, $tag)) {
+                throw new RuntimeException(t('Mount tag: letters, digits, _ - (up to 36 characters).'));
+            }
+            if ($action === 'fs_add') {
+                $source = rtrim(trim((string)($_POST['source'] ?? '')), '/');
+                if ($source === '' || !preg_match(STORAGE_PATH_PATTERN, $source) || str_contains($source, '..')) {
+                    throw new RuntimeException(t('Host directory: an absolute path such as /srv/share.'));
+                }
+                if (isset(vm_hardware($xml)['filesystems'][$tag])) {
+                    throw new RuntimeException(t('The mount tag %s is already used.', $tag));
+                }
+                define_or_fail($con, vm_xml_add_filesystem($xml, $source, $tag));
+                $details = $source.' as '.$tag;
+                $message = t('Directory %s shared as %s (in the guest: mount -t virtiofs %s /mnt).', $source, $tag, $tag).$after_restart;
+            }
+            else {
+                define_or_fail($con, vm_xml_remove_filesystem($xml, $tag));
+                $details = $tag;
+                $message = t('Shared folder %s removed.', $tag).$after_restart;
+            }
+        }
         elseif ($action === 'serial_console') {
             $enable = !empty($_POST['enable']);
             $port = $enable ? (vm_serial_port($xml) ?: console_serial_free_port($con)) : 0;
@@ -496,6 +543,10 @@ $smarty->assign('disk_buses', DISK_BUSES);
 $smarty->assign('disk_cache_modes', DISK_CACHE_MODES);
 $smarty->assign('free_volumes', storage_free_volumes($con));
 $smarty->assign('serial_port', vm_serial_port($xml));
+$smarty->assign('hardware', vm_hardware($xml));
+$smarty->assign('video_models', VM_VIDEO_MODELS);
+$smarty->assign('sound_models', VM_SOUND_MODELS);
+$smarty->assign('watchdog_actions', VM_WATCHDOG_ACTIONS);
 // host devices: only administrators see and change them
 if (can('admin')) {
     $host_devices = hostdev_usb_list($con) + hostdev_pci_list($con);

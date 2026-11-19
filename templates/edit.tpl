@@ -307,6 +307,73 @@
 
   <div class="col-md-6">
     <div class="card mb-3">
+      <div class="card-header">{'Hardware'|t}</div>
+      <div class="card-body">
+        {call form_start action='hardware'}
+          <div class="row">
+            <div class="col-6 mb-2">
+              <label class="form-label small" for="video">{'Video'|t}</label>
+              <select class="form-select form-select-sm" id="video" name="video">
+{foreach $video_models as $m => $label}
+                <option value="{$m}"{if $hardware.video==$m} selected{/if}>{$label|t}</option>
+{/foreach}
+              </select>
+            </div>
+            <div class="col-6 mb-2">
+              <label class="form-label small" for="sound">{'Sound'|t}</label>
+              <select class="form-select form-select-sm" id="sound" name="sound">
+{foreach $sound_models as $m => $label}
+                <option value="{$m}"{if $hardware.sound==$m} selected{/if}>{$label|t}</option>
+{/foreach}
+              </select>
+            </div>
+            <div class="col-6 mb-2">
+              <label class="form-label small" for="watchdog">{'Watchdog (action when the guest hangs)'|t}</label>
+              <select class="form-select form-select-sm" id="watchdog" name="watchdog">
+{foreach $watchdog_actions as $a => $label}
+                <option value="{$a}"{if $hardware.watchdog==$a} selected{/if}>{$label|t}</option>
+{/foreach}
+              </select>
+            </div>
+            <div class="col-6 mb-2 pt-4">
+              <div class="form-check"><input type="checkbox" class="form-check-input" id="rng" name="rng" value="1"{if $hardware.rng} checked{/if}> <label class="form-check-label small" for="rng">{'Random number generator (virtio-rng)'|t}</label></div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">{'Save'|t}</button>
+        </form>
+        <hr>
+        {call form_start action='vnc_password'}
+          <label class="form-label small" for="vnc_password">{'VNC password'|t} {if $hardware.vnc_password}<span class="badge text-bg-success">{'set'|t}</span>{/if}</label>
+          <div class="d-flex gap-1">
+            <input type="password" class="form-control form-control-sm" id="vnc_password" name="vnc_password" maxlength="8" autocomplete="new-password" placeholder="{'empty = no password'|t}">
+            <button type="submit" class="btn btn-outline-primary btn-sm text-nowrap">{'Save'|t}</button>
+          </div>
+          <div class="form-text">{'Protects the VNC port against other users of the host; the browser console passes it automatically. Up to 8 characters (VNC limit).'|t}</div>
+        </form>
+{if $can.admin}
+        <hr>
+        <div class="small fw-semibold mb-1">{'Shared folders (virtiofs)'|t}</div>
+{foreach $hardware.filesystems as $tag => $dir}
+        <div class="d-flex align-items-center gap-2 small mb-1">
+          <code>{$tag}</code> <span class="text-body-secondary">{$dir}</span>
+          {call post_button url='edit.php' action='fs_remove' label={'Remove'|t} class='btn-outline-danger btn-sm' extra=['node'=>$node, 'tag'=>$tag]}
+        </div>
+{/foreach}
+        {call form_start action='fs_add'}
+          <div class="d-flex gap-1">
+            <input type="text" class="form-control form-control-sm font-monospace" name="source" placeholder="/srv/share" aria-label="{'Host directory'|t}" required>
+            <input type="text" class="form-control form-control-sm font-monospace" name="tag" placeholder="share" style="max-width: 8rem" aria-label="{'Mount tag'|t}" required>
+            <button type="submit" class="btn btn-outline-primary btn-sm">{'Add'|t}</button>
+          </div>
+          <div class="form-text">{'The guest mounts it with: mount -t virtiofs <tag> /mnt. The machine gets shared memory (needed by virtiofs).'|t}</div>
+        </form>
+{/if}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card mb-3">
       <div class="card-header">{'Text console'|t}</div>
       <div class="card-body">
         <p class="small text-body-secondary">{'A serial console in the browser (login prompt, boot messages, emergency shell); the guest needs a console on ttyS0, which cloud images have.'|t}</p>

@@ -194,6 +194,9 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
   the LAN) or directly to a host interface (macvtap) - in both wizards and
   on the edit page; host bridges and interfaces are listed for local
   connections
+- hardware: video model, sound, watchdog, virtio-rng, VNC password (passed to
+  the browser console automatically), shared host folders (virtiofs, for
+  administrators)
 - XML definition editor for administrators (checked against the libvirt
   schema)
 - host device passthrough for administrators: USB (by vendor and product,
