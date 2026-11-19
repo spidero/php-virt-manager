@@ -87,7 +87,7 @@
         <td><span class="badge rounded-pill text-bg-{$vm.color}" data-vm-badge>{$vm.label|t}</span></td>
         <td class="small text-nowrap">
 {foreach $vm.addresses as $a}
-          <div><span class="user-select-all font-monospace">{$a.addr}</span>{if $a.prefix !== ''} <span class="text-body-secondary user-select-none">/{$a.prefix}</span>{/if}</div>
+          <div><span class="user-select-all font-monospace">{$a.addr}</span></div>
 {foreachelse}
           <span class="text-body-secondary">-</span>
 {/foreach}
