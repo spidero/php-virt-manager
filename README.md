@@ -23,6 +23,17 @@ the KVM host itself and manages that host's libvirt.
 **Host requirements:** Linux with KVM and libvirt running (`libvirtd` or
 `virtqemud`, socket in `/var/run/libvirt`), Docker with the Compose plugin.
 
+**Access to libvirt (required, once):** the panel runs as uid 33 (`www-data`)
+and libvirt checks access with polkit, which allows members of the `libvirt`
+group - by the groups of that uid on the **host**. Add it on the host:
+
+```sh
+sudo usermod -aG libvirt $(id -nu 33)    # usually www-data
+```
+
+Without it the panel shows `authentication unavailable: no polkit agent
+available` (see [Troubleshooting](#troubleshooting)).
+
 ### 1. Start
 
 With `docker run`:
@@ -210,6 +221,10 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 
 ## Development setup
 
+The built-in server runs as your user, which must be in the `libvirt` group
+(`sudo usermod -aG libvirt $USER`, then log in again) to manage
+`qemu:///system`.
+
 ```sh
 composer install
 mkdir -p templates_c configs cache
@@ -255,7 +270,8 @@ The nginx configuration also routes `api.php/v1/...` (PATH_INFO) and passes the
 `Authorization` header. The script installs nginx, php-fpm, websockify and noVNC, copies the panel to
 `/var/www/php-virt-manager`, creates `config.php` with a random password
 (printed at the end), a self-signed TLS certificate, a dedicated php-fpm pool
-running with the `libvirt` group, a systemd unit for websockify and a systemd
+running with the `libvirt` group (and adds `www-data` to that group, which
+polkit requires), a systemd unit for websockify and a systemd
 timer running `bin/cron.php` every minute (background jobs, snapshot schedules,
 log rotation).
 
