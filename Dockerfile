@@ -19,7 +19,12 @@ COPY composer.json composer.lock ./
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-progress \
     && rm -rf /root/.cache/composer
 COPY . .
-RUN mkdir -p templates_c cache configs data/tokens \
+# version shown in the start log: the release (X.Y.Z), "master" or "dev" for local
+# builds, and the git commit; CI passes them as build arguments
+ARG VERSION=dev
+ARG REVISION=unknown
+RUN printf '%s %s\n' "$VERSION" "$REVISION" > VERSION \
+    && mkdir -p templates_c cache configs data/tokens \
     && chown -R www-data:www-data templates_c cache configs data \
     && chmod +x deploy/docker/entrypoint.sh
 

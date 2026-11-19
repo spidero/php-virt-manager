@@ -150,6 +150,10 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 
 ### Troubleshooting
 
+The first lines of `docker logs php-virt-manager` show the version (release,
+`master` or `dev` for a local build), the commit and the PHP version - include
+them in bug reports.
+
 - `WARNING: /var/run/libvirt/libvirt-sock not found` - libvirt is not running
   on the host or the socket is not mounted (`-v /var/run/libvirt:/var/run/libvirt`).
 - `Cannot connect to qemu:///system: authentication unavailable: no polkit agent

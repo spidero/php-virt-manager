@@ -93,6 +93,9 @@ jobs:
           load: true
           tags: php-virt-manager
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.release.outputs.version || (github.ref_name == 'master' && 'master') || 'dev' }}
+            REVISION=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
