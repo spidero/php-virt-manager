@@ -2,23 +2,8 @@
 
 // cloud images and cloud-init (NoCloud seed ISO) for machines created from templates
 
-const CLOUD_IMAGES = [
-    'ubuntu-26.04' => ['label' => 'Ubuntu 26.04 LTS', 'url' => 'https://cloud-images.ubuntu.com/resolute/current/resolute-server-cloudimg-amd64.img'],
-    'ubuntu-24.04' => ['label' => 'Ubuntu 24.04 LTS', 'url' => 'https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img'],
-    'debian-13'    => ['label' => 'Debian 13', 'url' => 'https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2'],
-    'debian-12'    => ['label' => 'Debian 12', 'url' => 'https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2'],
-    'almalinux-10' => ['label' => 'AlmaLinux 10', 'url' => 'https://repo.almalinux.org/almalinux/10/cloud/x86_64/images/AlmaLinux-10-GenericCloud-latest.x86_64.qcow2'],
-    'rocky-10'     => ['label' => 'Rocky Linux 10', 'url' => 'https://dl.rockylinux.org/pub/rocky/10/images/x86_64/Rocky-10-GenericCloud-Base.latest.x86_64.qcow2'],
-];
-
 const CLOUD_USER_PATTERN = '/^[a-z_][a-z0-9_-]{0,31}$/';
 const CLOUD_VOLUME_PREFIX = 'cloud-';
-
-// catalog: built-in images plus $cloud_images from config.php (same format)
-function cloud_catalog() {
-    global $cloud_images;
-    return array_merge(CLOUD_IMAGES, is_array($cloud_images ?? null) ? $cloud_images : []);
-}
 
 function cloud_volume_name($key) {
     return CLOUD_VOLUME_PREFIX.$key.'.qcow2';
@@ -29,7 +14,7 @@ function cloud_downloaded($con) {
     $found = [];
     foreach (array_keys(storage_active_pools($con)) as $pool_name) {
         $pool = libvirt_storagepool_lookup_by_name($con, $pool_name);
-        foreach (array_keys(cloud_catalog()) as $key) {
+        foreach (array_keys(cloud_catalog(true)) as $key) {
             if (isset($found[$key]) || !in_array(cloud_volume_name($key), libvirt_storagepool_list_volumes($pool) ?: [], true)) {
                 continue;
             }

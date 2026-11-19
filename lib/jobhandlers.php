@@ -22,7 +22,7 @@ function job_progress_reporter($job_id, $label) {
 // params: image (catalog key), pool
 function job_image_download(array $params, $con, $job_id, $uri) {
     $key = (string)$params['image'];
-    $image = cloud_catalog()[$key] ?? null;
+    $image = cloud_catalog(true)[$key] ?? null;
     $pool = libvirt_storagepool_lookup_by_name($con, (string)$params['pool']);
     if (!$image) {
         throw new RuntimeException('unknown image '.$key);

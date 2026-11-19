@@ -1,6 +1,11 @@
 {include file="header.tpl"}
 <div class="card mb-3">
-  <div class="card-header">{'Cloud images'|t}</div>
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>{'Cloud images'|t}</span>
+{if $can.admin}
+    <a href="cloud-catalog.php" class="small">{'Edit catalog'|t}</a>
+{/if}
+  </div>
   <div class="table-responsive">
   <table class="table table-sm align-middle mb-0">
     <thead><tr><th>{'Image'|t}</th><th>{'State'|t}</th><th></th></tr></thead>
@@ -59,7 +64,7 @@
           <label class="form-label" for="image">{'Image'|t}</label>
           <select class="form-select" id="image" name="image">
 {foreach $downloaded as $key => $d}
-            <option value="{$key}"{if $form.image==$key} selected{/if}>{$catalog[$key].label}</option>
+            <option value="{$key}"{if $form.image==$key} selected{/if}>{$image_labels[$key]|default:$key}</option>
 {/foreach}
           </select>
         </div>

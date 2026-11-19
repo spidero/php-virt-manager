@@ -93,6 +93,8 @@ Choose ports that are free on the host (`ss -tlnp`).
 | `PVM_USER`          | `admin`          | first administrator (created on first start) |
 | `PVM_PASSWORD`      | random           | its password (or `PVM_PASSWORD_HASH`, a `password_hash()` bcrypt hash); applied on every start when set |
 | `PVM_READONLY`      | `0`              | `1` = view only                          |
+| `PVM_CLOUD_CATALOG_URL` | GitHub list  | cloud image catalog to synchronize from (see [Cloud image catalog](#cloud-image-catalog)) |
+| `PVM_CLOUD_CATALOG_SYNC` | `1`         | `0` = no automatic daily synchronization |
 | `TZ`                | `UTC`            | time zone (logs, snapshot schedules)     |
 | `HTTPS_PORT`, `HTTP_PORT`, `WS_PORT` | see [Ports](#ports) | |
 
@@ -287,13 +289,33 @@ Base images are downloaded by an administrator (Cloud images page) into a
 storage pool as `cloud-<name>.qcow2`. A new machine gets a full copy of the
 image grown to the requested size and a small `<name>-seed.iso` with the
 cloud-init configuration (NoCloud); the ISO is deleted together with the
-machine. More images can be added in `config.php`:
+machine.
 
-```php
-$cloud_images = [
-    'fedora-43' => ['label' => 'Fedora 43', 'url' => 'https://.../Fedora-Cloud-Base-43.qcow2'],
-];
+### Cloud image catalog
+
+The list of images lives in [`cloud-images.json`](cloud-images.json):
+
+```json
+{"version": 1, "images": [
+  {"key": "debian-13", "label": "Debian 13", "url": "https://cloud.debian.org/.../debian-13-genericcloud-amd64.qcow2"}
+]}
 ```
+
+The panel starts with the copy shipped with it and synchronizes from
+`$cloud_catalog_url` (default: the same file on GitHub,
+`https://raw.githubusercontent.com/spidero/php-virt-manager/master/cloud-images.json`)
+with the *Synchronize now* button and once a day from `bin/cron.php`
+(`$cloud_catalog_auto_sync = false` turns that off). Point the URL to your
+own file (a fork, a gist, an internal server - `https://` only) to manage
+the list centrally.
+
+Administrators edit the catalog on *Cloud images → Edit catalog*: add own
+images, change the name or URL, disable entries. Synchronization only adds
+new images and updates entries that were not edited in the panel - nothing
+is removed; entries from the list can be disabled, own entries also deleted.
+A disabled image that is already downloaded stays usable in the wizard.
+Fixed entries can still be added in `config.php` (`$cloud_images`, same
+format as before).
 
 Files are copied into pools with `virsh vol-upload`, because the web server
 cannot write to pool directories and `libvirt_stream_send()` of libvirt-php

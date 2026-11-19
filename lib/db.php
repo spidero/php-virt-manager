@@ -71,6 +71,23 @@ const DB_MIGRATIONS = [
             UNIQUE (user_id, fingerprint)
         )',
     ],
+    7 => [
+        // source: list (cloud-images.json / synchronized URL) or local (added in the panel);
+        // modified: a list entry edited in the panel, no longer updated by synchronization
+        'CREATE TABLE cloud_images (
+            key TEXT PRIMARY KEY,
+            label TEXT NOT NULL,
+            url TEXT NOT NULL,
+            source TEXT NOT NULL,
+            modified INTEGER NOT NULL DEFAULT 0,
+            enabled INTEGER NOT NULL DEFAULT 1,
+            updated_at INTEGER NOT NULL
+        )',
+        'CREATE TABLE settings (
+            name TEXT PRIMARY KEY,
+            value TEXT
+        )',
+    ],
 ];
 
 function db() {
@@ -113,4 +130,14 @@ function db_query($sql, array $params = []) {
     $stmt = db()->prepare($sql);
     $stmt->execute($params);
     return $stmt;
+}
+
+// small persistent values (catalog synchronization state etc.)
+function setting_get($name) {
+    $value = db_query('SELECT value FROM settings WHERE name = ?', [$name])->fetchColumn();
+    return $value === false ? null : $value;
+}
+
+function setting_set($name, $value) {
+    db_query('INSERT INTO settings (name, value) VALUES (?, ?) ON CONFLICT (name) DO UPDATE SET value = excluded.value', [$name, $value]);
 }

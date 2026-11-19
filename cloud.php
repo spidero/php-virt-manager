@@ -53,6 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $smarty->assign('catalog', $catalog);
+// labels of all entries: a disabled image that is already downloaded stays selectable
+$smarty->assign('image_labels', array_map(fn($image) => $image['label'], cloud_catalog(true)));
 $smarty->assign('downloaded', cloud_downloaded($con));
 // downloads in progress: image key => job
 $downloading = [];

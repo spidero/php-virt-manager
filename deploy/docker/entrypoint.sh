@@ -57,6 +57,13 @@ if [ ! -f "$APP_DIR/config.php" ] || [ -n "${PVM_PASSWORD:-}${PVM_PASSWORD_HASH:
             "auth_password_hash" => getenv("PVM_HASH"),
             "console_enabled"    => true,
         ];
+        // optional: own catalog list, automatic synchronization on/off
+        if (getenv("PVM_CLOUD_CATALOG_URL")) {
+            $set["cloud_catalog_url"] = getenv("PVM_CLOUD_CATALOG_URL");
+        }
+        if (getenv("PVM_CLOUD_CATALOG_SYNC") !== false) {
+            $set["cloud_catalog_auto_sync"] = getenv("PVM_CLOUD_CATALOG_SYNC") !== "0";
+        }
         foreach ($set as $k => $v) {
             // callback: a bcrypt hash contains "$2y$..." which would be read as backreferences;
             // /s: the $connections array spans several lines

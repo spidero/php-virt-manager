@@ -1,0 +1,35 @@
+{
+    "version": 1,
+    "images": [
+        {
+            "key": "ubuntu-26.04",
+            "label": "Ubuntu 26.04 LTS",
+            "url": "https://cloud-images.ubuntu.com/resolute/current/resolute-server-cloudimg-amd64.img"
+        },
+        {
+            "key": "ubuntu-24.04",
+            "label": "Ubuntu 24.04 LTS",
+            "url": "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+        },
+        {
+            "key": "debian-13",
+            "label": "Debian 13",
+            "url": "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
+        },
+        {
+            "key": "debian-12",
+            "label": "Debian 12",
+            "url": "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2"
+        },
+        {
+            "key": "almalinux-10",
+            "label": "AlmaLinux 10",
+            "url": "https://repo.almalinux.org/almalinux/10/cloud/x86_64/images/AlmaLinux-10-GenericCloud-latest.x86_64.qcow2"
+        },
+        {
+            "key": "rocky-10",
+            "label": "Rocky Linux 10",
+            "url": "https://dl.rockylinux.org/pub/rocky/10/images/x86_64/Rocky-10-GenericCloud-Base.latest.x86_64.qcow2"
+        }
+    ]
+}

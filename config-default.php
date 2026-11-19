@@ -38,7 +38,14 @@ $console_enabled = false;
 $console_novnc_url = 'novnc/vnc_lite.html';
 $console_ws_path = 'websockify';
 
-// additional cloud images (key => label, qcow2 URL), added to the built-in list
+// cloud image catalog: synchronized from this URL (a JSON file like
+// cloud-images.json) by the button on the catalog page and, when enabled,
+// once a day by bin/cron.php; synchronization only adds and updates entries
+$cloud_catalog_url = 'https://raw.githubusercontent.com/spidero/php-virt-manager/master/cloud-images.json';
+$cloud_catalog_auto_sync = true;
+
+// additional fixed cloud images (key => label, qcow2 URL), added to the
+// catalog edited in the panel
 // $cloud_images = [
 //     'fedora-43' => ['label' => 'Fedora 43', 'url' => 'https://.../Fedora-Cloud-Base-43.qcow2'],
 // ];
