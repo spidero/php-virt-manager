@@ -263,6 +263,20 @@
   if (systemDark.addEventListener) systemDark.addEventListener('change', applyTheme);
   applyTheme();
 
+  // new machine wizard: an operating system profile fills in the recommended values
+  document.querySelectorAll('[data-os-profile]').forEach(function (select) {
+    select.addEventListener('change', function () {
+      var o = select.options[select.selectedIndex];
+      var set = function (id, value) { var el = document.getElementById(id); if (el && value !== null) el.value = value; };
+      set('memory', o.getAttribute('data-memory'));
+      set('disk', o.getAttribute('data-disk'));
+      set('vcpus', o.getAttribute('data-vcpus'));
+      set('firmware', o.getAttribute('data-firmware'));
+      var tpm = document.getElementById('tpm');
+      if (tpm) tpm.checked = o.getAttribute('data-tpm') === '1';
+    });
+  });
+
   poll();
   setInterval(poll, INTERVAL);
   pollJobs();

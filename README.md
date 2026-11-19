@@ -217,7 +217,10 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
   to log in within a minute
 - from ISO (any pool; ISO images can be downloaded from a URL in the
   background), by importing an existing disk, or by network boot (PXE);
-  BIOS or UEFI with optional Secure Boot, emulated TPM 2.0 (e.g. for Windows 11)
+  BIOS or UEFI with optional Secure Boot, emulated TPM 2.0; operating system
+  profiles fill in recommended values - Windows 10/11/Server get Hyper-V
+  enlightenments, a local time clock and either the virtio-win drivers ISO as
+  a second CD-ROM (virtio disk and NIC) or a SATA disk and e1000e NIC
 
 **Storage and networks**
 

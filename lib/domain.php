@@ -13,6 +13,23 @@ const DOMAIN_STATES = [
 ];
 
 // power action => [libvirt function, message on success]
+// operating system profiles of the new machine wizard: recommended resources and,
+// for Windows, Hyper-V enlightenments, local time clock and installer-friendly devices
+const DOMAIN_OS_PROFILES = [
+    'linux'  => ['label' => 'Linux / other', 'memory' => 2048, 'disk' => 20, 'vcpus' => 2, 'firmware' => 'bios', 'tpm' => 0, 'windows' => false],
+    'win11'  => ['label' => 'Windows 11', 'memory' => 4096, 'disk' => 64, 'vcpus' => 2, 'firmware' => 'efi-secure', 'tpm' => 1, 'windows' => true],
+    'win10'  => ['label' => 'Windows 10', 'memory' => 4096, 'disk' => 64, 'vcpus' => 2, 'firmware' => 'efi', 'tpm' => 0, 'windows' => true],
+    'winsrv' => ['label' => 'Windows Server 2022/2025', 'memory' => 4096, 'disk' => 64, 'vcpus' => 2, 'firmware' => 'efi-secure', 'tpm' => 1, 'windows' => true],
+];
+const VIRTIO_WIN_ISO_URL = 'https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso';
+
+// Windows guests: Hyper-V enlightenments (much faster, fewer timer problems)
+function domain_hyperv_xml() {
+    return "<hyperv mode='custom'><relaxed state='on'/><vapic state='on'/><spinlocks state='on' retries='8191'/>"
+        ."<vpindex state='on'/><runtime state='on'/><synic state='on'/><stimer state='on'/><reset state='on'/>"
+        ."<frequencies state='on'/></hyperv>";
+}
+
 // firmware choices of the new machine wizard
 const DOMAIN_FIRMWARES = ['bios' => 'BIOS', 'efi' => 'UEFI', 'efi-secure' => 'UEFI + Secure Boot'];
 
@@ -274,8 +291,11 @@ function domain_xml_spice_to_vnc($xml) {
 // $firmware: 'bios' (SeaBIOS), 'efi' or 'efi-secure' (UEFI with Secure Boot and the
 // Microsoft keys enrolled, e.g. for Windows 11) - the firmware files are chosen by libvirt;
 // $tpm adds an emulated TPM 2.0 (swtpm)
-// $disk_format: qcow2 or raw (an imported volume)
-function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $network, array $boot = ['cdrom', 'hd'], $iso_bus = 'sata', $serial_port = 0, $firmware = 'bios', $tpm = false, $disk_format = 'qcow2') {
+// $disk_format: qcow2 or raw (an imported volume); $opts: windows (bool), disk_bus,
+// nic_model, drivers_iso (second CD-ROM, e.g. virtio-win drivers)
+function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $network, array $boot = ['cdrom', 'hd'], $iso_bus = 'sata', $serial_port = 0, $firmware = 'bios', $tpm = false, $disk_format = 'qcow2', array $opts = []) {
+    $windows = !empty($opts['windows']);
+    $drivers = (string)($opts['drivers_iso'] ?? '');
     $iso = '';
     if ($iso_path !== '') {
         $bus = $iso_bus === 'scsi' ? 'scsi' : 'sata';
@@ -294,14 +314,20 @@ function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $netwo
             : ($firmware === 'efi' ? "<firmware><feature enabled='no' name='secure-boot'/></firmware>" : ''))
         .implode('', array_map(fn($dev) => "<boot dev='".xml_escape($dev)."'/>", $boot)).'</os>'
         // Secure Boot needs SMM so the firmware variables cannot be changed by the guest
-        .'<features><acpi/><apic/>'.($firmware === 'efi-secure' ? "<smm state='on'/>" : '').'</features>'
+        .'<features><acpi/><apic/>'.($windows ? domain_hyperv_xml() : '').($firmware === 'efi-secure' ? "<smm state='on'/>" : '').'</features>'
         ."<cpu mode='host-passthrough'/>"
-        ."<clock offset='utc'/>"
+        // Windows keeps the hardware clock in local time
+        .($windows
+            ? "<clock offset='localtime'><timer name='rtc' tickpolicy='catchup'/><timer name='pit' tickpolicy='delay'/>"
+                ."<timer name='hpet' present='no'/><timer name='hypervclock' present='yes'/></clock>"
+            : "<clock offset='utc'/>")
         .'<on_poweroff>destroy</on_poweroff><on_reboot>restart</on_reboot><on_crash>destroy</on_crash>'
         .'<devices>'
-        .vm_disk_device_xml($disk_path, 'vda', 'virtio', $disk_format)
+        .vm_disk_device_xml($disk_path, ($opts['disk_bus'] ?? 'virtio') === 'virtio' ? 'vda' : 'sdc', $opts['disk_bus'] ?? 'virtio', $disk_format)
         .$iso
-        .vm_nic_device_xml($network)
+        .($drivers !== '' ? "<disk type='file' device='cdrom'><driver name='qemu' type='raw'/>"
+            ."<source file='".xml_escape($drivers)."'/><target dev='sdb' bus='sata'/><readonly/></disk>" : '')
+        .vm_nic_device_xml($network, $opts['nic_model'] ?? 'virtio')
         .vnc_graphics_xml()
         ."<video><model type='virtio'/></video>"
         ."<input type='tablet' bus='usb'/>"

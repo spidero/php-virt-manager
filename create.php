@@ -34,6 +34,8 @@ $form = [
     'pool'    => array_key_first($pools) ?? '',
     'iso'     => '',
     'network' => nic_target_default($networks),
+    'os'      => 'linux',
+    'drivers' => '',
     'source'  => 'iso',
     'volume'  => '',
     'firmware' => 'bios',
@@ -56,6 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'pool'    => (string)($_POST['pool'] ?? ''),
         'iso'     => (string)($_POST['iso'] ?? ''),
         'network' => nic_target_normalize((string)($_POST['network'] ?? '')),
+        'os'      => (string)($_POST['os'] ?? 'linux'),
+        'drivers' => (string)($_POST['drivers'] ?? ''),
         'source'  => (string)($_POST['source'] ?? 'iso'),
         'volume'  => (string)($_POST['volume'] ?? ''),
         'firmware' => (string)($_POST['firmware'] ?? 'bios'),
@@ -90,6 +94,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset(DOMAIN_FIRMWARES[$form['firmware']])) {
         $errors[] = t('Select the firmware.');
     }
+    if (!isset(DOMAIN_OS_PROFILES[$form['os']])) {
+        $errors[] = t('Select the operating system.');
+    }
+    if ($form['drivers'] !== '' && !isset($isos[$form['drivers']])) {
+        $errors[] = t('Unknown ISO image.');
+    }
+    // Windows: with the virtio-win drivers ISO the disk and NIC use virtio (the driver is
+    // loaded in the installer), without it SATA and e1000e work out of the box
+    $windows = !empty(DOMAIN_OS_PROFILES[$form['os']]['windows']);
+    $with_drivers = $windows && $form['drivers'] !== '';
+    $os_opts = [
+        'windows'     => $windows,
+        'disk_bus'    => $windows && !$with_drivers ? 'sata' : 'virtio',
+        'nic_model'   => $windows && !$with_drivers ? 'e1000e' : 'virtio',
+        'drivers_iso' => $with_drivers ? $form['drivers'] : '',
+    ];
     // installation source: ISO (CD/DVD), an imported existing disk or network boot (PXE)
     $free_volumes = storage_free_volumes($con);
     if (!in_array($form['source'], ['iso', 'import', 'pxe'], true)) {
@@ -121,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $disk_path = $import ? $form['volume'] : (string)libvirt_storagevolume_get_path($vol);
         $xml = domain_new_xml($form['name'], $form['memory'], $form['vcpus'],
             $disk_path, $iso_path, $form['network'], $boot, 'sata', 0,
-            $form['firmware'], (bool)$form['tpm'], $import ? $free_volumes[$form['volume']]['format'] : 'qcow2');
+            $form['firmware'], (bool)$form['tpm'], $import ? $free_volumes[$form['volume']]['format'] : 'qcow2', $os_opts);
         $res = libvirt_domain_define_xml($con, $xml);
         if (!$res) {
             $errors[] = t('Cannot define machine: %s', libvirt_get_last_error());
@@ -132,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    $details = sprintf('%d MB, %d vCPU, %s, %s: %s, net: %s, %s%s',
+    $details = sprintf('%s, %d MB, %d vCPU, %s, %s: %s, net: %s, %s%s', $form['os'],
         $form['memory'], $form['vcpus'], $import ? 'imported disk' : $form['disk'].' GB in '.$form['pool'],
         $form['source'], $import ? $form['volume'] : ($iso_path ?: '-'), $form['network'],
         $form['firmware'], $form['tpm'] ? ', tpm' : '');
@@ -158,6 +178,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $smarty->assign('form', $form);
 $smarty->assign('firmwares', DOMAIN_FIRMWARES);
+$smarty->assign('os_profiles', DOMAIN_OS_PROFILES);
+$smarty->assign('virtio_win_url', VIRTIO_WIN_ISO_URL);
 $smarty->assign('free_volumes', storage_free_volumes($con));
 $smarty->assign('errors', $errors);
 $smarty->assign('pools', $pools);

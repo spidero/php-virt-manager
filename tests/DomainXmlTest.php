@@ -116,4 +116,28 @@ final class DomainXmlTest extends TestCase
         $this->assertCount(1, $doc->devices->disk, 'no CD-ROM without an ISO');
         $this->assertSame('qcow2', (string)simplexml_load_string(domain_new_xml('vm', 512, 1, '/p/d.qcow2', '', 'net'))->devices->disk[0]->driver['type']);
     }
+
+    public function testWindowsProfile(): void
+    {
+        $win = simplexml_load_string(domain_new_xml('win', 4096, 2, '/p/w.qcow2', '/p/win11.iso', 'default', ['cdrom', 'hd'], 'sata', 0,
+            'efi-secure', true, 'qcow2', ['windows' => true, 'disk_bus' => 'sata', 'nic_model' => 'e1000e']));
+        $this->assertSame('on', (string)$win->features->hyperv->relaxed['state']);
+        $this->assertSame('localtime', (string)$win->clock['offset']);
+        $this->assertSame('sata', (string)$win->devices->disk[0]->target['bus']);
+        $this->assertSame('sdc', (string)$win->devices->disk[0]->target['dev'], 'no clash with the CD-ROMs');
+        $this->assertSame('e1000e', (string)$win->devices->interface->model['type']);
+
+        $drivers = simplexml_load_string(domain_new_xml('win', 4096, 2, '/p/w.qcow2', '/p/win11.iso', 'default', ['cdrom', 'hd'], 'sata', 0,
+            'efi-secure', true, 'qcow2', ['windows' => true, 'drivers_iso' => '/p/virtio-win.iso']));
+        $this->assertCount(3, $drivers->devices->disk);
+        $this->assertSame('/p/virtio-win.iso', (string)$drivers->devices->disk[2]->source['file']);
+        $this->assertSame('vda', (string)$drivers->devices->disk[0]->target['dev']);
+
+        $linux = simplexml_load_string(domain_new_xml('l', 1024, 1, '/p/l.qcow2', '', 'default'));
+        $this->assertCount(0, $linux->features->hyperv);
+        $this->assertSame('utc', (string)$linux->clock['offset']);
+        foreach (DOMAIN_OS_PROFILES as $p) {
+            $this->assertArrayHasKey($p['firmware'], DOMAIN_FIRMWARES);
+        }
+    }
 }
