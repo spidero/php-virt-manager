@@ -262,6 +262,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $details = implode(', ', $order);
             $message = t('Boot order saved.').$after_restart;
         }
+        elseif ($action === 'rename') {
+            $name = trim((string)($_POST['name'] ?? ''));
+            if ($active) {
+                throw new RuntimeException(t('Shut the machine down first.'));
+            }
+            if (!preg_match(DOMAIN_NAME_PATTERN, $name)) {
+                throw new RuntimeException(t('Name: 1-64 characters, letters, digits, . _ - (must start with a letter or digit).'));
+            }
+            if (in_array($name, libvirt_list_domains($con) ?: [], true)) {
+                throw new RuntimeException(t('A machine with this name already exists.'));
+            }
+            [$status, $output] = domain_virsh($connection, ['domrename', $node, $name]);
+            if ($status !== 0) {
+                throw new RuntimeException(t('Error: %s', trim($output)));
+            }
+            domain_rename_references(connection_current_key(), $node, $name);
+            action_log('edit_rename', $node, true, $name);
+            flash_set('success', t('Machine renamed to %s. Disk files keep their names.', $name));
+            redirect('edit.php?node='.urlencode($name));
+        }
         elseif ($action === 'clone') {
             $name = trim((string)($_POST['name'] ?? ''));
             if ($active) {

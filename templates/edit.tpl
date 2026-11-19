@@ -234,6 +234,26 @@
 
   <div class="col-md-6">
     <div class="card mb-3">
+      <div class="card-header">{'Rename'|t}</div>
+      <div class="card-body">
+{if $active}
+        <p class="text-body-secondary mb-0">{'Shut the machine down to rename it.'|t}</p>
+{else}
+        {call form_start action='rename'}
+          <div class="mb-3">
+            <label class="form-label" for="new_name">{'New name'|t}</label>
+            <input type="text" class="form-control" id="new_name" name="name" value="{$node}" required pattern="[A-Za-z0-9][A-Za-z0-9._\-]{ldelim}0,63{rdelim}">
+            <div class="form-text">{'Disk files keep their names; starred machines and snapshot schedules follow the new name.'|t}</div>
+          </div>
+          <button type="submit" class="btn btn-primary">{'Rename'|t}</button>
+        </form>
+{/if}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card mb-3">
       <div class="card-header">{'Clone'|t}</div>
       <div class="card-body">
 {if $active}

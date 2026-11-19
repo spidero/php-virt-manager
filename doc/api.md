@@ -207,6 +207,8 @@ Power actions (`operator`). No request body.
 | `reboot` | ACPI reboot |
 | `suspend` | pause (the machine keeps its memory) |
 | `resume` | continue a paused machine |
+| `reset` | hard reset, like the reset button (no clean shutdown) |
+| `save` | write the memory to disk and stop; the next `start` continues where it left off |
 
 ```sh
 curl -X POST -H "Authorization: Bearer $PVM_TOKEN" $PVM_URL/domains/web-01/actions/start

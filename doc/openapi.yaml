@@ -111,7 +111,7 @@ paths:
         - name: action
           in: path
           required: true
-          schema: {type: string, enum: [start, stop, destroy, reboot, suspend, resume]}
+          schema: {type: string, enum: [start, stop, destroy, reboot, suspend, resume, reset, save]}
         - {$ref: '#/components/parameters/conn'}
       responses:
         '200':

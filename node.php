@@ -98,6 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ok = true;
         }
     }
+    elseif ($action === 'discard_save') {
+        [$status, $output] = domain_virsh($connection, ['managedsave-remove', $node]);
+        $ok = $status === 0;
+        $details = $ok ? '' : trim($output);
+        $message = t('Saved state discarded.');
+    }
     elseif ($action === 'switch_vnc') {
         $new_xml = domain_xml_spice_to_vnc((string)libvirt_domain_get_xml_desc($res, null, VIR_DOMAIN_XML_INACTIVE));
         if ($new_xml === null) {
@@ -114,7 +120,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect($node_url);
     }
 
-    $error = $ok ? '' : (string)libvirt_get_last_error();
+    // virsh actions report their own output in $details
+    $error = $ok ? '' : ($action === 'discard_save' ? '' : (string)libvirt_get_last_error());
     action_log($action, $node, $ok, trim($details.' '.$error));
     flash_set($ok ? 'success' : 'danger', $ok ? $message : t('Error: %s', $error));
     // Post/Redirect/Get - a page refresh must not repeat the action
@@ -131,6 +138,7 @@ $smarty->assign('node', $node);
 $smarty->assign('key_combos', DOMAIN_KEY_COMBOS);
 $smarty->assign('domain_uuid', libvirt_domain_get_uuid_string($res));
 $smarty->assign('active', $active);
+$smarty->assign('managed_save', !$active && domain_has_managed_save($connection, $node));
 $smarty->assign('info', $info);
 $smarty->assign('state', domain_state($info['state']));
 $smarty->assign('autostart', (bool)libvirt_domain_get_autostart($res));

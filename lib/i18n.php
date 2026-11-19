@@ -53,7 +53,7 @@ const I18N_DYNAMIC = [
     'inactive', 'building', 'degraded', 'inaccessible',
     'viewer', 'operator', 'admin',
     'Starting machine, it may take some time', 'Shutting down machine, it may take some time',
-    'Machine forcibly stopped',
+    'Machine forcibly stopped', 'Machine reset', 'Machine state saved; the next start restores it',
     'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
     'NAT', 'routed', 'isolated',
     'Cloning', 'Image download', 'Machine from cloud image', 'Hard disk', 'CD/DVD', 'Network (PXE)', 'Rebooting machine, it may take some time', 'Suspending machine', 'Resuming machine',

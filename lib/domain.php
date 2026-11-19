@@ -33,7 +33,26 @@ const DOMAIN_POWER_ACTIONS = [
     'reboot'  => ['libvirt_domain_reboot',   'Rebooting machine, it may take some time'],
     'suspend' => ['libvirt_domain_suspend',  'Suspending machine'],
     'resume'  => ['libvirt_domain_resume',   'Resuming machine'],
+    'reset'   => ['domain_reset',            'Machine reset'],
+    // managed save: memory written to disk, the machine stops; the next start restores it
+    'save'    => ['libvirt_domain_managedsave', 'Machine state saved; the next start restores it'],
 ];
+
+// hard reset, like the reset button (no clean shutdown)
+function domain_reset($res) {
+    return libvirt_domain_reset($res, 0);
+}
+
+// virsh command for what libvirt-php lacks (rename, managed save state); [exit code, output]
+function domain_virsh($uri, array $args) {
+    return cloud_run(array_merge(['virsh', '-q', '-c', $uri], $args));
+}
+
+// true when the stopped machine has a saved state that the next start restores
+function domain_has_managed_save($uri, $name) {
+    [$status, $output] = domain_virsh($uri, ['dominfo', $name]);
+    return $status === 0 && (bool)preg_match('/^Managed save:\s+yes/mi', $output);
+}
 
 // VM name allowed by the create wizard
 const DOMAIN_NAME_PATTERN = '/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/';
@@ -301,4 +320,10 @@ function volume_new_xml($name, $capacity_gb) {
     return '<volume><name>'.xml_escape($name).'</name>'
         ."<capacity unit='G'>".(int)$capacity_gb.'</capacity>'
         ."<target><format type='qcow2'/></target></volume>";
+}
+
+// after a rename: starred machines and snapshot schedules follow the new name
+function domain_rename_references($conn, $old, $new) {
+    db_query('UPDATE favorites SET name = ? WHERE conn = ? AND name = ?', [$new, $conn, $old]);
+    db_query('UPDATE schedules SET domain = ? WHERE conn = ? AND domain = ?', [$new, $conn, $old]);
 }

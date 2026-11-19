@@ -13,7 +13,7 @@
 {/function}
 <div class="card mb-3">
   <div class="card-body">
-    <h5>{include file="star.tpl" name=$node back='node'} {$node} <span class="badge text-bg-{$state.color}">{$state.label|t}</span></h5>
+    <h5>{include file="star.tpl" name=$node back='node'} {$node} <span class="badge text-bg-{$state.color}">{$state.label|t}</span>{if $managed_save} <span class="badge text-bg-info">{'saved state'|t}</span>{/if}</h5>
     <p class="text-body-secondary mb-3"><small>UUID: {$domain_uuid}</small></p>
 
 {if $allow.operate}
@@ -22,12 +22,17 @@
         {call action_button action='stop' label={'Shut down'|t}}
         {call action_button action='reboot' label={'Reboot'|t}}
         {call action_button action='suspend' label={'Pause'|t}}
+        {call action_button action='save' label={'Save state'|t} class='btn-outline-secondary' confirm={'Save the memory of %s to disk and stop it? The next start continues where it left off.'|t:$node}}
+        {call action_button action='reset' label={'Reset'|t} class='btn-outline-danger' confirm={'Reset %s like the reset button? Unsaved data in the machine will be lost.'|t:$node}}
         {call action_button action='destroy' label={'Force stop'|t} class='btn-danger' confirm={'Force stop %s? Unsaved data in the machine will be lost.'|t:$node}}
     {elseif $info['state']==3}
         {call action_button action='resume' label={'Resume'|t}}
         {call action_button action='destroy' label={'Force stop'|t} class='btn-danger' confirm={'Force stop %s? Unsaved data in the machine will be lost.'|t:$node}}
     {elseif $info['state']==5}
-        {call action_button action='start' label={'Start'|t} class='btn-success'}
+        {call action_button action='start' label=($managed_save)?{'Restore'|t}:{'Start'|t} class='btn-success'}
+      {if $managed_save}
+        {call action_button action='discard_save' label={'Discard saved state'|t} class='btn-outline-danger' confirm={'Discard the saved state of %s? The next start boots the machine from scratch, unsaved data is lost.'|t:$node}}
+      {/if}
     {/if}
         <a href="edit.php?node={$node|escape:'url'}" class="btn btn-outline-secondary mb-1">{'Edit'|t}</a>
     {if $graphics && $graphics.type=='vnc' && $active && $console_enabled}
