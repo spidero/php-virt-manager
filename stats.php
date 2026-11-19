@@ -12,6 +12,15 @@ foreach (domain_list($con) as $d) {
 }
 
 $result = ['time' => microtime(true), 'domains' => $domains];
+// host load for the charts of the hypervisor page (the CPU call takes about a second)
+if (!empty($_GET['host'])) {
+    $memory = node_memory(libvirt_node_get_mem_stats($con) ?: []);
+    $result['host'] = [
+        'cpu'       => node_cpu_percent(@libvirt_node_get_cpu_stats($con)),
+        'mem_used'  => $memory['used'],
+        'mem_total' => $memory['total'],
+    ];
+}
 // counters of all machines for the machine table of the hypervisor page
 if (!empty($_GET['all'])) {
     $result['vms'] = [];

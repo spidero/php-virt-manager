@@ -31,6 +31,16 @@
   </table>
 </div>
 
+<div class="card mt-3">
+  <div class="card-header">{'Host load'|t} <small class="text-body-secondary">({'last 5 minutes'|t})</small></div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6"><canvas class="w-100" style="height: 110px" data-series="host_cpu" data-labels="CPU" data-unit="%"></canvas></div>
+      <div class="col-md-6"><canvas class="w-100" style="height: 110px" data-series="host_mem" data-labels="{'Memory used'|t}" data-unit="GB"></canvas></div>
+    </div>
+  </div>
+</div>
+
 {* bar color by usage: green, then yellow from 75 %, red from 90 % *}
 {function name=usage_bar pct=0 label=''}
 <div class="progress vm-bar" role="progressbar" aria-label="{$label}" aria-valuenow="{$pct}" aria-valuemin="0" aria-valuemax="100">

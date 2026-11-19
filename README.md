@@ -157,7 +157,8 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 
 ## Features
 
-- hypervisor overview, machine list with state indicators refreshed live
+- hypervisor overview with live charts of host CPU and memory, machine list
+  with state indicators refreshed live
 - live charts per machine: CPU, memory, disk and network throughput
 - machine details: memory, vCPUs, disks, network interfaces with guest IPs,
   autostart, live screen preview

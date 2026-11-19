@@ -96,4 +96,15 @@ final class StatsTest extends TestCase
         $this->assertSame(792944, $c['mem_usable']);
         $this->assertSame(0, stats_counters([])['mem_avail']);
     }
+
+    public function testNodeCpuPercent(): void
+    {
+        $a = ['kernel' => 100, 'user' => 300, 'idle' => 1000, 'iowait' => 0];
+        $b = ['kernel' => 150, 'user' => 400, 'idle' => 1350, 'iowait' => 0];
+        $this->assertSame(30.0, node_cpu_percent([$a, $b]));
+        $this->assertSame(0.0, node_cpu_percent([$a, ['kernel' => 100, 'user' => 300, 'idle' => 2000, 'iowait' => 0]]));
+        $this->assertNull(node_cpu_percent([$a, $a]), 'no time passed');
+        $this->assertNull(node_cpu_percent(false));
+        $this->assertNull(node_cpu_percent([$a]));
+    }
 }

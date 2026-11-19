@@ -40,6 +40,7 @@
   function format(value, unit) {
     if (unit === '%') return value.toFixed(1) + ' %';
     if (unit === 'MB') return Math.round(value) + ' MB';
+    if (unit === 'GB') return value.toFixed(1) + ' GB';
     return (value < 10 ? value.toFixed(2) : value.toFixed(1)) + ' MB/s';
   }
 
@@ -57,10 +58,12 @@
     ctx.scale(ratio, ratio);
     ctx.clearRect(0, 0, w, h);
 
+    // fixed scale (data-max, e.g. host memory) or the highest value plus a margin
+    var fixed = parseFloat(canvas.getAttribute('data-max') || '0');
     var max = unit === '%' ? 100 : 0;
     keys.forEach(function (k) { (series[k] || []).forEach(function (v) { max = Math.max(max, v); }); });
     if (max === 0) max = 1;
-    max *= unit === '%' ? 1 : 1.15;
+    max = fixed > 0 ? fixed : max * (unit === '%' ? 1 : 1.15);
 
     var top = 18, bottom = h - 4, left = 4, right = w - 4;
     ctx.strokeStyle = css('--bs-border-color', '#dee2e6');
@@ -165,6 +168,7 @@
     var params = [];
     if (node) params.push('node=' + encodeURIComponent(node));
     if (document.querySelector('[data-vm]')) params.push('all=1');
+    if (document.querySelector('canvas[data-series^="host_"]')) params.push('host=1');
     var url = 'stats.php' + (params.length ? '?' + params.join('&') : '');
     fetch(url, { credentials: 'same-origin', cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -172,6 +176,14 @@
         if (!data) return;
         updateStates(data.domains);
         if (data.vms) updateVmTable(data.vms, data.domains, data.time);
+        if (data.host) {
+          if (data.host.cpu !== null) push('host_cpu', data.host.cpu);
+          push('host_mem', data.host.mem_used / 1073741824);
+          document.querySelectorAll('canvas[data-series^="host_"]').forEach(function (c) {
+            if (c.getAttribute('data-series') === 'host_mem') c.setAttribute('data-max', data.host.mem_total / 1073741824);
+            draw(c);
+          });
+        }
         if (node) {
           var current = data.domains.filter(function (d) { return d.name === node; })[0];
           // state changed elsewhere (or the machine is gone): reload for the right buttons

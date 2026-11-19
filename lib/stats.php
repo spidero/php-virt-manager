@@ -91,3 +91,15 @@ function stats_memory_used(array $c) {
     }
     return [min($c['mem_rss'], $c['mem_total']), $c['mem_total'], 'host'];
 }
+
+// host CPU use in % from libvirt_node_get_cpu_stats(), which returns two cumulative
+// samples one second apart (all CPUs together, nanoseconds); null when unknown
+function node_cpu_percent($samples) {
+    if (!is_array($samples) || !isset($samples[0], $samples[1])) {
+        return null;
+    }
+    $busy = fn($s) => (float)($s['kernel'] ?? 0) + (float)($s['user'] ?? 0);
+    $total = fn($s) => $busy($s) + (float)($s['idle'] ?? 0) + (float)($s['iowait'] ?? 0);
+    $dt = $total($samples[1]) - $total($samples[0]);
+    return $dt > 0 ? round(max(0, min(100, ($busy($samples[1]) - $busy($samples[0])) / $dt * 100)), 1) : null;
+}
