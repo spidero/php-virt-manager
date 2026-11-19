@@ -215,8 +215,9 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
   out of the box, an editable catalog synchronized from GitHub; user with SSH
   keys (saved keys selectable) and/or password, hostname, disk size - ready
   to log in within a minute
-- from ISO: qcow2 disk in any active pool, ISO from any pool, network, BIOS
-  or UEFI with optional Secure Boot, emulated TPM 2.0 (e.g. for Windows 11)
+- from ISO (any pool; ISO images can be downloaded from a URL in the
+  background), by importing an existing disk, or by network boot (PXE);
+  BIOS or UEFI with optional Secure Boot, emulated TPM 2.0 (e.g. for Windows 11)
 
 **Storage and networks**
 

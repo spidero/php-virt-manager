@@ -274,7 +274,8 @@ function domain_xml_spice_to_vnc($xml) {
 // $firmware: 'bios' (SeaBIOS), 'efi' or 'efi-secure' (UEFI with Secure Boot and the
 // Microsoft keys enrolled, e.g. for Windows 11) - the firmware files are chosen by libvirt;
 // $tpm adds an emulated TPM 2.0 (swtpm)
-function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $network, array $boot = ['cdrom', 'hd'], $iso_bus = 'sata', $serial_port = 0, $firmware = 'bios', $tpm = false) {
+// $disk_format: qcow2 or raw (an imported volume)
+function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $network, array $boot = ['cdrom', 'hd'], $iso_bus = 'sata', $serial_port = 0, $firmware = 'bios', $tpm = false, $disk_format = 'qcow2') {
     $iso = '';
     if ($iso_path !== '') {
         $bus = $iso_bus === 'scsi' ? 'scsi' : 'sata';
@@ -298,8 +299,7 @@ function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $netwo
         ."<clock offset='utc'/>"
         .'<on_poweroff>destroy</on_poweroff><on_reboot>restart</on_reboot><on_crash>destroy</on_crash>'
         .'<devices>'
-        ."<disk type='file' device='disk'><driver name='qemu' type='qcow2' discard='unmap'/>"
-        ."<source file='".xml_escape($disk_path)."'/><target dev='vda' bus='virtio'/></disk>"
+        .vm_disk_device_xml($disk_path, 'vda', 'virtio', $disk_format)
         .$iso
         .vm_nic_device_xml($network)
         .vnc_graphics_xml()

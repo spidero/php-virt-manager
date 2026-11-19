@@ -36,15 +36,39 @@
 {/foreach}
         </select>
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="iso">{'Installation ISO'|t}</label>
-        <select class="form-select" id="iso" name="iso">
-          <option value="">- {'none'|t} -</option>
+      <fieldset class="mb-3">
+        <legend class="form-label fs-6">{'Installation source'|t}</legend>
+        <div class="form-check">
+          <input type="radio" class="form-check-input" id="source-iso" name="source" value="iso"{if $form.source=='iso'} checked{/if}>
+          <label class="form-check-label" for="source-iso">{'ISO image (CD/DVD)'|t}</label>
+        </div>
+        <div class="ms-4 mb-2">
+          <select class="form-select form-select-sm" id="iso" name="iso" aria-label="{'Installation ISO'|t}">
+            <option value="">- {'none'|t} -</option>
 {foreach $isos as $path => $label}
-          <option value="{$path}"{if $form.iso==$path} selected{/if}>{$label}</option>
+            <option value="{$path}"{if $form.iso==$path} selected{/if}>{$label}</option>
 {/foreach}
-        </select>
-      </div>
+          </select>
+          <div class="form-text">{'Another ISO can be downloaded from a URL on the storage pool page.'|t}</div>
+        </div>
+        <div class="form-check">
+          <input type="radio" class="form-check-input" id="source-import" name="source" value="import"{if $form.source=='import'} checked{/if}{if !$free_volumes} disabled{/if}>
+          <label class="form-check-label" for="source-import">{'Import an existing disk (no installation, disk size and pool are not used)'|t}</label>
+        </div>
+        <div class="ms-4 mb-2">
+          <select class="form-select form-select-sm" name="volume" aria-label="{'Existing volume'|t}">
+{foreach $free_volumes as $path => $v}
+            <option value="{$path}"{if $form.volume==$path} selected{/if}>{$v.label}</option>
+{foreachelse}
+            <option value="">{'no unused volumes'|t}</option>
+{/foreach}
+          </select>
+        </div>
+        <div class="form-check">
+          <input type="radio" class="form-check-input" id="source-pxe" name="source" value="pxe"{if $form.source=='pxe'} checked{/if}>
+          <label class="form-check-label" for="source-pxe">{'Network boot (PXE) - needs a PXE server in the network'|t}</label>
+        </div>
+      </fieldset>
       <div class="mb-3">
         <label class="form-label" for="network">{'Network'|t}</label>
         <select class="form-select" id="network" name="network">

@@ -7,7 +7,29 @@ const JOB_HANDLERS = [
     'image_download' => 'job_image_download',
     'cloud_create'   => 'job_cloud_create',
     'volume_clone'   => 'job_volume_clone',
+    'iso_download'   => 'job_iso_download',
 ];
+
+// params: url, pool, name (volume name ending with .iso)
+function job_iso_download(array $params, $con, $job_id, $uri) {
+    $pool = libvirt_storagepool_lookup_by_name($con, (string)$params['pool']);
+    if (!$pool || !libvirt_storagepool_is_active($pool)) {
+        throw new RuntimeException('storage pool not active');
+    }
+    if (in_array((string)$params['name'], libvirt_storagepool_list_volumes($pool) ?: [], true)) {
+        throw new RuntimeException('volume '.$params['name'].' already exists');
+    }
+    $file = data_path('tmp/iso-'.$job_id.'.iso');
+    try {
+        cloud_download((string)$params['url'], $file, job_progress_reporter($job_id, 'download'));
+        $size = (int)filesize($file);
+        cloud_upload_file($con, $uri, $pool, (string)$params['name'], $file, job_progress_reporter($job_id, 'copying to the storage pool'));
+    }
+    finally {
+        @unlink($file);
+    }
+    return $params['name'].' saved to '.$params['pool'].' ('.format_bytes($size).')';
+}
 
 // params: pool, source (volume name), name (new volume name)
 function job_volume_clone(array $params, $con, $job_id, $uri) {

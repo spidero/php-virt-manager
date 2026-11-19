@@ -94,6 +94,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $details = $size.' GB';
             $message = t('Volume %s resized to %d GB.', $name, $size);
         }
+        elseif ($action === 'iso_download') {
+            $url = trim((string)($_POST['url'] ?? ''));
+            $name = trim((string)($_POST['name'] ?? ''));
+            if ($name === '') {
+                $name = basename((string)parse_url($url, PHP_URL_PATH));
+            }
+            if (!preg_match('#^https?://[^\s/]+/\S+$#', $url) || filter_var($url, FILTER_VALIDATE_URL) === false) {
+                throw new RuntimeException(t('Enter an http:// or https:// address of the ISO image.'));
+            }
+            if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.iso$/i', $name)) {
+                throw new RuntimeException(t('The volume name must end with .iso (letters, digits, . _ -).'));
+            }
+            if (in_array($name, libvirt_storagepool_list_volumes($pool) ?: [], true) || job_pending('iso_download', 'name', $name)) {
+                throw new RuntimeException(t('Volume %s already exists in pool %s.', $name, $storage));
+            }
+            $id = job_create('iso_download', ['url' => $url, 'pool' => $storage, 'name' => $name]);
+            action_log('iso_download_queued', $storage.'/'.$name, true, $url.' (job #'.$id.')');
+            flash_set('success', t('Download of %s started in the background (job #%d).', $name, $id));
+            redirect('jobs.php');
+        }
         elseif ($action === 'volume_clone') {
             $name = (string)($_POST['volume'] ?? '');
             $new_name = trim((string)($_POST['name'] ?? ''));

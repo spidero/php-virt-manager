@@ -34,6 +34,8 @@ $form = [
     'pool'    => array_key_first($pools) ?? '',
     'iso'     => '',
     'network' => nic_target_default($networks),
+    'source'  => 'iso',
+    'volume'  => '',
     'firmware' => 'bios',
     'tpm'     => 0,
     'start'   => 1,
@@ -54,6 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'pool'    => (string)($_POST['pool'] ?? ''),
         'iso'     => (string)($_POST['iso'] ?? ''),
         'network' => nic_target_normalize((string)($_POST['network'] ?? '')),
+        'source'  => (string)($_POST['source'] ?? 'iso'),
+        'volume'  => (string)($_POST['volume'] ?? ''),
         'firmware' => (string)($_POST['firmware'] ?? 'bios'),
         'tpm'     => empty($_POST['tpm']) ? 0 : 1,
         'start'   => empty($_POST['start']) ? 0 : 1,
@@ -86,8 +90,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset(DOMAIN_FIRMWARES[$form['firmware']])) {
         $errors[] = t('Select the firmware.');
     }
+    // installation source: ISO (CD/DVD), an imported existing disk or network boot (PXE)
+    $free_volumes = storage_free_volumes($con);
+    if (!in_array($form['source'], ['iso', 'import', 'pxe'], true)) {
+        $errors[] = t('Select the installation source.');
+    }
+    elseif ($form['source'] === 'import' && !isset($free_volumes[$form['volume']])) {
+        $errors[] = t('Select a volume that is not used by a machine.');
+    }
+    $import = $form['source'] === 'import';
+    $iso_path = $form['source'] === 'iso' ? $form['iso'] : '';
+    $boot = ['iso' => ['cdrom', 'hd'], 'import' => ['hd'], 'pxe' => ['network', 'hd']][$form['source']] ?? ['hd'];
 
-    if (!$errors) {
+    if (!$errors && !$import) {
         $pool = libvirt_storagepool_lookup_by_name($con, $form['pool']);
         $vol_name = $form['name'].'.qcow2';
         if (in_array($vol_name, libvirt_storagepool_list_volumes($pool) ?: [], true)) {
@@ -95,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    if (!$errors) {
+    if (!$errors && !$import) {
         $vol = libvirt_storagevolume_create_xml($pool, volume_new_xml($vol_name, $form['disk']));
         if (!$vol) {
             $errors[] = t('Cannot create disk: %s', libvirt_get_last_error());
@@ -103,19 +118,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$errors) {
+        $disk_path = $import ? $form['volume'] : (string)libvirt_storagevolume_get_path($vol);
         $xml = domain_new_xml($form['name'], $form['memory'], $form['vcpus'],
-            (string)libvirt_storagevolume_get_path($vol), $form['iso'], $form['network'], ['cdrom', 'hd'], 'sata', 0,
-            $form['firmware'], (bool)$form['tpm']);
+            $disk_path, $iso_path, $form['network'], $boot, 'sata', 0,
+            $form['firmware'], (bool)$form['tpm'], $import ? $free_volumes[$form['volume']]['format'] : 'qcow2');
         $res = libvirt_domain_define_xml($con, $xml);
         if (!$res) {
             $errors[] = t('Cannot define machine: %s', libvirt_get_last_error());
-            // do not leave an orphaned disk behind
-            libvirt_storagevolume_delete($vol, 0);
+            // do not leave an orphaned disk behind (an imported volume stays)
+            if (!$import) {
+                libvirt_storagevolume_delete($vol, 0);
+            }
         }
     }
 
-    $details = sprintf('%d MB, %d vCPU, %d GB in %s, iso: %s, net: %s, %s%s',
-        $form['memory'], $form['vcpus'], $form['disk'], $form['pool'], $form['iso'] ?: '-', $form['network'],
+    $details = sprintf('%d MB, %d vCPU, %s, %s: %s, net: %s, %s%s',
+        $form['memory'], $form['vcpus'], $import ? 'imported disk' : $form['disk'].' GB in '.$form['pool'],
+        $form['source'], $import ? $form['volume'] : ($iso_path ?: '-'), $form['network'],
         $form['firmware'], $form['tpm'] ? ', tpm' : '');
     if ($errors) {
         action_log('create', $form['name'], false, $details.'; '.implode(' ', $errors));
@@ -139,6 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $smarty->assign('form', $form);
 $smarty->assign('firmwares', DOMAIN_FIRMWARES);
+$smarty->assign('free_volumes', storage_free_volumes($con));
 $smarty->assign('errors', $errors);
 $smarty->assign('pools', $pools);
 $smarty->assign('isos', $isos);

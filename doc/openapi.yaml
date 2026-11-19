@@ -537,7 +537,7 @@ components:
       type: object
       properties:
         id: {type: integer}
-        type: {type: string, enum: [clone, cloud_create, image_download, volume_clone]}
+        type: {type: string, enum: [clone, cloud_create, image_download, volume_clone, iso_download]}
         target: {type: [string, 'null']}
         status: {type: string, enum: [queued, running, done, failed]}
         progress: {type: [integer, 'null'], minimum: 0, maximum: 100, description: 'percent of the current phase'}

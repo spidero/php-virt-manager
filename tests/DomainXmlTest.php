@@ -107,4 +107,13 @@ final class DomainXmlTest extends TestCase
         // the boot order stays inside <os>
         $this->assertSame('hd', (string)$secure->os->boot['dev']);
     }
+
+    public function testImportedRawDiskAndPxeBoot(): void
+    {
+        $doc = simplexml_load_string(domain_new_xml('vm', 512, 1, '/p/imported.img', '', 'net', ['network', 'hd'], 'sata', 0, 'bios', false, 'raw'));
+        $this->assertSame('raw', (string)$doc->devices->disk[0]->driver['type']);
+        $this->assertSame(['network', 'hd'], [(string)$doc->os->boot[0]['dev'], (string)$doc->os->boot[1]['dev']]);
+        $this->assertCount(1, $doc->devices->disk, 'no CD-ROM without an ISO');
+        $this->assertSame('qcow2', (string)simplexml_load_string(domain_new_xml('vm', 512, 1, '/p/d.qcow2', '', 'net'))->devices->disk[0]->driver['type']);
+    }
 }

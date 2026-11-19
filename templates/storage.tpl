@@ -155,6 +155,22 @@
         <button type="submit" class="btn btn-primary btn-sm w-100">{'Create volume'|t}</button>
       </div>
     </form>
+    <form method="post" action="storage.php" class="row g-2 align-items-end mt-2">
+      <input type="hidden" name="csrf" value="{$csrf_token}">
+      <input type="hidden" name="action" value="iso_download">
+      <input type="hidden" name="storage" value="{$storage}">
+      <div class="col-md-6">
+        <label class="form-label" for="iso_url">{'Download ISO from URL'|t}</label>
+        <input type="url" class="form-control form-control-sm font-monospace" id="iso_url" name="url" placeholder="https://.../debian-13-amd64-netinst.iso" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="iso_name">{'Volume name (optional)'|t}</label>
+        <input type="text" class="form-control form-control-sm" id="iso_name" name="name" placeholder="netinst.iso">
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-outline-primary btn-sm w-100">{'Download'|t}</button>
+      </div>
+    </form>
   </div>
 {/if}
 </div>
