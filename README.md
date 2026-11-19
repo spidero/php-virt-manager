@@ -149,10 +149,10 @@ must match `version.json`, CI refuses it otherwise.
 | Tag      | Built from                                           |
 |----------|------------------------------------------------------|
 | `latest` | every push to `master` and every release tag         |
-| `2.0.0`  | release tag `v2.0.0` (pin it to stay on a version)   |
+| `2.1.0`  | release tag `v2.1.0` (pin it to stay on a version)   |
 
 Images are published by CI after the tests pass. A release is made by pushing
-a tag (`git tag v2.0.1 && git push origin v2.0.1`); an existing tag can be
+a tag after updating `version.json` (`git tag v2.1.1 && git push origin v2.1.1`); an existing tag can be
 rebuilt from Actions → CI → Run workflow. To build the image from source:
 `docker compose up -d --build`.
 
