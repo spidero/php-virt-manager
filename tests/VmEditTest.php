@@ -189,4 +189,17 @@ final class VmEditTest extends TestCase
         $this->assertSame(7200, vm_serial_port(domain_new_xml('vm', 512, 1, '/d.qcow2', '', 'net', ['hd'], 'sata', 7200)));
         $this->assertSame(0, vm_serial_port(domain_new_xml('vm', 512, 1, '/d.qcow2', '', 'net')));
     }
+
+    public function testXmlIdentityCheck(): void
+    {
+        $uuid = '0b6f1b2a-1111-2222-3333-444455556666';
+        $xml = "<domain type='kvm'><name>vm</name><uuid>$uuid</uuid><memory>1</memory></domain>";
+        $this->assertSame([], vm_xml_identity_errors($xml, 'vm', $uuid));
+        $this->assertSame([], vm_xml_identity_errors(str_replace($uuid, strtoupper($uuid), $xml), 'vm', $uuid), 'UUID case');
+        $this->assertSame([], vm_xml_identity_errors("<domain><name>vm</name></domain>", 'vm', $uuid), 'missing UUID keeps the current one');
+        $this->assertCount(1, vm_xml_identity_errors(str_replace('<name>vm<', '<name>other<', $xml), 'vm', $uuid));
+        $this->assertCount(1, vm_xml_identity_errors(str_replace('0b6f', 'ffff', $xml), 'vm', $uuid));
+        $this->assertCount(1, vm_xml_identity_errors('<domain><name>vm</name>', 'vm', $uuid), 'not well-formed');
+        $this->assertCount(1, vm_xml_identity_errors('<network><name>vm</name></network>', 'vm', $uuid));
+    }
 }

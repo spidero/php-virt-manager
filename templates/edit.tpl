@@ -5,7 +5,8 @@
   <input type="hidden" name="node" value="{$node}">
   <input type="hidden" name="action" value="{$action}">
 {/function}
-<h5 class="mb-3">{'Edit %s'|t:$node} <a href="node.php?node={$node|escape:'url'}" class="btn btn-link btn-sm">&laquo; {'back'|t}</a></h5>
+<h5 class="mb-3">{'Edit %s'|t:$node} <a href="node.php?node={$node|escape:'url'}" class="btn btn-link btn-sm">&laquo; {'back'|t}</a>
+{if $can.admin}  <a href="xml.php?node={$node|escape:'url'}" class="btn btn-outline-secondary btn-sm float-end">{'Edit XML'|t}</a>{/if}</h5>
 {if $active}
 <div class="alert alert-info">{'The machine is running: memory, vCPU and boot order changes take effect after it is shut down and started again. Disks and network interfaces are attached immediately.'|t}</div>
 {/if}

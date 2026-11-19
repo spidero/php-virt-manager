@@ -397,3 +397,52 @@ function vm_serial_port($xml) {
     }
     return (int)$source->getAttribute('service');
 }
+
+// edited definition must describe the same machine: name and UUID unchanged
+// (another name would define a second machine); returns error messages
+function vm_xml_identity_errors($new_xml, $name, $uuid) {
+    try {
+        $doc = vm_dom($new_xml);
+    }
+    catch (InvalidArgumentException $e) {
+        return [t('The XML is not well-formed.')];
+    }
+    if ($doc->documentElement->nodeName !== 'domain') {
+        return [t('The root element must be <domain>.')];
+    }
+    $errors = [];
+    $new_name = vm_first($doc, '/domain/name');
+    if (!$new_name || trim($new_name->textContent) !== $name) {
+        $errors[] = t('The name must stay %s (rename the machine instead).', $name);
+    }
+    $new_uuid = vm_first($doc, '/domain/uuid');
+    if ($new_uuid && strtolower(trim($new_uuid->textContent)) !== strtolower($uuid)) {
+        $errors[] = t('The UUID must not change.');
+    }
+    return $errors;
+}
+
+// schema check with virt-xml-validate (libvirt-clients); '' when valid or the tool
+// is missing, otherwise its error output
+function vm_xml_schema_error($xml) {
+    if (!is_executable('/usr/bin/virt-xml-validate')) {
+        return '';
+    }
+    $file = tempnam(sys_get_temp_dir(), 'pvm-xml-');
+    file_put_contents($file, $xml);
+    $proc = proc_open(['/usr/bin/virt-xml-validate', $file, 'domain'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+    $output = '';
+    $status = 1;
+    if (is_resource($proc)) {
+        $output = stream_get_contents($pipes[1]).stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $status = proc_close($proc);
+    }
+    @unlink($file);
+    if ($status === 0) {
+        return '';
+    }
+    // drop the temporary file name from the messages
+    return trim(str_replace($file, 'XML', $output));
+}
