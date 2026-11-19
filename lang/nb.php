@@ -142,7 +142,7 @@ return [
     'Machine forcibly stopped' => 'Maskinen er tvangsstoppet',
     'Machine from cloud image' => 'Maskin fra skybilde',
     'Machine has no SPICE graphics to switch.' => 'Maskinen har ingen SPICE-grafikk å bytte.',
-    'Manage your SSH keys in the profile.' => 'Administrer SSH-nøklene dine i profilen.',
+    'Manage your SSH keys' => 'Administrer SSH-nøkler',
     'Medium' => 'Medium',
     'Memory' => 'Minne',
     'Memory (MB)' => 'Minne (MB)',

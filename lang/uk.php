@@ -142,7 +142,7 @@ return [
     'Machine forcibly stopped' => 'Машину примусово зупинено',
     'Machine from cloud image' => 'Машина з хмарного образу',
     'Machine has no SPICE graphics to switch.' => 'Машина не має графіки SPICE для перемикання.',
-    'Manage your SSH keys in the profile.' => 'Керуйте ключами SSH у профілі.',
+    'Manage your SSH keys' => 'Керувати ключами SSH',
     'Medium' => 'Носій',
     'Memory' => 'Памʼять',
     'Memory (MB)' => 'Памʼять (МБ)',

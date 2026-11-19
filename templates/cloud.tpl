@@ -115,7 +115,7 @@
 {foreachelse}
           <div class="form-text mt-0">{'No saved keys yet.'|t}</div>
 {/foreach}
-          <div class="form-text"><a href="profile.php#ssh-keys">{'Manage your SSH keys in the profile.'|t}</a></div>
+          <div class="form-text"><a href="sshkeys.php">{'Manage your SSH keys'|t}</a></div>
         </div>
         <div class="col-12 mb-3">
           <label class="form-label" for="ssh_keys">{'Additional SSH public keys'|t} ({'one per line'|t})</label>

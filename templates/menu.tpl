@@ -33,6 +33,7 @@
     <a href="network.php" class="list-group-item list-group-item-action py-2{if $page=='network'} active{/if}">{'Networks'|t}</a>
 {if $can.operate}
     <a href="jobs.php" class="list-group-item list-group-item-action py-2{if $page=='jobs'} active{/if}">{'Background tasks'|t}</a>
+    <a href="sshkeys.php" class="list-group-item list-group-item-action py-2{if $page=='sshkeys'} active{/if}">{'SSH keys'|t}</a>
 {/if}
 {if $can.admin}
     <a href="log.php" class="list-group-item list-group-item-action py-2{if $page=='log'} active{/if}">{'Action log'|t}</a>

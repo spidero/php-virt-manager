@@ -76,7 +76,7 @@ return [
     'Machine %s created' => 'Maszyna %s utworzona',
     'Machine forcibly stopped' => 'Maszyna zatrzymana siłowo',
     'Machine has no SPICE graphics to switch.' => 'Maszyna nie ma grafiki SPICE do przełączenia.',
-    'Manage your SSH keys in the profile.' => 'Kluczami SSH zarządzasz w profilu.',
+    'Manage your SSH keys' => 'Zarządzaj kluczami SSH',
     'Memory' => 'Pamięć',
     'Memory (MB)' => 'Pamięć (MB)',
     'Memory must be between %d and %d MB.' => 'Pamięć musi wynosić od %d do %d MB.',

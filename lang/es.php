@@ -142,7 +142,7 @@ return [
     'Machine forcibly stopped' => 'Máquina detenida a la fuerza',
     'Machine from cloud image' => 'Máquina desde imagen en la nube',
     'Machine has no SPICE graphics to switch.' => 'La máquina no tiene gráficos SPICE que cambiar.',
-    'Manage your SSH keys in the profile.' => 'Gestione sus claves SSH en el perfil.',
+    'Manage your SSH keys' => 'Gestionar claves SSH',
     'Medium' => 'Medio',
     'Memory' => 'Memoria',
     'Memory (MB)' => 'Memoria (MB)',
