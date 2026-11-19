@@ -55,6 +55,7 @@ const I18N_DYNAMIC = [
     'Starting machine, it may take some time', 'Shutting down machine, it may take some time',
     'Machine forcibly stopped',
     'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+    'NAT', 'routed', 'isolated',
     'Cloning', 'Image download', 'Machine from cloud image', 'Hard disk', 'CD/DVD', 'Network (PXE)', 'Rebooting machine, it may take some time', 'Suspending machine', 'Resuming machine',
 ];
 

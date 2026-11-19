@@ -180,8 +180,10 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
   keys and/or password, hostname, disk size - ready to log in within a minute;
   SSH keys saved in the profile are offered as checkboxes
 - storage pools (start/stop, autostart, refresh) with volumes (create, delete;
-  volumes used by machines are protected), libvirt networks (start/stop,
-  autostart) with DHCP leases
+  volumes used by machines are protected), libvirt networks: create (NAT,
+  routed, isolated) and delete, start/stop, autostart, DHCP range and static
+  IP addresses per MAC (changed live, without restarting the network), DHCP
+  leases
 - users with roles (admin, operator, viewer), login lockout after repeated
   failures, CSRF protection, read-only connections
 - several hypervisors (local or `qemu+ssh://`) switchable in the menu
