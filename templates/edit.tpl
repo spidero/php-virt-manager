@@ -230,20 +230,56 @@
       <div class="card-header">{'Add disk'|t}</div>
       <div class="card-body">
         {call form_start action='add_disk'}
-          <div class="row">
-            <div class="col-sm-4 mb-3">
-              <label class="form-label" for="size">{'Size (GB)'|t}</label>
-              <input type="number" class="form-control" id="size" name="size" value="10" min="1" max="4096" required>
+          <div class="form-check">
+            <input type="radio" class="form-check-input" id="src-new" name="source" value="new" checked>
+            <label class="form-check-label" for="src-new">{'New disk'|t}</label>
+          </div>
+          <div class="row ms-3">
+            <div class="col-sm-4 mb-2">
+              <label class="form-label small" for="size">{'Size (GB)'|t}</label>
+              <input type="number" class="form-control form-control-sm" id="size" name="size" value="10" min="1" max="4096" required>
             </div>
-            <div class="col-sm-8 mb-3">
-              <label class="form-label" for="pool">{'Storage pool'|t}</label>
-              <select class="form-select" id="pool" name="pool">
+            <div class="col-sm-8 mb-2">
+              <label class="form-label small" for="pool">{'Storage pool'|t}</label>
+              <select class="form-select form-select-sm" id="pool" name="pool">
 {foreach $pools as $name => $free}
                 <option value="{$name}">{$name} ({$free})</option>
 {/foreach}
               </select>
             </div>
           </div>
+          <div class="form-check">
+            <input type="radio" class="form-check-input" id="src-existing" name="source" value="existing"{if !$free_volumes} disabled{/if}>
+            <label class="form-check-label" for="src-existing">{'Existing volume'|t}</label>
+          </div>
+          <div class="ms-3 mb-2">
+            <select class="form-select form-select-sm" name="volume" aria-label="{'Existing volume'|t}">
+{foreach $free_volumes as $path => $v}
+              <option value="{$path}">{$v.label}</option>
+{foreachelse}
+              <option value="">{'no unused volumes'|t}</option>
+{/foreach}
+            </select>
+          </div>
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label small" for="bus">{'Bus'|t}</label>
+              <select class="form-select form-select-sm" id="bus" name="bus">
+{foreach $disk_buses as $b => $label}
+                <option value="{$b}">{$label}</option>
+{/foreach}
+              </select>
+            </div>
+            <div class="col-6 mb-3">
+              <label class="form-label small" for="cache">{'Cache'|t}</label>
+              <select class="form-select form-select-sm" id="cache" name="cache">
+{foreach $disk_cache_modes as $c => $label}
+                <option value="{$c}">{$label}</option>
+{/foreach}
+              </select>
+            </div>
+          </div>
+          <div class="form-text mt-n2 mb-2">{'virtio is the fastest; SATA for guests without virtio drivers (e.g. a Windows installer).'|t}</div>
           <button type="submit" class="btn btn-primary">{'Add disk'|t}</button>
         </form>
       </div>

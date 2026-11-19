@@ -255,4 +255,19 @@ final class VmEditTest extends TestCase
         $this->assertSame([], vm_hostdevs(vm_xml_remove_hostdev($without, 'pci:0000:02:00.0')));
         $this->assertSame($without, vm_xml_remove_hostdev($without, 'usb:ffff:ffff'), 'unknown key: unchanged');
     }
+
+    public function testDiskBusFormatCache(): void
+    {
+        $d = simplexml_load_string(vm_disk_device_xml('/p/a.img', 'sdb', 'scsi', 'raw', 'none'));
+        $this->assertSame(['scsi', 'sdb', 'raw', 'none'], [(string)$d->target['bus'], (string)$d->target['dev'], (string)$d->driver['type'], (string)$d->driver['cache']]);
+        $default = simplexml_load_string(vm_disk_device_xml('/p/b.qcow2', 'vdb'));
+        $this->assertSame(['virtio', 'qcow2', ''], [(string)$default->target['bus'], (string)$default->driver['type'], (string)$default->driver['cache']]);
+        // unknown values fall back to safe defaults
+        $odd = simplexml_load_string(vm_disk_device_xml('/p/c', 'vdc', 'ide', 'vmdk', 'evil'));
+        $this->assertSame(['virtio', 'raw', ''], [(string)$odd->target['bus'], (string)$odd->driver['type'], (string)$odd->driver['cache']]);
+        $this->assertSame('vd', vm_disk_target_prefix('virtio'));
+        $this->assertSame('sd', vm_disk_target_prefix('sata'));
+        $this->assertFalse(vm_has_virtio_scsi('<domain><devices/></domain>'));
+        $this->assertTrue(vm_has_virtio_scsi("<domain><devices><controller type='scsi' index='0' model='virtio-scsi'/></devices></domain>"));
+    }
 }

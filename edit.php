@@ -131,25 +131,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $details = $iso ?: 'eject';
         }
         elseif ($action === 'add_disk') {
-            $size = (int)($_POST['size'] ?? 0);
-            $pool = (string)($_POST['pool'] ?? '');
-            if ($size < 1 || $size > 4096) {
-                throw new RuntimeException(t('Disk size must be between %d and %d GB.', 1, 4096));
+            $source = (string)($_POST['source'] ?? 'new');
+            $bus = (string)($_POST['bus'] ?? 'virtio');
+            $cache = (string)($_POST['cache'] ?? '');
+            if (!isset(DISK_BUSES[$bus])) {
+                throw new RuntimeException(t('Unknown disk bus.'));
             }
-            if (!isset($pools[$pool])) {
-                throw new RuntimeException(t('Select an active storage pool.'));
+            if (!isset(DISK_CACHE_MODES[$cache])) {
+                throw new RuntimeException(t('Unknown cache mode.'));
             }
-            $target = vm_next_target($xml, 'vd');
-            $vol = storage_create_qcow2($con, $pool, $node.'-'.$target.'.qcow2', $size);
-            $device = vm_disk_device_xml((string)libvirt_storagevolume_get_path($vol), $target);
+            $target = vm_next_target($xml, vm_disk_target_prefix($bus));
+            $vol = null;
+            if ($source === 'existing') {
+                // an existing, unused volume (e.g. a disk image moved from another host)
+                $path = (string)($_POST['volume'] ?? '');
+                $free = storage_free_volumes($con);
+                if (!isset($free[$path])) {
+                    throw new RuntimeException(t('Select a volume that is not used by a machine.'));
+                }
+                $device = vm_disk_device_xml($path, $target, $bus, $free[$path]['format'], $cache);
+                $details = $target.' '.$path;
+                $message = t('Disk %s attached (%s).', $target, basename($path));
+            }
+            else {
+                $size = (int)($_POST['size'] ?? 0);
+                $pool = (string)($_POST['pool'] ?? '');
+                if ($size < 1 || $size > 4096) {
+                    throw new RuntimeException(t('Disk size must be between %d and %d GB.', 1, 4096));
+                }
+                if (!isset($pools[$pool])) {
+                    throw new RuntimeException(t('Select an active storage pool.'));
+                }
+                $vol = storage_create_qcow2($con, $pool, $node.'-'.$target.'.qcow2', $size);
+                $device = vm_disk_device_xml((string)libvirt_storagevolume_get_path($vol), $target, $bus, 'qcow2', $cache);
+                $details = $target.', '.$size.' GB in '.$pool;
+                $message = t('Disk %s (%d GB) added.', $target, $size);
+            }
+            // SCSI disks need a virtio-scsi controller
+            if ($bus === 'scsi' && !vm_has_virtio_scsi($xml)) {
+                $controller = "<controller type='scsi' model='virtio-scsi'/>";
+                if (attach_device($con, $res, $xml, $active, $controller) === false) {
+                    if ($vol) {
+                        libvirt_storagevolume_delete($vol, 0);
+                    }
+                    throw new RuntimeException(t('Error: %s', libvirt_get_last_error()));
+                }
+                $xml = (string)libvirt_domain_get_xml_desc($res, null, VIR_DOMAIN_XML_INACTIVE);
+            }
             $note = attach_device($con, $res, $xml, $active, $device);
             if ($note === false) {
                 $error = libvirt_get_last_error();
-                libvirt_storagevolume_delete($vol, 0);
+                if ($vol) {
+                    libvirt_storagevolume_delete($vol, 0);
+                }
                 throw new RuntimeException(t('Error: %s', $error));
             }
-            $details = $target.', '.$size.' GB in '.$pool.($note ? ', after restart' : '');
-            $message = t('Disk %s (%d GB) added.', $target, $size).$note;
+            $details .= ', '.$bus.($cache !== '' ? ', cache '.$cache : '').($note ? ', after restart' : '');
+            $message .= $note;
         }
         elseif ($action === 'add_nic') {
             $network = nic_target_normalize((string)($_POST['network'] ?? ''));
@@ -453,6 +491,9 @@ foreach (vm_disk_devices($xml) as $target => $d) {
 $smarty->assign('device_disks', $device_disks);
 $smarty->assign('device_nics', vm_nic_devices($xml));
 $smarty->assign('nic_models', NIC_MODELS);
+$smarty->assign('disk_buses', DISK_BUSES);
+$smarty->assign('disk_cache_modes', DISK_CACHE_MODES);
+$smarty->assign('free_volumes', storage_free_volumes($con));
 $smarty->assign('serial_port', vm_serial_port($xml));
 // host devices: only administrators see and change them
 if (can('admin')) {

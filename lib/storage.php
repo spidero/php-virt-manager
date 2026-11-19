@@ -124,3 +124,28 @@ function storage_sources_in_use_running($con) {
     }
     return $paths;
 }
+
+// volumes that can be attached as a disk: not ISO images, not used by any machine;
+// path => [label, format]
+function storage_free_volumes($con) {
+    $in_use = storage_sources_in_use($con);
+    $list = [];
+    foreach (array_keys(storage_active_pools($con)) as $pool_name) {
+        $pool = libvirt_storagepool_lookup_by_name($con, $pool_name);
+        foreach (libvirt_storagepool_list_volumes($pool) ?: [] as $vol_name) {
+            if (preg_match('/\.iso$/i', $vol_name)) {
+                continue;
+            }
+            $vol = libvirt_storagevolume_lookup_by_name($pool, $vol_name);
+            $path = $vol ? (string)libvirt_storagevolume_get_path($vol) : '';
+            if ($path === '' || in_array($path, $in_use, true)) {
+                continue;
+            }
+            $info = libvirt_storagevolume_get_info($vol);
+            $xml = @simplexml_load_string((string)libvirt_storagevolume_get_xml_desc($vol, null));
+            $format = $xml ? (string)($xml->target->format['type'] ?? 'raw') : 'raw';
+            $list[$path] = ['label' => $pool_name.' / '.$vol_name.' ('.format_bytes($info['capacity']).', '.$format.')', 'format' => $format];
+        }
+    }
+    return $list;
+}

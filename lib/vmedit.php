@@ -120,9 +120,26 @@ function vm_next_target($xml, $prefix) {
     throw new RuntimeException('No free disk target');
 }
 
-function vm_disk_device_xml($path, $target) {
-    return "<disk type='file' device='disk'><driver name='qemu' type='qcow2' discard='unmap'/>"
-        ."<source file='".xml_escape($path)."'/><target dev='".xml_escape($target)."' bus='virtio'/></disk>";
+const DISK_BUSES = ['virtio' => 'virtio', 'scsi' => 'SCSI (virtio-scsi)', 'sata' => 'SATA'];
+const DISK_CACHE_MODES = ['' => 'default', 'none' => 'none', 'writeback' => 'writeback', 'writethrough' => 'writethrough', 'directsync' => 'directsync', 'unsafe' => 'unsafe'];
+
+// target name prefix of a bus (SATA and SCSI disks share the sdX names)
+function vm_disk_target_prefix($bus) {
+    return $bus === 'virtio' ? 'vd' : 'sd';
+}
+
+// disk device; $format qcow2 or raw (from the volume), $cache '' = libvirt default
+function vm_disk_device_xml($path, $target, $bus = 'virtio', $format = 'qcow2', $cache = '') {
+    $bus = isset(DISK_BUSES[$bus]) ? $bus : 'virtio';
+    $format = in_array($format, ['qcow2', 'raw'], true) ? $format : 'raw';
+    $cache_attr = $cache !== '' && isset(DISK_CACHE_MODES[$cache]) ? " cache='".$cache."'" : '';
+    return "<disk type='file' device='disk'><driver name='qemu' type='".$format."' discard='unmap'".$cache_attr.'/>'
+        ."<source file='".xml_escape($path)."'/><target dev='".xml_escape($target)."' bus='".$bus."'/></disk>";
+}
+
+// true when the definition has a virtio-scsi controller (needed by SCSI disks)
+function vm_has_virtio_scsi($xml) {
+    return vm_first(vm_dom($xml), "/domain/devices/controller[@type='scsi'][@model='virtio-scsi']") !== null;
 }
 
 function vm_cdrom_device_xml($iso_path, $target) {
