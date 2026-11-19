@@ -669,3 +669,34 @@ function vm_xml_set_vcpu_options($xml, $current, $cpuset) {
     }
     return vm_xml($doc);
 }
+
+// I/O limits of a disk: [bytes per second, operations per second], 0 = no limit
+function vm_disk_iotune($xml, $target) {
+    $xpath = new DOMXPath(vm_dom($xml));
+    $disk = '/domain/devices/disk[target/@dev='.vm_xpath_literal($target).']/iotune/';
+    $value = fn($name) => (int)($xpath->query($disk.$name)->item(0)?->textContent);
+    return ['bytes' => $value('total_bytes_sec'), 'iops' => $value('total_iops_sec')];
+}
+
+// bandwidth limits of a network interface (by MAC) in KiB/s: [inbound, outbound], 0 = no limit
+function vm_nic_bandwidth($xml, $mac) {
+    $xpath = new DOMXPath(vm_dom($xml));
+    foreach ($xpath->query('/domain/devices/interface') ?: [] as $iface) {
+        $address = $xpath->query('mac/@address', $iface)->item(0);
+        if ($address && strtolower($address->nodeValue) === strtolower($mac)) {
+            $in = $xpath->query('bandwidth/inbound/@average', $iface)->item(0);
+            $out = $xpath->query('bandwidth/outbound/@average', $iface)->item(0);
+            return ['in' => $in ? (int)$in->nodeValue : 0, 'out' => $out ? (int)$out->nodeValue : 0];
+        }
+    }
+    return ['in' => 0, 'out' => 0];
+}
+
+// Mbit/s <-> KiB/s (libvirt interface bandwidth unit)
+function vm_mbit_to_kib($mbit) {
+    return (int)round($mbit * 1000000 / 8 / 1024);
+}
+
+function vm_kib_to_mbit($kib) {
+    return round($kib * 1024 * 8 / 1000000, 1);
+}

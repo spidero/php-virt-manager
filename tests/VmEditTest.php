@@ -329,4 +329,19 @@ final class VmEditTest extends TestCase
         $this->assertFalse(vm_cpuset_valid('a', 4));
         $this->assertFalse(vm_cpuset_valid('', 4));
     }
+
+    public function testIoAndBandwidthLimits(): void
+    {
+        $xml = "<domain><devices>
+            <disk type='file' device='disk'><target dev='vda'/><iotune><total_bytes_sec>10485760</total_bytes_sec><total_iops_sec>500</total_iops_sec></iotune></disk>
+            <disk type='file' device='disk'><target dev='vdb'/></disk>
+            <interface type='network'><mac address='52:54:00:00:00:01'/><bandwidth><inbound average='12207'/></bandwidth></interface>
+            </devices></domain>";
+        $this->assertSame(['bytes' => 10485760, 'iops' => 500], vm_disk_iotune($xml, 'vda'));
+        $this->assertSame(['bytes' => 0, 'iops' => 0], vm_disk_iotune($xml, 'vdb'));
+        $this->assertSame(['in' => 12207, 'out' => 0], vm_nic_bandwidth($xml, '52:54:00:00:00:01'));
+        $this->assertSame(['in' => 0, 'out' => 0], vm_nic_bandwidth($xml, '52:54:00:00:00:99'));
+        $this->assertSame(12207, vm_mbit_to_kib(100));
+        $this->assertSame(100.0, vm_kib_to_mbit(12207));
+    }
 }

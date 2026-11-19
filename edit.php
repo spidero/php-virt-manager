@@ -385,6 +385,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $details = $key;
         }
+        elseif ($action === 'disk_iotune') {
+            $target = (string)($_POST['target'] ?? '');
+            $mbs = (float)($_POST['mbs'] ?? 0);
+            $iops = (int)($_POST['iops'] ?? 0);
+            if (!isset(vm_disk_devices($xml)[$target]) || vm_disk_devices($xml)[$target]['device'] !== 'disk') {
+                throw new RuntimeException(t('Unknown disk.'));
+            }
+            if ($mbs < 0 || $mbs > 100000 || $iops < 0 || $iops > 10000000) {
+                throw new RuntimeException(t('Limits must be 0 (none) or positive numbers.'));
+            }
+            // --config always, --live as well for a running machine; 0 removes a limit
+            $args = ['blkdeviotune', $node, $target, '--total-bytes-sec', (string)(int)round($mbs * 1048576), '--total-iops-sec', (string)$iops, '--config'];
+            if ($active) {
+                $args[] = '--live';
+            }
+            [$status, $output] = domain_virsh($connection, $args);
+            if ($status !== 0) {
+                throw new RuntimeException(t('Error: %s', trim($output)));
+            }
+            $details = $target.': '.$mbs.' MB/s, '.$iops.' IOPS';
+            $message = t('I/O limits of %s saved.', $target);
+        }
+        elseif ($action === 'nic_bandwidth') {
+            $mac = strtolower((string)($_POST['mac'] ?? ''));
+            $in = (float)($_POST['in'] ?? 0);
+            $out = (float)($_POST['out'] ?? 0);
+            if (!isset(vm_nic_devices($xml)[$mac])) {
+                throw new RuntimeException(t('Unknown network interface.'));
+            }
+            if ($in < 0 || $in > 100000 || $out < 0 || $out > 100000) {
+                throw new RuntimeException(t('Limits must be 0 (none) or positive numbers.'));
+            }
+            // inbound = traffic to the machine (download), outbound = from it; KiB/s, 0 removes
+            $args = ['domiftune', $node, $mac, '--inbound', (string)vm_mbit_to_kib($in), '--outbound', (string)vm_mbit_to_kib($out), '--config'];
+            if ($active) {
+                $args[] = '--live';
+            }
+            [$status, $output] = domain_virsh($connection, $args);
+            if ($status !== 0) {
+                throw new RuntimeException(t('Error: %s', trim($output)));
+            }
+            $details = $mac.': in '.$in.' Mbit/s, out '.$out.' Mbit/s';
+            $message = t('Bandwidth limits of %s saved.', $mac);
+        }
         elseif ($action === 'hardware') {
             $video = (string)($_POST['video'] ?? 'virtio');
             $sound = (string)($_POST['sound'] ?? '');
@@ -560,12 +604,19 @@ foreach (vm_disk_devices($xml) as $target => $d) {
         continue;
     }
     $capacity = disk_capacity($con, $res, $active, $target, $d['path']);
-    $device_disks[] = $d + ['target' => $target, 'file' => basename($d['path']), 'capacity' => $capacity !== null ? format_bytes($capacity) : '-',
+    $iotune = vm_disk_iotune($xml, $target);
+    $device_disks[] = $d + ['target' => $target, 'file' => basename($d['path']),
+        'limit_mbs' => round($iotune['bytes'] / 1048576, 1), 'limit_iops' => $iotune['iops'], 'capacity' => $capacity !== null ? format_bytes($capacity) : '-',
         'capacity_gb' => $capacity !== null ? (int)ceil($capacity / 1073741824) : 0,
         'shared' => in_array($d['path'], $shared, true)];
 }
 $smarty->assign('device_disks', $device_disks);
-$smarty->assign('device_nics', vm_nic_devices($xml));
+$device_nics = vm_nic_devices($xml);
+foreach ($device_nics as $mac => $nic) {
+    $bandwidth = vm_nic_bandwidth($xml, $mac);
+    $device_nics[$mac] += ['limit_in' => vm_kib_to_mbit($bandwidth['in']), 'limit_out' => vm_kib_to_mbit($bandwidth['out'])];
+}
+$smarty->assign('device_nics', $device_nics);
 $smarty->assign('nic_models', NIC_MODELS);
 $smarty->assign('disk_buses', DISK_BUSES);
 $smarty->assign('disk_cache_modes', DISK_CACHE_MODES);

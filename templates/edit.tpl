@@ -15,7 +15,7 @@
   <div class="card-header">{'Disks'|t}</div>
   <div class="table-responsive">
   <table class="table table-sm align-middle mb-0">
-    <thead class="small"><tr><th>{'Device'|t}</th><th>{'File'|t}</th><th>{'Size'|t}</th><th>{'Resize'|t}</th><th></th></tr></thead>
+    <thead class="small"><tr><th>{'Device'|t}</th><th>{'File'|t}</th><th>{'Size'|t}</th><th>{'Resize'|t}</th><th>{'Limits (0 = none)'|t}</th><th></th></tr></thead>
     <tbody>
 {foreach $device_disks as $d}
       <tr>
@@ -32,6 +32,17 @@
             <button type="submit" class="btn btn-outline-primary btn-sm text-nowrap">{'GB, resize'|t}</button>
           </form>
         </td>
+        <td>
+          <form method="post" action="edit.php" class="d-flex gap-1 align-items-center small">
+            <input type="hidden" name="csrf" value="{$csrf_token}">
+            <input type="hidden" name="node" value="{$node}">
+            <input type="hidden" name="action" value="disk_iotune">
+            <input type="hidden" name="target" value="{$d.target}">
+            <input type="number" name="mbs" class="form-control form-control-sm" style="width: 5rem" min="0" step="0.1" value="{$d.limit_mbs}" aria-label="MB/s">MB/s
+            <input type="number" name="iops" class="form-control form-control-sm" style="width: 5.5rem" min="0" value="{$d.limit_iops}" aria-label="IOPS">IOPS
+            <button type="submit" class="btn btn-outline-primary btn-sm">{'Save'|t}</button>
+          </form>
+        </td>
         <td class="text-end">
           <form method="post" action="edit.php" class="d-inline-flex gap-2 align-items-center" data-confirm="{'Detach disk %s from the machine?'|t:$d.target}">
             <input type="hidden" name="csrf" value="{$csrf_token}">
@@ -46,7 +57,7 @@
         </td>
       </tr>
 {foreachelse}
-      <tr><td colspan="5" class="text-body-secondary">{'No disks'|t}</td></tr>
+      <tr><td colspan="6" class="text-body-secondary">{'No disks'|t}</td></tr>
 {/foreach}
     </tbody>
   </table>
@@ -57,7 +68,7 @@
   <div class="card-header">{'Network interfaces'|t}</div>
   <div class="table-responsive">
   <table class="table table-sm align-middle mb-0">
-    <thead class="small"><tr><th>MAC</th><th>{'Network'|t} / {'Model'|t}</th><th></th></tr></thead>
+    <thead class="small"><tr><th>MAC</th><th>{'Network'|t} / {'Model'|t}</th><th>{'Limits in Mbit/s (0 = none)'|t}</th><th></th></tr></thead>
     <tbody>
 {foreach $device_nics as $mac => $n}
       <tr>
@@ -88,6 +99,17 @@
           <span class="small">{$n.type}: {$n.source} ({$n.model})</span>
 {/if}
         </td>
+        <td>
+          <form method="post" action="edit.php" class="d-flex gap-1 align-items-center small">
+            <input type="hidden" name="csrf" value="{$csrf_token}">
+            <input type="hidden" name="node" value="{$node}">
+            <input type="hidden" name="action" value="nic_bandwidth">
+            <input type="hidden" name="mac" value="{$mac}">
+            {'in'|t} <input type="number" name="in" class="form-control form-control-sm" style="width: 5rem" min="0" step="0.1" value="{$n.limit_in}" aria-label="{'download limit (Mbit/s)'|t}">
+            {'out'|t} <input type="number" name="out" class="form-control form-control-sm" style="width: 5rem" min="0" step="0.1" value="{$n.limit_out}" aria-label="{'upload limit (Mbit/s)'|t}">
+            <button type="submit" class="btn btn-outline-primary btn-sm">{'Save'|t}</button>
+          </form>
+        </td>
         <td class="text-end">
           <form method="post" action="edit.php" class="d-inline" data-confirm="{'Detach network interface %s?'|t:$mac}">
             <input type="hidden" name="csrf" value="{$csrf_token}">
@@ -99,7 +121,7 @@
         </td>
       </tr>
 {foreachelse}
-      <tr><td colspan="3" class="text-body-secondary">{'No network interfaces'|t}</td></tr>
+      <tr><td colspan="4" class="text-body-secondary">{'No network interfaces'|t}</td></tr>
 {/foreach}
     </tbody>
   </table>

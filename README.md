@@ -194,7 +194,8 @@ them in bug reports.
   host CPUs (both live), CD/DVD medium, boot order, rename
 - disks: add a new one or attach an existing volume (virtio, SCSI or SATA bus,
   cache mode), grow (also while running), detach (optionally deleting the
-  file); network interfaces: add, switch network (live) or model, detach -
+  file), I/O limits (MB/s, IOPS); network interfaces also get bandwidth limits
+  - limits change live; network interfaces: add, switch network (live) or model, detach -
   devices are hot-plugged into running machines
 - network interfaces connect to a libvirt network, a host bridge (machine in
   the LAN) or directly to a host interface (macvtap) - in both wizards and
