@@ -19,6 +19,9 @@ function stats_counters(array $raw) {
         // resident memory of the QEMU process and the memory assigned to the guest, in KiB
         'mem_rss'   => (int)($raw['balloon.rss'] ?? 0),
         'mem_total' => (int)($raw['balloon.current'] ?? 0),
+        // memory seen by the guest (virtio balloon statistics), 0 when the guest does not report them
+        'mem_avail'  => (int)($raw['balloon.available'] ?? 0),
+        'mem_usable' => (int)($raw['balloon.usable'] ?? 0),
         'disk_rd'   => $sum('block', 'rd.bytes'),
         'disk_wr'   => $sum('block', 'wr.bytes'),
         'net_rx'    => $sum('net', 'rx.bytes'),
@@ -77,4 +80,14 @@ function node_cpu_model($sysinfo_xml, $capabilities_xml) {
         return trim($caps->host->cpu->vendor.' '.$caps->host->cpu->model);
     }
     return '';
+}
+
+// memory use of a running machine in KiB: [used, total, source]; "guest" when
+// the guest reports balloon statistics (used without cache, like free(1) in
+// the guest), otherwise "host": resident memory of the QEMU process
+function stats_memory_used(array $c) {
+    if ($c['mem_avail'] > 0 && $c['mem_usable'] > 0) {
+        return [max(0, $c['mem_avail'] - $c['mem_usable']), $c['mem_avail'], 'guest'];
+    }
+    return [min($c['mem_rss'], $c['mem_total']), $c['mem_total'], 'host'];
 }

@@ -30,4 +30,66 @@
     <tr><th>{'NUMA nodes'|t}</th><td>{$node_info['nodes']}</td></tr>
   </table>
 </div>
+
+{* bar color by usage: green, then yellow from 75 %, red from 90 % *}
+{function name=usage_bar pct=0 label=''}
+<div class="progress vm-bar" role="progressbar" aria-label="{$label}" aria-valuenow="{$pct}" aria-valuemin="0" aria-valuemax="100">
+  <div class="progress-bar{if $pct >= 90} bg-danger{elseif $pct >= 75} bg-warning{else} bg-success{/if}" style="width: {$pct}%"></div>
+</div>
+{/function}
+<div class="card mt-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>{'Machines'|t}</span>
+    <small class="text-body-secondary">{count($vms)}</small>
+  </div>
+  <div class="table-responsive">
+  <table class="table table-hover align-middle mb-0 vm-table">
+    <thead class="small text-body-secondary">
+      <tr><th>{'Name'|t}</th><th>{'State'|t}</th><th>IP</th><th>CPU</th><th>{'Memory'|t}</th><th>{'Disk'|t}</th></tr>
+    </thead>
+    <tbody>
+{foreach $vms as $vm}
+      <tr data-vm="{$vm.name}" data-vm-state="{$vm.id}">
+        <td>
+          <a href="node.php?node={$vm.name|escape:'url'}" class="fw-semibold text-decoration-none">{$vm.name}</a>
+          <div class="small text-body-secondary">{'%d vCPU'|t:$vm.vcpus}</div>
+        </td>
+        <td><span class="badge rounded-pill text-bg-{$vm.color}" data-vm-badge>{$vm.label|t}</span></td>
+        <td class="small text-nowrap">
+{foreach $vm.addresses as $a}
+          <div><span class="user-select-all font-monospace">{$a.addr}</span>{if $a.prefix !== ''} <span class="text-body-secondary user-select-none">/{$a.prefix}</span>{/if}</div>
+{foreachelse}
+          <span class="text-body-secondary">-</span>
+{/foreach}
+        </td>
+        <td class="vm-usage">
+{if $vm.active}
+          <div class="small vm-num" data-vm-cpu-text>…</div>
+          {call usage_bar pct=0 label='CPU'}
+{else}
+          <span class="text-body-secondary">-</span>
+{/if}
+        </td>
+        <td class="vm-usage">
+          <div class="small vm-num" data-vm-mem-text data-of="{'%s of %s'|t:'%1':'%2'}"{if $vm.mem_source} title="{$mem_titles[$vm.mem_source]}"{/if}>{$vm.mem_text}</div>
+{if $vm.active && $vm.mem_source}
+          {call usage_bar pct=$vm.mem_pct label={'Memory'|t}}
+{/if}
+        </td>
+        <td class="vm-usage">
+{if $vm.disk_text}
+          <div class="small vm-num">{$vm.disk_text}</div>
+          {call usage_bar pct=$vm.disk_pct label={'Disk'|t}}
+{else}
+          <span class="text-body-secondary">-</span>
+{/if}
+        </td>
+      </tr>
+{foreachelse}
+      <tr><td colspan="6" class="text-body-secondary">{'No machines found'|t}</td></tr>
+{/foreach}
+    </tbody>
+  </table>
+  </div>
+</div>
 {include file="footer.tpl"}

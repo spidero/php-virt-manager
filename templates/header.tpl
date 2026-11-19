@@ -28,6 +28,12 @@
       })();
     </script>
     <style>
+      /* machine table on the hypervisor page: thin usage bars, aligned digits */
+      .vm-table td { padding-top: .6rem; padding-bottom: .6rem; }
+      .vm-table .vm-usage { min-width: 9rem; width: 17%; }
+      .vm-table .vm-num { font-variant-numeric: tabular-nums; white-space: nowrap; margin-bottom: .2rem; }
+      .vm-bar { height: 5px; }
+      .vm-bar .progress-bar { transition: width .6s ease; }
       /* let the content column shrink (long table cells must not push it below the menu) */
       .row > .col { min-width: 0; }
       /* tables placed directly in cards: align cell padding with the card body */

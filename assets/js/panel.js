@@ -110,14 +110,68 @@
     document.querySelectorAll('canvas[data-series]').forEach(draw);
   }
 
+  // machine table of the hypervisor page ([data-vm] rows): CPU % from two samples, memory
+  var vmPrev = {};
+  function fmtBytes(kib) {
+    var units = ['KB', 'MB', 'GB', 'TB'], v = kib, i = 0;
+    while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+    return (Math.round(v * 10) / 10) + ' ' + units[i];
+  }
+  function setBar(cell, pct) {
+    var bar = cell && cell.querySelector('.progress-bar');
+    if (!bar) return;
+    pct = Math.max(0, Math.min(100, pct));
+    bar.style.width = pct + '%';
+    bar.parentNode.setAttribute('aria-valuenow', Math.round(pct));
+    bar.classList.toggle('bg-danger', pct >= 90);
+    bar.classList.toggle('bg-warning', pct >= 75 && pct < 90);
+    bar.classList.toggle('bg-success', pct < 75);
+  }
+  function updateVmTable(vms, domains, time) {
+    var states = {};
+    domains.forEach(function (d) { states[d.name] = d; });
+    document.querySelectorAll('[data-vm]').forEach(function (row) {
+      var name = row.getAttribute('data-vm');
+      var d = states[name], c = vms[name];
+      // state changed (started, stopped): reload for IPs, bars and links
+      if (!d || String(d.state) !== row.getAttribute('data-vm-state')) {
+        window.location.reload();
+        return;
+      }
+      if (!c || [1, 2, 3].indexOf(c.state) < 0) return;
+      var cpuText = row.querySelector('[data-vm-cpu-text]');
+      var prevSample = vmPrev[name];
+      if (cpuText && prevSample && time > prevSample.time) {
+        var cpu = Math.min(100, Math.max(0, c.cpu_ns - prevSample.c.cpu_ns) / 1e9 / (time - prevSample.time) / c.vcpus * 100);
+        cpuText.textContent = cpu.toFixed(1) + ' %';
+        setBar(cpuText.parentNode, cpu);
+      }
+      vmPrev[name] = { c: c, time: time };
+      var memText = row.querySelector('[data-vm-mem-text]');
+      if (memText && memText.parentNode.querySelector('.progress-bar')) {
+        var guest = c.mem_avail > 0 && c.mem_usable > 0;
+        var used = guest ? Math.max(0, c.mem_avail - c.mem_usable) : Math.min(c.mem_rss, c.mem_total);
+        var total = guest ? c.mem_avail : c.mem_total;
+        if (total > 0) {
+          memText.textContent = memText.getAttribute('data-of').replace('%1', fmtBytes(used)).replace('%2', fmtBytes(total));
+          setBar(memText.parentNode, used / total * 100);
+        }
+      }
+    });
+  }
+
   function poll() {
     if (document.hidden) return;
-    var url = 'stats.php' + (node ? '?node=' + encodeURIComponent(node) : '');
+    var params = [];
+    if (node) params.push('node=' + encodeURIComponent(node));
+    if (document.querySelector('[data-vm]')) params.push('all=1');
+    var url = 'stats.php' + (params.length ? '?' + params.join('&') : '');
     fetch(url, { credentials: 'same-origin', cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) {
         if (!data) return;
         updateStates(data.domains);
+        if (data.vms) updateVmTable(data.vms, data.domains, data.time);
         if (node) {
           var current = data.domains.filter(function (d) { return d.name === node; })[0];
           // state changed elsewhere (or the machine is gone): reload for the right buttons

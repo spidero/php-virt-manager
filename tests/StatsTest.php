@@ -79,4 +79,21 @@ final class StatsTest extends TestCase
         $this->assertSame('', node_cpu_model(false, false));
         $this->assertSame('', node_cpu_model('not xml', ''));
     }
+
+    public function testMemoryUsedPrefersGuestStatistics(): void
+    {
+        $c = ['mem_rss' => 1000, 'mem_total' => 2048, 'mem_avail' => 1900, 'mem_usable' => 1500];
+        $this->assertSame([400, 1900, 'guest'], stats_memory_used($c));
+        // no balloon statistics from the guest: QEMU resident memory, at most the assigned memory
+        $c = ['mem_rss' => 3000, 'mem_total' => 2048, 'mem_avail' => 0, 'mem_usable' => 0];
+        $this->assertSame([2048, 2048, 'host'], stats_memory_used($c));
+    }
+
+    public function testCountersIncludeGuestMemory(): void
+    {
+        $c = stats_counters(['balloon.available' => '991168', 'balloon.usable' => '792944']);
+        $this->assertSame(991168, $c['mem_avail']);
+        $this->assertSame(792944, $c['mem_usable']);
+        $this->assertSame(0, stats_counters([])['mem_avail']);
+    }
 }

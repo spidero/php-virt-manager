@@ -21,4 +21,19 @@ foreach (domain_list($con) as $d) {
 }
 $smarty->assign('state_counts', $state_counts);
 
+// machine table: texts and percentages for the first render, panel.js updates CPU and memory
+$pct = fn($part, $whole) => $whole > 0 ? (int)min(100, round($part / $whole * 100)) : 0;
+$vms = [];
+foreach (domain_overview($con) as $vm) {
+    $vm['mem_pct'] = $pct($vm['mem_used'], $vm['mem_total']);
+    $vm['mem_text'] = $vm['active'] && $vm['mem_source'] !== ''
+        ? t('%s of %s', format_bytes($vm['mem_used']), format_bytes($vm['mem_total']))
+        : format_bytes($vm['mem_total']);
+    $vm['disk_pct'] = $pct($vm['disk_alloc'], $vm['disk_cap']);
+    $vm['disk_text'] = $vm['disk_cap'] > 0 ? t('%s of %s', format_bytes($vm['disk_alloc']), format_bytes($vm['disk_cap'])) : '';
+    $vms[] = $vm;
+}
+$smarty->assign('vms', $vms);
+$smarty->assign('mem_titles', ['guest' => t('used by the guest system (without cache)'), 'host' => t('memory of the QEMU process on the host')]);
+
 $smarty->display('index.tpl');

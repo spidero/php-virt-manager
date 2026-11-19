@@ -12,6 +12,13 @@ foreach (domain_list($con) as $d) {
 }
 
 $result = ['time' => microtime(true), 'domains' => $domains];
+// counters of all machines for the machine table of the hypervisor page
+if (!empty($_GET['all'])) {
+    $result['vms'] = [];
+    foreach ($stats as $name => $raw) {
+        $result['vms'][$name] = stats_counters($raw);
+    }
+}
 $node = (string)($_GET['node'] ?? '');
 if ($node !== '' && isset($stats[$node])) {
     $result['node'] = stats_counters($stats[$node]);

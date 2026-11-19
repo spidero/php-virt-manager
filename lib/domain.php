@@ -42,6 +42,48 @@ function domain_list($con) {
     return $list;
 }
 
+// machines for the hypervisor page: state, vCPUs, memory, guest IPs and disk use
+function domain_overview($con) {
+    $stats = @libvirt_connect_get_all_domain_stats($con, 0, 0) ?: [];
+    $rows = [];
+    foreach (domain_list($con) as $d) {
+        $res = libvirt_domain_lookup_by_name($con, $d['name']);
+        if (!$res) {
+            continue;
+        }
+        $info = libvirt_domain_get_info($res);
+        $xml = domain_xml($res);
+        $active = in_array((int)$d['id'], [1, 2, 3], true);
+        $addresses = [];
+        foreach ($xml ? domain_interfaces($res, $xml, $active) : [] as $iface) {
+            $addresses = array_merge($addresses, $iface['addresses']);
+        }
+        $capacity = $allocation = 0;
+        foreach ($xml ? $xml->devices->disk : [] as $disk) {
+            if ((string)$disk['device'] === 'disk') {
+                $block = @libvirt_domain_get_block_info($res, (string)$disk->target['dev']);
+                if (is_array($block)) {
+                    $capacity += (int)$block['capacity'];
+                    $allocation += (int)$block['allocation'];
+                }
+            }
+        }
+        $counters = isset($stats[$d['name']]) ? stats_counters($stats[$d['name']]) : null;
+        [$mem_used, $mem_total, $mem_source] = $active && $counters ? stats_memory_used($counters) : [0, (int)$info['memory'], ''];
+        $rows[] = $d + [
+            'active'     => $active,
+            'vcpus'      => (int)$info['nrVirtCpu'],
+            'mem_used'   => $mem_used * 1024,
+            'mem_total'  => $mem_total * 1024,
+            'mem_source' => $mem_source,
+            'addresses'  => $addresses,
+            'disk_alloc' => $allocation,
+            'disk_cap'   => $capacity,
+        ];
+    }
+    return $rows;
+}
+
 function domain_xml($res, $inactive = false) {
     $xml = libvirt_domain_get_xml_desc($res, null, $inactive ? VIR_DOMAIN_XML_INACTIVE : 0);
     return simplexml_load_string((string)$xml) ?: null;
