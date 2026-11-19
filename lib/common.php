@@ -102,3 +102,41 @@ function system_timezone() {
     }
     return date_default_timezone_get();
 }
+
+const APP_REPO_URL = 'https://github.com/spidero/php-virt-manager';
+
+// version of the panel: the VERSION file ("<version> <revision>", written by the Docker
+// build and deploy/install.sh), otherwise the commit of a git checkout, otherwise "dev"
+function app_version($root = null) {
+    static $cache = [];
+    $root = $root ?? dirname(__DIR__);
+    if (isset($cache[$root])) {
+        return $cache[$root];
+    }
+    $version = 'dev';
+    $revision = '';
+    $file = @file_get_contents($root.'/VERSION');
+    if ($file !== false && preg_match('/^(\S+)(?:\s+([0-9a-f]{7,40}|unknown))?/', trim($file), $m)) {
+        $version = $m[1];
+        $revision = ($m[2] ?? '') === 'unknown' ? '' : ($m[2] ?? '');
+    }
+    elseif (is_file($root.'/.git/HEAD')) {
+        // read the commit without running git
+        $head = trim((string)@file_get_contents($root.'/.git/HEAD'));
+        if (preg_match('/^ref: (refs\/\S+)$/', $head, $m)) {
+            $ref = @file_get_contents($root.'/.git/'.$m[1]);
+            if ($ref === false && preg_match('/^([0-9a-f]{40}) '.preg_quote($m[1], '/').'$/m', (string)@file_get_contents($root.'/.git/packed-refs'), $p)) {
+                $ref = $p[1];
+            }
+            $head = trim((string)$ref);
+        }
+        $revision = preg_match('/^[0-9a-f]{40}$/', $head) ? $head : '';
+    }
+    $release = preg_match('/^\d+\.\d+\.\d+$/', $version) === 1;
+    return $cache[$root] = [
+        'version'      => $version,
+        'revision'     => substr($revision, 0, 7),
+        'version_url'  => $release ? APP_REPO_URL.'/releases/tag/v'.$version : APP_REPO_URL,
+        'revision_url' => $revision !== '' ? APP_REPO_URL.'/commit/'.$revision : '',
+    ];
+}

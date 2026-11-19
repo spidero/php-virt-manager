@@ -119,4 +119,27 @@ final class MiscTest extends TestCase
         }
         $this->assertNotContains('disk', STORAGE_BUILD_TYPES, 'a whole disk is never built (partition table)');
     }
+
+    public function testAppVersion(): void
+    {
+        $dir = sys_get_temp_dir().'/pvm-version-'.getmypid();
+        @mkdir($dir.'/a/.git/refs/heads', 0777, true);
+        @mkdir($dir.'/b', 0777, true);
+        @mkdir($dir.'/c', 0777, true);
+        // release in the VERSION file (Docker image, install.sh)
+        file_put_contents($dir.'/b/VERSION', "2.0.0 126c6935f1a2b3c4d5e6f708192a3b4c5d6e7f80\n");
+        $v = app_version($dir.'/b');
+        $this->assertSame(['2.0.0', '126c693'], [$v['version'], $v['revision']]);
+        $this->assertStringEndsWith('/releases/tag/v2.0.0', $v['version_url']);
+        $this->assertStringEndsWith('/commit/126c6935f1a2b3c4d5e6f708192a3b4c5d6e7f80', $v['revision_url']);
+        // a git checkout without VERSION: the commit from .git
+        file_put_contents($dir.'/a/.git/HEAD', "ref: refs/heads/master\n");
+        file_put_contents($dir.'/a/.git/refs/heads/master', "abcdef0123456789abcdef0123456789abcdef01\n");
+        $this->assertSame(['dev', 'abcdef0'], [app_version($dir.'/a')['version'], app_version($dir.'/a')['revision']]);
+        // a local Docker build: no revision, link to the project
+        file_put_contents($dir.'/c/VERSION', "dev unknown\n");
+        $c = app_version($dir.'/c');
+        $this->assertSame(['dev', '', APP_REPO_URL], [$c['version'], $c['revision'], $c['version_url']]);
+        exec('rm -rf '.escapeshellarg($dir));
+    }
 }

@@ -50,6 +50,10 @@ rsync -a --delete \
     --exclude .git --exclude .github --exclude vendor --exclude templates_c --exclude cache \
     --exclude configs --exclude data --exclude /assets/css --exclude tests --exclude config.php --exclude '*.md' --exclude docs \
     --include README.md "$SRC_DIR/" "$APP_DIR/"
+# version shown in the panel footer: git describe of the checkout (e.g. 2.0.0 or 2.0.0-3-gabc1234)
+if git -C "$SRC_DIR" rev-parse HEAD >/dev/null 2>&1; then
+    printf '%s %s\n' "$(git -C "$SRC_DIR" describe --tags --always | sed 's/^v//')" "$(git -C "$SRC_DIR" rev-parse HEAD)" > "$APP_DIR/VERSION"
+fi
 (cd "$APP_DIR" && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-progress -q)
 mkdir -p "$APP_DIR/templates_c" "$APP_DIR/cache" "$APP_DIR/configs" "$APP_DIR/data/tokens"
 chown -R root:root "$APP_DIR"
