@@ -151,7 +151,8 @@
           var bar = el.firstElementChild;
           var known = job.progress !== null;
           bar.style.width = (known ? job.progress : 100) + '%';
-          bar.textContent = known ? job.progress + '%' : '';
+          // queued: translated label from the template (data-queued-text)
+          bar.textContent = known ? job.progress + '%' : (job.status === 'queued' ? el.getAttribute('data-queued-text') : '');
           bar.classList.toggle('bg-secondary', job.status === 'queued');
           var msg = document.querySelector('[data-job-message="' + id + '"]');
           if (msg) msg.textContent = job.message;
