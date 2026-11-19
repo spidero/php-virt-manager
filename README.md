@@ -222,7 +222,7 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 
 ## Requirements (without Docker)
 
-- PHP >= 8.2 with the libvirt and SQLite extensions (Debian/Ubuntu:
+- PHP >= 8.4 with the libvirt and SQLite extensions (Debian/Ubuntu:
   `php-libvirt-php`, `php-sqlite3`)
 - composer
 - access to the libvirt socket (the PHP user must be in the `libvirt` group)

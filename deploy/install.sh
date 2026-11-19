@@ -19,6 +19,9 @@ echo "== packages"
 apt-get update -q
 apt-get install -y -q php-cli
 PHP_VERSION=${PHP_VERSION:-$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')}
+# the panel needs PHP 8.4 or newer (e.g. Ubuntu 26.04, Debian 14)
+php -r 'exit(version_compare($argv[1], "8.4", ">=") ? 0 : 1);' "$PHP_VERSION" \
+    || { echo "PHP $PHP_VERSION is too old, php-virt-manager needs PHP 8.4 or newer." >&2; exit 1; }
 # php-libvirt-php ships only the ini file, the module is in php<version>-libvirt-php
 apt-get install -y -q nginx "php$PHP_VERSION-fpm" php-xml php-mbstring php-sqlite3 php-curl \
     php-libvirt-php "php$PHP_VERSION-libvirt-php" libvirt-clients xorriso composer novnc websockify rsync openssl

@@ -16,7 +16,7 @@ steps to reproduce.
 
 ## Development setup
 
-Requirements: PHP 8.2+ with the libvirt, SQLite and curl extensions, composer,
+Requirements: PHP 8.4+ with the libvirt, SQLite and curl extensions, composer,
 a local libvirt (`qemu:///system`) and a user in the `libvirt` group.
 
 ```sh
