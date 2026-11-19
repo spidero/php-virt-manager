@@ -65,6 +65,9 @@ if [ -n "${PVM_PASSWORD:-}${PVM_PASSWORD_HASH:-}" ]; then
     mkdir -p "$APP_DIR/data"
     chown www-data:www-data "$APP_DIR/data"
     su -s /bin/sh www-data -c "php $APP_DIR/bin/set-password.php"
+    echo "NOTE: PVM_PASSWORD/PVM_PASSWORD_HASH is applied on every start - a password of" \
+         "'$PVM_USER' changed in the panel is overwritten by the next restart." \
+         "Remove the variable to manage the password in the panel." >&2
 fi
 
 # self-signed certificate unless one is mounted
