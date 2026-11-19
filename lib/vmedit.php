@@ -131,9 +131,10 @@ function vm_cdrom_device_xml($iso_path, $target) {
         ."<target dev='".xml_escape($target)."' bus='sata'/><readonly/></disk>";
 }
 
-function vm_nic_device_xml($network, $model = 'virtio') {
-    return "<interface type='network'><source network='".xml_escape($network)."'/>"
-        ."<model type='".xml_escape($model)."'/></interface>";
+// $target: libvirt network name or "network:/bridge:/direct:<name>" (see nic_target_parse())
+function vm_nic_device_xml($target, $model = 'virtio') {
+    [$type, $source] = nic_target_xml_parts($target);
+    return "<interface type='".$type."'>".$source."<model type='".xml_escape($model)."'/></interface>";
 }
 
 function vm_xml_add_device($xml, $device_xml) {
@@ -327,6 +328,7 @@ function vm_nic_devices($xml) {
         $list[strtolower($mac->nodeValue)] = [
             'type'   => $iface->getAttribute('type'),
             'source' => $source ? $source->nodeValue : '',
+            'target' => $iface->getAttribute('type').':'.($source ? $source->nodeValue : ''),
             'model'  => $model ? $model->nodeValue : '',
             'xml'    => (string)$doc->saveXML($iface),
         ];
@@ -358,17 +360,17 @@ function vm_xml_remove_nic($xml, $mac) {
 
 const NIC_MODELS = ['virtio' => 'virtio', 'e1000e' => 'Intel e1000e', 'e1000' => 'Intel e1000', 'rtl8139' => 'Realtek rtl8139'];
 
-// interface XML connected to another libvirt network and/or with another model
-function vm_nic_xml_change($nic_xml, $network, $model) {
+// interface XML connected elsewhere (libvirt network name or a target, see
+// nic_target_parse()) and/or with another model
+function vm_nic_xml_change($nic_xml, $target, $model) {
     $doc = vm_dom($nic_xml);
     $iface = $doc->documentElement;
-    $iface->setAttribute('type', 'network');
+    [$type, $source_xml] = nic_target_xml_parts($target);
+    $iface->setAttribute('type', $type);
     foreach (iterator_to_array($iface->getElementsByTagName('source')) as $old) {
         $iface->removeChild($old);
     }
-    $source = $doc->createElement('source');
-    $source->setAttribute('network', $network);
-    $iface->insertBefore($source, $iface->firstChild);
+    $iface->insertBefore(vm_element($doc, $source_xml), $iface->firstChild);
     $model_el = $iface->getElementsByTagName('model')->item(0);
     if (!$model_el) {
         $model_el = $doc->createElement('model');

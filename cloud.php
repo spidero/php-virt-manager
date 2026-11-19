@@ -5,7 +5,7 @@ require_permission('operate');
 
 $catalog = cloud_catalog();
 $pools = storage_active_pools($con);
-$networks = libvirt_list_networks($con) ?: [];
+$networks = nic_targets_for($con, $connection);
 $node_info = libvirt_node_get_info($con);
 $max_memory_mb = (int)floor($node_info['memory'] / 1024);
 $max_vcpus = (int)$node_info['cpus'];
@@ -13,7 +13,7 @@ $max_vcpus = (int)$node_info['cpus'];
 $saved_keys = ssh_key_list(current_user()['id']);
 $form = [
     'image' => '', 'name' => '', 'memory' => 2048, 'vcpus' => min(2, $max_vcpus), 'disk' => 20,
-    'pool' => array_key_first($pools) ?? '', 'network' => in_array('default', $networks, true) ? 'default' : ($networks[0] ?? ''),
+    'pool' => array_key_first($pools) ?? '', 'network' => nic_target_default($networks),
     'user' => 'admin', 'ssh_keys' => '', 'ssh_key_ids' => array_column($saved_keys, 'id'), 'start' => 1,
 ];
 $errors = [];

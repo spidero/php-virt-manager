@@ -25,7 +25,8 @@ $max_memory_mb = (int)floor($node_info['memory'] / 1024);
 $max_vcpus = (int)$node_info['cpus'];
 $isos = storage_iso_list($con);
 $pools = storage_active_pools($con);
-$networks = libvirt_list_networks($con) ?: [];
+// interface targets: libvirt networks, host bridges, direct (macvtap) interfaces
+$networks = nic_targets_for($con, $connection);
 
 // attaches a device: live and persistent for a running machine (falling back to
 // the persistent definition only, e.g. when q35 has no free PCIe port), otherwise
@@ -151,8 +152,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = t('Disk %s (%d GB) added.', $target, $size).$note;
         }
         elseif ($action === 'add_nic') {
-            $network = (string)($_POST['network'] ?? '');
-            if (!in_array($network, $networks, true)) {
+            $network = nic_target_normalize((string)($_POST['network'] ?? ''));
+            if (!nic_target_valid($network, $networks)) {
                 throw new RuntimeException(t('Select a network.'));
             }
             $note = attach_device($con, $res, $xml, $active, vm_nic_device_xml($network));
@@ -246,13 +247,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         elseif ($action === 'nic_change') {
             $mac = strtolower((string)($_POST['mac'] ?? ''));
-            $network = (string)($_POST['network'] ?? '');
+            $network = nic_target_normalize((string)($_POST['network'] ?? ''));
             $model = (string)($_POST['model'] ?? '');
             $nics = vm_nic_devices($xml);
             if (!isset($nics[$mac])) {
                 throw new RuntimeException(t('Unknown network interface.'));
             }
-            if (!in_array($network, $networks, true)) {
+            if (!nic_target_valid($network, $networks)) {
                 throw new RuntimeException(t('Select a network.'));
             }
             if (!isset(NIC_MODELS[$model])) {
@@ -260,12 +261,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $new_nic = vm_nic_xml_change($nics[$mac]['xml'], $network, $model);
             $model_changed = $model !== $nics[$mac]['model'];
-            if ($active && !$model_changed) {
-                // network switch of the running machine (link stays, new network at once)
-                if (!libvirt_domain_update_device($res, $new_nic, AFFECT_LIVE_CONFIG)) {
-                    throw new RuntimeException(t('Error: %s', libvirt_get_last_error()));
-                }
-                $message = t('Network interface %s connected to %s.', $mac, $network);
+            if ($active && !$model_changed && libvirt_domain_update_device($res, $new_nic, AFFECT_LIVE_CONFIG)) {
+                // switched in the running machine (the link stays, the new connection at once)
+                $message = t('Network interface %s connected to %s.', $mac, nic_target_parse($network)[1]);
+            }
+            elseif ($active && !$model_changed) {
+                // some changes (e.g. network -> macvtap) cannot be made live: the definition only
+                define_or_fail($con, vm_xml_replace_nic($xml, $mac, $new_nic));
+                $message = t('Network interface %s saved.', $mac).$after_restart;
             }
             else {
                 define_or_fail($con, vm_xml_replace_nic($xml, $mac, $new_nic));

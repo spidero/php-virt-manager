@@ -53,4 +53,40 @@ final class NetworksTest extends TestCase
         $this->assertSame('10.0.0.0/16', network_ipv4(simplexml_load_string("<network><ip address='10.0.0.1' prefix='16'/></network>"))['cidr']);
         $this->assertNull(network_ipv4(simplexml_load_string('<network><name>none</name></network>')));
     }
+
+    public function testNicTargets(): void
+    {
+        $this->assertSame(['network', 'default'], nic_target_parse('default'));
+        $this->assertSame(['bridge', 'br0'], nic_target_parse('bridge:br0'));
+        $this->assertSame('network:lab', nic_target_normalize('lab'));
+
+        // fake /sys/class/net: a bridge, a Docker bridge, a NIC, a bridge port, loopback
+        $sys = sys_get_temp_dir().'/pvm-sys-'.getmypid();
+        foreach (['br0/bridge', 'docker0/bridge', 'br-0123456789ab/bridge', 'eno1/device', 'eno2/device', 'eno2/brport', 'lo'] as $dir) {
+            @mkdir($sys.'/'.$dir, 0777, true);
+        }
+        $host = nic_host_interfaces('qemu:///system', $sys);
+        $this->assertSame(['bridge' => ['br0'], 'direct' => ['eno1']], $host);
+        $this->assertSame(['bridge' => [], 'direct' => []], nic_host_interfaces('qemu+ssh://other/system', $sys), 'remote: none');
+        exec('rm -rf '.escapeshellarg($sys));
+
+        $targets = nic_targets(['default'], $host);
+        $this->assertSame(['network:default', 'bridge:br0', 'direct:eno1'], array_keys($targets));
+        $this->assertTrue(nic_target_valid('default', $targets));
+        $this->assertTrue(nic_target_valid('direct:eno1', $targets));
+        $this->assertFalse(nic_target_valid('bridge:docker0', $targets));
+        $this->assertSame('network:default', nic_target_default($targets));
+
+        $bridge = simplexml_load_string(vm_nic_device_xml('bridge:br0'));
+        $this->assertSame(['bridge', 'br0'], [(string)$bridge['type'], (string)$bridge->source['bridge']]);
+        $direct = simplexml_load_string(vm_nic_device_xml('direct:eno1', 'e1000e'));
+        $this->assertSame(['direct', 'eno1', 'bridge', 'e1000e'], [(string)$direct['type'], (string)$direct->source['dev'], (string)$direct->source['mode'], (string)$direct->model['type']]);
+        $this->assertSame('default', (string)simplexml_load_string(vm_nic_device_xml('default'))->source['network']);
+
+        // switching a network interface to a bridge replaces the source
+        $nic = "<interface type='network'><mac address='52:54:00:00:00:01'/><source network='default'/><model type='virtio'/></interface>";
+        $changed = simplexml_load_string(vm_nic_xml_change($nic, 'bridge:br0', 'virtio'));
+        $this->assertSame(['bridge', 'br0', ''], [(string)$changed['type'], (string)$changed->source['bridge'], (string)$changed->source['network']]);
+        $this->assertSame('bridge:br0', vm_nic_devices("<domain><devices>".vm_nic_xml_change($nic, 'bridge:br0', 'virtio')."</devices></domain>")['52:54:00:00:00:01']['target']);
+    }
 }

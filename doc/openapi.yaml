@@ -511,7 +511,7 @@ components:
         vcpus: {type: integer, minimum: 1, default: 1}
         disk: {type: integer, minimum: 3, maximum: 4096, default: 20, description: 'GB'}
         pool: {type: string, description: 'default - first active pool'}
-        network: {type: string, default: default}
+        network: {type: string, default: default, description: 'libvirt network, or bridge:<host bridge> / direct:<host interface> (macvtap)'}
         user: {type: string, pattern: '^[a-z_][a-z0-9_-]{0,31}$', default: admin}
         ssh_keys:
           oneOf:

@@ -63,16 +63,19 @@
       <tr>
         <td><code>{$mac}</code></td>
         <td>
-{if $n.type == 'network'}
+{if $n.type == 'network' || $n.type == 'bridge' || $n.type == 'direct'}
           <form method="post" action="edit.php" class="d-flex gap-1 flex-wrap">
             <input type="hidden" name="csrf" value="{$csrf_token}">
             <input type="hidden" name="node" value="{$node}">
             <input type="hidden" name="action" value="nic_change">
             <input type="hidden" name="mac" value="{$mac}">
             <select name="network" class="form-select form-select-sm w-auto" aria-label="{'Network'|t}">
-{foreach $networks as $net}
-              <option value="{$net}"{if $net==$n.source} selected{/if}>{$net}</option>
+{foreach $networks as $target => $label}
+              <option value="{$target}"{if $target==$n.target} selected{/if}>{$label}</option>
 {/foreach}
+{if !isset($networks[$n.target])}
+              <option value="" selected disabled>{$n.type}: {$n.source}</option>
+{/if}
             </select>
             <select name="model" class="form-select form-select-sm w-auto" aria-label="{'Model'|t}">
 {foreach $nic_models as $m => $label}
@@ -255,8 +258,8 @@
           <div class="mb-3">
             <label class="form-label" for="network">{'Network'|t}</label>
             <select class="form-select" id="network" name="network">
-{foreach $networks as $n}
-              <option value="{$n}">{$n}</option>
+{foreach $networks as $target => $label}
+              <option value="{$target}">{$label}</option>
 {/foreach}
             </select>
           </div>

@@ -101,3 +101,88 @@ function network_machine_macs($con, $network) {
     }
     return $macs;
 }
+
+// where a network interface is connected: "network:<libvirt network>",
+// "bridge:<host bridge>" or "direct:<host interface>" (macvtap, bridge mode)
+const NIC_IFACE_PATTERN = '/^[A-Za-z0-9_.:-]{1,15}$/';
+
+// [type, name] of a target; a plain name is a libvirt network (older forms and API)
+function nic_target_parse($target) {
+    $target = (string)$target;
+    if (preg_match('/^(network|bridge|direct):(.+)$/', $target, $m)) {
+        return [$m[1], $m[2]];
+    }
+    return ['network', $target];
+}
+
+// host bridges and physical interfaces for the target lists; only for a local
+// connection (the panel sees its own host's /sys/class/net); Docker bridges are left out
+function nic_host_interfaces($uri, $sys = '/sys/class/net') {
+    $list = ['bridge' => [], 'direct' => []];
+    if (!connection_is_local($uri)) {
+        return $list;
+    }
+    foreach (glob($sys.'/*') ?: [] as $path) {
+        $name = basename($path);
+        if (!preg_match(NIC_IFACE_PATTERN, $name) || $name === 'docker0' || preg_match('/^br-[0-9a-f]{12}$/', $name)) {
+            continue;
+        }
+        if (is_dir($path.'/bridge')) {
+            $list['bridge'][] = $name;
+        }
+        elseif (file_exists($path.'/device') && !is_dir($path.'/brport')) {
+            $list['direct'][] = $name;
+        }
+    }
+    sort($list['bridge']);
+    sort($list['direct']);
+    return $list;
+}
+
+// choices for interface selects: target => label
+function nic_targets(array $networks, array $host) {
+    $targets = [];
+    foreach ($networks as $net) {
+        $targets['network:'.$net] = $net;
+    }
+    foreach ($host['bridge'] as $bridge) {
+        $targets['bridge:'.$bridge] = $bridge.' ('.t('host bridge').')';
+    }
+    foreach ($host['direct'] as $dev) {
+        $targets['direct:'.$dev] = $dev.' ('.t('direct, macvtap').')';
+    }
+    return $targets;
+}
+
+// true when the target exists in the given choices (a plain network name counts as network:<name>)
+function nic_target_valid($target, array $targets) {
+    [$type, $name] = nic_target_parse($target);
+    return isset($targets[$type.':'.$name]);
+}
+
+// <source>/<interface type> for a target
+function nic_target_xml_parts($target) {
+    [$type, $name] = nic_target_parse($target);
+    $name = xml_escape($name);
+    return match ($type) {
+        'bridge' => ['bridge', "<source bridge='".$name."'/>"],
+        'direct' => ['direct', "<source dev='".$name."' mode='bridge'/>"],
+        default  => ['network', "<source network='".$name."'/>"],
+    };
+}
+
+// "default" -> "network:default"; prefixed targets stay
+function nic_target_normalize($target) {
+    [$type, $name] = nic_target_parse($target);
+    return $type.':'.$name;
+}
+
+// targets of a connection: libvirt networks, host bridges and interfaces (local only)
+function nic_targets_for($con, $uri) {
+    return nic_targets(libvirt_list_networks($con) ?: [], nic_host_interfaces($uri));
+}
+
+// default target of the wizards: the "default" network, else the first choice
+function nic_target_default(array $targets) {
+    return isset($targets['network:default']) ? 'network:default' : (string)(array_key_first($targets) ?? '');
+}

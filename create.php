@@ -24,7 +24,7 @@ foreach (libvirt_list_storagepools($con) ?: [] as $pool_name) {
         }
     }
 }
-$networks = libvirt_list_networks($con) ?: [];
+$networks = nic_targets_for($con, $connection);
 
 $form = [
     'name'    => '',
@@ -33,7 +33,7 @@ $form = [
     'disk'    => 20,
     'pool'    => array_key_first($pools) ?? '',
     'iso'     => '',
-    'network' => in_array('default', $networks, true) ? 'default' : ($networks[0] ?? ''),
+    'network' => nic_target_default($networks),
     'firmware' => 'bios',
     'tpm'     => 0,
     'start'   => 1,
@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'disk'    => (int)($_POST['disk'] ?? 0),
         'pool'    => (string)($_POST['pool'] ?? ''),
         'iso'     => (string)($_POST['iso'] ?? ''),
-        'network' => (string)($_POST['network'] ?? ''),
+        'network' => nic_target_normalize((string)($_POST['network'] ?? '')),
         'firmware' => (string)($_POST['firmware'] ?? 'bios'),
         'tpm'     => empty($_POST['tpm']) ? 0 : 1,
         'start'   => empty($_POST['start']) ? 0 : 1,
@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($form['iso'] !== '' && !isset($isos[$form['iso']])) {
         $errors[] = t('Unknown ISO image.');
     }
-    if (!in_array($form['network'], $networks, true)) {
+    if (!nic_target_valid($form['network'], $networks)) {
         $errors[] = t('Select a network.');
     }
     if (!isset(DOMAIN_FIRMWARES[$form['firmware']])) {

@@ -301,7 +301,7 @@ function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $netwo
         ."<disk type='file' device='disk'><driver name='qemu' type='qcow2' discard='unmap'/>"
         ."<source file='".xml_escape($disk_path)."'/><target dev='vda' bus='virtio'/></disk>"
         .$iso
-        ."<interface type='network'><source network='".xml_escape($network)."'/><model type='virtio'/></interface>"
+        .vm_nic_device_xml($network)
         .vnc_graphics_xml()
         ."<video><model type='virtio'/></video>"
         ."<input type='tablet' bus='usb'/>"

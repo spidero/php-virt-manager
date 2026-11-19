@@ -189,6 +189,10 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 - disks: add, grow (also while running), detach (optionally deleting the
   file); network interfaces: add, switch network (live) or model, detach -
   devices are hot-plugged into running machines
+- network interfaces connect to a libvirt network, a host bridge (machine in
+  the LAN) or directly to a host interface (macvtap) - in both wizards and
+  on the edit page; host bridges and interfaces are listed for local
+  connections
 - XML definition editor for administrators (checked against the libvirt
   schema)
 - host device passthrough for administrators: USB (by vendor and product,

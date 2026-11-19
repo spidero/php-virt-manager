@@ -328,7 +328,7 @@ as a background job.
 | `vcpus` | no | 1 | up to the host CPU count |
 | `disk` | no | 20 | GB, 3-4096; the image is grown to this size |
 | `pool` | no | first active pool | storage pool for the disk |
-| `network` | no | `default` | libvirt network |
+| `network` | no | `default` | libvirt network, or `bridge:<host bridge>` / `direct:<host interface>` (macvtap) |
 | `user` | no | `admin` | user created in the guest, gets sudo without a password |
 | `ssh_keys` | a key or `password` | | list of public keys (or a string with one key per line) |
 | `ssh_key_ids` | a key or `password` | | ids of your saved keys from `GET /ssh-keys`; combined with `ssh_keys` |

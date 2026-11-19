@@ -48,8 +48,8 @@
       <div class="mb-3">
         <label class="form-label" for="network">{'Network'|t}</label>
         <select class="form-select" id="network" name="network">
-{foreach $networks as $n}
-          <option value="{$n}"{if $form.network==$n} selected{/if}>{$n}</option>
+{foreach $networks as $target => $label}
+          <option value="{$target}"{if $form.network==$target} selected{/if}>{$label}</option>
 {/foreach}
         </select>
       </div>

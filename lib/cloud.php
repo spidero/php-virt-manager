@@ -38,7 +38,7 @@ function cloud_create_request($con, array $input) {
     $max_vcpus = (int)$node_info['cpus'];
     $downloaded = cloud_downloaded($con);
     $pools = storage_active_pools($con);
-    $networks = libvirt_list_networks($con) ?: [];
+    $networks = nic_targets_for($con, $GLOBALS['connection'] ?? 'qemu:///system');
 
     $form = [
         'image'    => (string)($input['image'] ?? ''),
@@ -47,7 +47,7 @@ function cloud_create_request($con, array $input) {
         'vcpus'    => (int)($input['vcpus'] ?? 1),
         'disk'     => (int)($input['disk'] ?? 20),
         'pool'     => (string)($input['pool'] ?? (array_key_first($pools) ?? '')),
-        'network'  => (string)($input['network'] ?? 'default'),
+        'network'  => nic_target_normalize((string)($input['network'] ?? 'default')),
         'user'     => trim((string)($input['user'] ?? 'admin')),
         'ssh_keys' => is_array($input['ssh_keys'] ?? null) ? implode("\n", $input['ssh_keys']) : (string)($input['ssh_keys'] ?? ''),
         // saved keys of the current user (profile), selected by id
@@ -82,7 +82,7 @@ function cloud_create_request($con, array $input) {
     if (!isset($pools[$form['pool']])) {
         $errors[] = t('Select an active storage pool.');
     }
-    if (!in_array($form['network'], $networks, true)) {
+    if (!nic_target_valid($form['network'], $networks)) {
         $errors[] = t('Select a network.');
     }
     if (!preg_match(CLOUD_USER_PATTERN, $form['user'])) {
