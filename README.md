@@ -5,11 +5,13 @@
 
 Web panel for libvirt/KVM written in PHP (Smarty 5, Bootstrap 5).
 
-Manage virtual machines from the browser: live charts, snapshots with
-schedules, a noVNC console, machines from cloud images with cloud-init,
-cloning, users with roles, a REST API - deployable with one script on nginx
-or as a Docker container (`ghcr.io/spidero/php-virt-manager`). Interface in English, German, Norwegian, Polish,
-Spanish and Ukrainian.
+Manage virtual machines from the browser: a dashboard with live charts,
+graphical and text consoles, machines from cloud images with cloud-init or
+from ISO (BIOS/UEFI, Secure Boot, TPM), live device changes, snapshots with
+schedules, networks and storage pools, host device passthrough, users with
+roles and a REST API - deployable with one script on nginx or as a Docker
+container (`ghcr.io/spidero/php-virt-manager`). Interface in English, German,
+Norwegian, Polish, Spanish and Ukrainian.
 
 ![Machine details](.github/screenshots/vm-details.png)
 
@@ -22,6 +24,9 @@ the KVM host itself and manages that host's libvirt.
 
 **Host requirements:** Linux with KVM and libvirt running (`libvirtd` or
 `virtqemud`, socket in `/var/run/libvirt`), Docker with the Compose plugin.
+Optional, on the host: `ovmf` for UEFI machines, `swtpm` for the emulated TPM,
+the NFS client (`nfs-common`) for NFS storage pools, IOMMU (VT-d/AMD-Vi) for
+PCI passthrough.
 
 **Access to libvirt (required, once):** the panel runs as uid 33 (`www-data`)
 and libvirt checks access with polkit, which allows members of the `libvirt`
@@ -92,7 +97,8 @@ variables and opened directly on the host:
 |--------------|---------|-------------------|---------------------------------------|
 | `HTTPS_PORT` | `9443`  | all interfaces    | the panel (open it in the firewall)   |
 | `HTTP_PORT`  | `9080`  | all interfaces    | redirects to HTTPS                    |
-| `WS_PORT`    | `6081`  | `127.0.0.1` only  | websockify for the noVNC console (nginx proxies it, do not expose) |
+| `WS_PORT`    | `6081`  | `127.0.0.1` only  | websockify for the consoles (nginx proxies it, do not expose) |
+| -            | `7100-7999` | `127.0.0.1` only | text consoles of the machines (one port per machine, opened by QEMU) |
 
 Choose ports that are free on the host (`ss -tlnp`).
 
@@ -154,56 +160,74 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
   port is free and allowed in the firewall.
 - the console does not connect - the machine needs a VNC graphics device; the
   container must run with `--network host`.
+- the text console stays empty - press Enter for a login prompt; only one
+  client can be connected at a time; the guest needs a console on `ttyS0`.
+- a machine from a Debian 12 cloud image comes up as `localhost` without a
+  network - it was created before the cloud-init CD-ROM moved to virtio-scsi
+  (the Debian 12 cloud kernel has no SATA driver); create it again.
+- a snapshot of a running UEFI machine fails - libvirt supports internal
+  snapshots of UEFI machines only when they are shut off.
 
 ## Features
 
-- hypervisor overview with live charts of host CPU and memory, machine list
-  with state indicators refreshed live
-- live charts per machine: CPU, memory, disk and network throughput
-- machine details: memory, vCPUs, disks, network interfaces with guest IPs,
-  autostart, live screen preview
+**Overview**
+
+- dashboard: machine table with state, guest IPs and live CPU, memory and
+  disk use; live charts of host CPU and memory; host details (CPU model,
+  memory)
+- starred machines in the menu, a machine page with live charts (CPU,
+  memory, disk and network throughput), disks, interfaces and screen preview
+- light/dark theme (system preference or the icon in the menu), interface in
+  English, German, Norwegian (bokmål), Polish, Spanish and Ukrainian
+
+**Machines**
+
 - power actions: start, shutdown, reboot, pause/resume, force stop, hard
-  reset, save state to disk (restored by the next start); rename machines
-- machine editing: maximum and current memory (balloon, changed live), CPU
-  topology (sockets, cores, threads) and model (host-passthrough/host-model),
-  CD/DVD medium, boot order; disks: add,
-  grow (also while running), detach (optionally deleting the file);
-  network interfaces: add, switch network (live) or model, detach - devices
-  are hot-plugged into running machines
-- host device passthrough for administrators: USB devices (by vendor and
-  product, also live) and PCI devices (next start, needs IOMMU); hubs and PCI
-  bridges are not offered, the host driver of each device is shown
+  reset, save state to disk (restored by the next start)
+- editing: maximum and current memory (balloon, changed live), CPU topology
+  (sockets, cores, threads) and model, CD/DVD medium, boot order, rename
+- disks: add, grow (also while running), detach (optionally deleting the
+  file); network interfaces: add, switch network (live) or model, detach -
+  devices are hot-plugged into running machines
+- XML definition editor for administrators (checked against the libvirt
+  schema)
+- host device passthrough for administrators: USB (by vendor and product,
+  also live) and PCI devices (next start, needs IOMMU)
 - cloning (disks copied in the background) and deleting machines with a
   choice of disks; disks used by other machines are protected
 - snapshots: create, revert, delete; automatic snapshots hourly, daily or
   weekly with retention (keep the newest N)
-- browser console (noVNC via websockify) with key combinations
-  (Ctrl+Alt+Del, Ctrl+Alt+F1...), text (serial) console in the browser,
-  SPICE to VNC graphics switch
-- new machine wizard (qcow2 disk in any active pool, ISO from any pool, network,
-  BIOS or UEFI with optional Secure Boot, emulated TPM 2.0 - e.g. for Windows 11)
-- machines from cloud images with cloud-init: Ubuntu 26.04/24.04, Debian 13/12,
-  AlmaLinux 10, Rocky Linux 10 (downloaded in the background), user with SSH
-  keys and/or password, hostname, disk size - ready to log in within a minute;
-  SSH keys saved in the profile are offered as checkboxes
-- storage pools: create (directory, NFS share, existing LVM volume group) and
+
+**Consoles**
+
+- graphical console (noVNC) with key combinations (Ctrl+Alt+Del,
+  Ctrl+Alt+F1...), SPICE to VNC switch
+- text (serial) console in the browser (xterm.js)
+
+**New machines**
+
+- from cloud images with cloud-init: Ubuntu, Debian, AlmaLinux, Rocky Linux
+  out of the box, an editable catalog synchronized from GitHub; user with SSH
+  keys (saved keys selectable) and/or password, hostname, disk size - ready
+  to log in within a minute
+- from ISO: qcow2 disk in any active pool, ISO from any pool, network, BIOS
+  or UEFI with optional Secure Boot, emulated TPM 2.0 (e.g. for Windows 11)
+
+**Storage and networks**
+
+- storage pools: create (directory, NFS share, existing LVM volume group),
   remove (files are kept), start/stop, autostart, refresh; volumes: create,
-  grow, copy (in the background), delete - volumes used by machines are
-  protected; libvirt networks: create (NAT,
-  routed, isolated) and delete, start/stop, autostart, DHCP range and static
-  IP addresses per MAC (changed live, without restarting the network), DHCP
-  leases
-- users with roles (admin, operator, viewer), login lockout after repeated
-  failures, CSRF protection, read-only connections
+  grow, copy (in the background), delete - volumes in use are protected
+- networks: create (NAT, routed, isolated) and delete, start/stop, autostart,
+  DHCP range and static IP addresses per MAC (changed live), DHCP leases
+
+**Administration**
+
+- users with roles (admin, operator, viewer), personal SSH keys, login
+  lockout, CSRF protection, read-only connections
 - several hypervisors (local or `qemu+ssh://`) switchable in the menu
-- interface in English, German, Norwegian (bokmål), Polish, Spanish and
-  Ukrainian (browser language, selectable in the profile)
-- light/dark theme following the system preference, or chosen with the icon
-  in the menu (remembered by the browser)
 - REST API with per-user tokens (same permissions as the user's role)
-- background task queue with a status page
-- action log (logins, power actions, snapshots, created machines, user changes)
-  with automatic rotation
+- background task queue with progress bars, action log with rotation
 
 ## Screenshots
 
@@ -228,7 +252,11 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 - access to the libvirt socket (the PHP user must be in the `libvirt` group)
 - for the browser console: nginx, websockify and noVNC (see Deployment)
 - for cloud images: `xorriso` (or `genisoimage`), `virsh` (`libvirt-clients`)
-  and the PHP curl extension
+  and the PHP curl extension; `virsh` is also used for renaming, network
+  updates and saved states, `virt-xml-validate` (`libvirt-clients`) by the XML
+  editor
+- on the KVM host, for the matching features: `ovmf` (UEFI), `swtpm` (TPM),
+  `nfs-common` (NFS pools), IOMMU enabled (PCI passthrough)
 
 ## Development setup
 
@@ -303,18 +331,19 @@ supported only with the nginx configuration from `deploy/`.
 
 ## Configuration
 
-See `config-default.php`: time zone (default: the system zone), libvirt connections (`$connections`, each can be
-read-only), first administrator, login lockout (`$login_max_attempts`,
-`$login_lock_seconds`), data directory, action log rotation and console
-settings.
+See `config-default.php`: time zone (default: the system zone), libvirt
+connections (`$connections`, each can be read-only), first administrator,
+login lockout (`$login_max_attempts`, `$login_lock_seconds`), data directory,
+action log rotation, console settings and the cloud image catalog
+(`$cloud_catalog_url`, `$cloud_catalog_auto_sync`, `$cloud_images`).
 
 ### Users and roles
 
 | Role       | Permissions |
 |------------|-------------|
-| `viewer`   | read-only access |
-| `operator` | power actions, snapshots, console, creating and editing machines |
-| `admin`    | everything, including deleting machines, storage and network management, users and the action log |
+| `viewer`   | read-only access, starring machines |
+| `operator` | power actions, snapshots, consoles, creating and editing machines (resources, disks, interfaces), saved SSH keys |
+| `admin`    | everything, including deleting machines, the XML editor, host device passthrough, storage pools and networks, the cloud image catalog, users and the action log |
 
 ## Cloud images
 
@@ -357,8 +386,9 @@ cannot write to pool directories and `libvirt_stream_send()` of libvirt-php
 ## REST API
 
 JSON API with personal tokens (created in the profile, same permissions as
-the user's role): machines, power actions, snapshots, cloning and machines
-from cloud images as background jobs, networks and pools.
+the user's role): machines, power actions (including reset and saving the
+state), snapshots, cloning and machines from cloud images as background
+jobs, saved SSH keys, networks and pools.
 
 ```sh
 curl -H "Authorization: Bearer pvm_..." https://panel.example.com:8443/api.php/v1/domains
@@ -413,8 +443,22 @@ the image to `ghcr.io`.
 
 - The panel controls machines on `qemu:///system`; use HTTPS and a strong
   password, do not expose it to untrusted networks.
-- VNC listens on 127.0.0.1 only; remote access goes through the authenticated
-  websocket proxy.
+- VNC and the text consoles listen on 127.0.0.1 only; remote access goes
+  through the authenticated websocket proxy. Local users of the host can reach
+  these ports.
+- The XML editor and host device passthrough are limited to administrators:
+  both can give a machine access to host resources.
+- Report vulnerabilities privately, see [SECURITY.md](.github/SECURITY.md).
+
+## Contributing and contact
+
+Ideas, bug reports and questions are welcome on GitHub - the panel shows the
+same links in a box on the dashboard:
+
+- [suggest a feature](https://github.com/spidero/php-virt-manager/issues/new?template=feature_request.yml)
+- [report a bug](https://github.com/spidero/php-virt-manager/issues/new?template=bug_report.yml)
+- [report a security issue privately](https://github.com/spidero/php-virt-manager/security/advisories/new)
+- pull requests: see [CONTRIBUTING.md](.github/CONTRIBUTING.md)
 
 ## License
 
