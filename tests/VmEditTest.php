@@ -202,4 +202,37 @@ final class VmEditTest extends TestCase
         $this->assertCount(1, vm_xml_identity_errors('<domain><name>vm</name>', 'vm', $uuid), 'not well-formed');
         $this->assertCount(1, vm_xml_identity_errors('<network><name>vm</name></network>', 'vm', $uuid));
     }
+
+    public function testResourcesWithBalloonAndTopology(): void
+    {
+        $xml = "<domain><name>vm</name><memory unit='KiB'>2097152</memory><vcpu>2</vcpu>"
+            ."<cpu mode='custom' match='exact'><model>Skylake-Client</model><vendor>Intel</vendor></cpu></domain>";
+        $this->assertSame(['mode' => 'custom', 'sockets' => 1, 'cores' => 2, 'threads' => 1], vm_cpu_settings($xml));
+        $this->assertSame(2048, vm_memory_mb($xml, 'currentMemory'), 'no currentMemory: all memory');
+
+        // same mode: the named model stays, the topology is set
+        $same = vm_xml_set_resources($xml, 4096, 4, 3072, ['mode' => 'custom', 'sockets' => 2, 'cores' => 2, 'threads' => 1]);
+        $doc = simplexml_load_string($same);
+        $this->assertSame('Skylake-Client', (string)$doc->cpu->model);
+        $this->assertSame(['4096', '3072', '4'], [(string)$doc->memory, (string)$doc->currentMemory, (string)$doc->vcpu]);
+        $this->assertSame(['mode' => 'custom', 'sockets' => 2, 'cores' => 2, 'threads' => 1], vm_cpu_settings($same));
+        $this->assertSame(3072, vm_memory_mb($same, 'currentMemory'));
+
+        // another mode: model, vendor and match are dropped
+        $pass = simplexml_load_string(vm_xml_set_resources($same, 4096, 4, null, ['mode' => 'host-passthrough', 'sockets' => 1, 'cores' => 2, 'threads' => 2]));
+        $this->assertSame('host-passthrough', (string)$pass->cpu['mode']);
+        $this->assertCount(0, $pass->cpu->model);
+        $this->assertSame('', (string)$pass->cpu['match']);
+        $model = simplexml_load_string(vm_xml_set_resources("<domain><vcpu>1</vcpu><cpu mode='host-passthrough' migratable='on'/></domain>",
+            512, 1, null, ['mode' => 'host-model', 'sockets' => 1, 'cores' => 1, 'threads' => 1]));
+        $this->assertSame('', (string)$model->cpu['migratable'], 'migratable only for host-passthrough');
+        $this->assertCount(1, $pass->cpu->topology);
+        $this->assertSame('4096', (string)$pass->currentMemory, 'without current memory: all memory');
+
+        // old call without CPU settings keeps the CPU element
+        $plain = simplexml_load_string(vm_xml_set_resources($xml, 1024, 1));
+        $this->assertSame('Skylake-Client', (string)$plain->cpu->model);
+        $this->assertSame(['mode' => 'host-passthrough', 'sockets' => 1, 'cores' => 3, 'threads' => 1],
+            vm_cpu_settings("<domain><vcpu>3</vcpu></domain>"), 'defaults');
+    }
 }

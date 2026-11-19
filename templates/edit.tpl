@@ -111,12 +111,38 @@
         {call form_start action='resources'}
           <div class="row">
             <div class="col-6 mb-3">
-              <label class="form-label" for="memory">{'Memory (MB)'|t}</label>
+              <label class="form-label" for="memory">{'Maximum memory (MB)'|t}</label>
               <input type="number" class="form-control" id="memory" name="memory" value="{$memory_mb}" min="128" max="{$max_memory_mb}" step="128" required>
             </div>
             <div class="col-6 mb-3">
-              <label class="form-label" for="vcpus">{'vCPUs'|t}</label>
-              <input type="number" class="form-control" id="vcpus" name="vcpus" value="{$vcpus}" min="1" max="{$max_vcpus}" required>
+              <label class="form-label" for="current_memory">{'Current memory (MB)'|t}</label>
+              <input type="number" class="form-control" id="current_memory" name="current_memory" value="{$current_memory_mb}" min="128" max="{$max_memory_mb}" step="128" required>
+            </div>
+            <div class="col-12 form-text mt-n2 mb-3">{'Current memory (balloon) can be lowered or raised up to the maximum while the machine runs; the guest needs the virtio balloon driver.'|t}</div>
+            <div class="col-4 mb-3">
+              <label class="form-label" for="sockets">{'Sockets'|t}</label>
+              <input type="number" class="form-control" id="sockets" name="sockets" value="{$cpu.sockets}" min="1" max="{$max_vcpus}" required>
+            </div>
+            <div class="col-4 mb-3">
+              <label class="form-label" for="cores">{'Cores'|t}</label>
+              <input type="number" class="form-control" id="cores" name="cores" value="{$cpu.cores}" min="1" max="{$max_vcpus}" required>
+            </div>
+            <div class="col-4 mb-3">
+              <label class="form-label" for="threads">{'Threads'|t}</label>
+              <input type="number" class="form-control" id="threads" name="threads" value="{$cpu.threads}" min="1" max="{$max_vcpus}" required>
+            </div>
+            <div class="col-12 form-text mt-n2 mb-3">{'vCPUs = sockets x cores x threads (now %d, host has %d). Desktop Windows uses at most 2 sockets.'|t:$vcpus:$max_vcpus}</div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="cpu_mode">{'CPU model'|t}</label>
+              <select class="form-select" id="cpu_mode" name="cpu_mode">
+{foreach $cpu_modes as $m => $label}
+                <option value="{$m}"{if $cpu.mode==$m} selected{/if}>{$label}</option>
+{/foreach}
+{if !isset($cpu_modes[$cpu.mode])}
+                <option value="{$cpu.mode}" selected>{$cpu.mode}</option>
+{/if}
+              </select>
+              <div class="form-text">{'host-passthrough: all features of the host CPU (fastest). host-model: a CPU model close to the host, easier to move to other hosts.'|t}</div>
             </div>
           </div>
           <button type="submit" class="btn btn-primary">{'Save'|t}</button>

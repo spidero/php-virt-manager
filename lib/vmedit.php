@@ -45,13 +45,59 @@ function vm_set_text(DOMDocument $doc, $name, $value, array $attributes = []) {
     }
 }
 
-// memory and vCPU count of the persistent definition
-function vm_xml_set_resources($xml, $memory_mb, $vcpus) {
+const VM_CPU_MODES = ['host-passthrough' => 'host-passthrough', 'host-model' => 'host-model'];
+
+// memory and vCPU count of the persistent definition; $current_mb is the balloon
+// target (default: all memory); $cpu = [mode, sockets, cores, threads] sets the CPU
+// model and topology (sockets * cores * threads must equal $vcpus)
+function vm_xml_set_resources($xml, $memory_mb, $vcpus, $current_mb = null, ?array $cpu = null) {
     $doc = vm_dom($xml);
     vm_set_text($doc, 'memory', (int)$memory_mb, ['unit' => 'MiB']);
-    vm_set_text($doc, 'currentMemory', (int)$memory_mb, ['unit' => 'MiB']);
+    vm_set_text($doc, 'currentMemory', (int)($current_mb ?? $memory_mb), ['unit' => 'MiB']);
     vm_set_text($doc, 'vcpu', (int)$vcpus);
+    if ($cpu !== null) {
+        $cpu_el = vm_first($doc, '/domain/cpu');
+        if (!$cpu_el) {
+            $cpu_el = $doc->createElement('cpu');
+            $doc->documentElement->appendChild($cpu_el);
+        }
+        // a named model (custom mode) does not fit another mode; the same mode keeps it
+        $mode_changed = $cpu_el->getAttribute('mode') !== $cpu['mode'];
+        foreach (iterator_to_array($cpu_el->childNodes) as $child) {
+            if ($child instanceof DOMElement && ($child->nodeName === 'topology'
+                    || ($mode_changed && in_array($child->nodeName, ['model', 'vendor'], true)))) {
+                $cpu_el->removeChild($child);
+            }
+        }
+        if ($mode_changed) {
+            $cpu_el->setAttribute('mode', $cpu['mode']);
+            // attributes of the old mode (migratable is only valid for host-passthrough/maximum)
+            foreach (['match', 'check', 'migratable'] as $attr) {
+                $cpu_el->removeAttribute($attr);
+            }
+        }
+        $topology = $doc->createElement('topology');
+        $topology->setAttribute('sockets', (string)(int)$cpu['sockets']);
+        $topology->setAttribute('dies', '1');
+        $topology->setAttribute('cores', (string)(int)$cpu['cores']);
+        $topology->setAttribute('threads', (string)(int)$cpu['threads']);
+        $cpu_el->insertBefore($topology, $cpu_el->firstChild);
+    }
     return vm_xml($doc);
+}
+
+// CPU mode and topology of a definition (defaults: host-passthrough, one socket with all vCPUs)
+function vm_cpu_settings($xml) {
+    $doc = vm_dom($xml);
+    $vcpus = max(1, (int)(vm_first($doc, '/domain/vcpu')->textContent ?? 1));
+    $cpu = vm_first($doc, '/domain/cpu');
+    $topology = vm_first($doc, '/domain/cpu/topology');
+    return [
+        'mode'    => $cpu && $cpu->getAttribute('mode') !== '' ? $cpu->getAttribute('mode') : 'host-passthrough',
+        'sockets' => $topology ? max(1, (int)$topology->getAttribute('sockets')) : 1,
+        'cores'   => $topology ? max(1, (int)$topology->getAttribute('cores')) : $vcpus,
+        'threads' => $topology ? max(1, (int)$topology->getAttribute('threads')) : 1,
+    ];
 }
 
 // target names (vda, sdb, ...) already used by disks
@@ -233,8 +279,9 @@ function vm_clone_volume_name($new_name, $target, $source_path) {
 }
 
 // <memory> of the definition converted to MiB (libvirt default unit is KiB)
-function vm_memory_mb($xml) {
-    $memory = vm_first(vm_dom($xml), '/domain/memory');
+// memory of the definition in MiB; $element 'currentMemory' for the balloon target
+function vm_memory_mb($xml, $element = 'memory') {
+    $memory = vm_first(vm_dom($xml), '/domain/'.$element) ?? ($element === 'currentMemory' ? vm_first(vm_dom($xml), '/domain/memory') : null);
     if (!$memory) {
         return 0;
     }

@@ -163,7 +163,9 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
   autostart, live screen preview
 - power actions: start, shutdown, reboot, pause/resume, force stop, hard
   reset, save state to disk (restored by the next start); rename machines
-- machine editing: memory, vCPUs, CD/DVD medium, boot order; disks: add,
+- machine editing: maximum and current memory (balloon, changed live), CPU
+  topology (sockets, cores, threads) and model (host-passthrough/host-model),
+  CD/DVD medium, boot order; disks: add,
   grow (also while running), detach (optionally deleting the file);
   network interfaces: add, switch network (live) or model, detach - devices
   are hot-plugged into running machines

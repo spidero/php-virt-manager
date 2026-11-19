@@ -72,16 +72,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if ($action === 'resources') {
             $memory = (int)($_POST['memory'] ?? 0);
-            $vcpus = (int)($_POST['vcpus'] ?? 0);
+            $current = (int)($_POST['current_memory'] ?? $memory);
+            $cpu = [
+                'mode'    => (string)($_POST['cpu_mode'] ?? 'host-passthrough'),
+                'sockets' => (int)($_POST['sockets'] ?? 1),
+                'cores'   => (int)($_POST['cores'] ?? 1),
+                'threads' => (int)($_POST['threads'] ?? 1),
+            ];
+            $vcpus = $cpu['sockets'] * $cpu['cores'] * $cpu['threads'];
             if ($memory < 128 || $memory > $max_memory_mb) {
                 throw new RuntimeException(t('Memory must be between %d and %d MB.', 128, $max_memory_mb));
             }
-            if ($vcpus < 1 || $vcpus > $max_vcpus) {
-                throw new RuntimeException(t('vCPUs must be between %d and %d.', 1, $max_vcpus));
+            if ($current < 128 || $current > $memory) {
+                throw new RuntimeException(t('Current memory must be between %d MB and the maximum memory.', 128));
             }
-            define_or_fail($con, vm_xml_set_resources($xml, $memory, $vcpus));
-            $details = $memory.' MB, '.$vcpus.' vCPU';
-            $message = t('Memory and vCPUs saved.').$after_restart;
+            if (min($cpu['sockets'], $cpu['cores'], $cpu['threads']) < 1 || $vcpus > $max_vcpus) {
+                throw new RuntimeException(t('vCPUs (sockets x cores x threads) must be between %d and %d.', 1, $max_vcpus));
+            }
+            $old_max = vm_memory_mb($xml);
+            $old_cpu = vm_cpu_settings($xml);
+            // the current mode stays allowed (e.g. custom with a named model)
+            if (!isset(VM_CPU_MODES[$cpu['mode']]) && $cpu['mode'] !== $old_cpu['mode']) {
+                throw new RuntimeException(t('Unknown CPU mode.'));
+            }
+            $old_vcpus = $old_cpu['sockets'] * $old_cpu['cores'] * $old_cpu['threads'];
+            define_or_fail($con, vm_xml_set_resources($xml, $memory, $vcpus, $current, $cpu));
+            $details = sprintf('%d/%d MB, %d vCPU (%dx%dx%d), %s', $current, $memory, $vcpus, $cpu['sockets'], $cpu['cores'], $cpu['threads'], $cpu['mode']);
+            $message = t('Memory and vCPUs saved.');
+            // the balloon target of a running machine changes at once (up to the current maximum)
+            $only_balloon = $memory === $old_max && $cpu == $old_cpu && $vcpus === $old_vcpus;
+            if ($active && $current !== vm_memory_mb($xml, 'currentMemory') && $current <= $old_max) {
+                $message .= libvirt_domain_set_memory_flags($res, $current * 1024, AFFECT_LIVE)
+                    ? ' '.t('The running machine now has %d MB.', $current)
+                    : ' '.t('Live change failed (%s).', libvirt_get_last_error());
+            }
+            if ($active && !$only_balloon) {
+                $message .= $after_restart;
+            }
         }
         elseif ($action === 'cdrom') {
             $iso = (string)($_POST['iso'] ?? '');
@@ -353,6 +380,9 @@ foreach (vm_disk_paths($xml) + vm_seed_paths($xml) as $target => $path) {
 $smarty->assign('node', $node);
 $smarty->assign('active', $active);
 $smarty->assign('memory_mb', vm_memory_mb($xml));
+$smarty->assign('current_memory_mb', vm_memory_mb($xml, 'currentMemory'));
+$smarty->assign('cpu', vm_cpu_settings($xml));
+$smarty->assign('cpu_modes', VM_CPU_MODES);
 $smarty->assign('vcpus', (int)$doc->vcpu);
 $smarty->assign('max_memory_mb', $max_memory_mb);
 $smarty->assign('max_vcpus', $max_vcpus);
