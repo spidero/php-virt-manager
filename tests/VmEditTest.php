@@ -311,4 +311,22 @@ final class VmEditTest extends TestCase
         $this->assertCount(1, simplexml_load_string($two)->memoryBacking, 'memory backing added once');
         $this->assertSame(['b' => '/srv/b'], vm_hardware(vm_xml_remove_filesystem($two, 'share'))['filesystems']);
     }
+
+    public function testVcpuCurrentAndPinning(): void
+    {
+        $xml = "<domain><name>vm</name><vcpu placement='static'>4</vcpu></domain>";
+        $this->assertSame(['max' => 4, 'current' => 4, 'cpuset' => ''], vm_vcpu_settings($xml));
+        $set = vm_xml_set_vcpu_options($xml, 2, '2-3');
+        $this->assertSame(['max' => 4, 'current' => 2, 'cpuset' => '2-3'], vm_vcpu_settings($set));
+        // current = max and no pinning: the attributes go away
+        $plain = simplexml_load_string(vm_xml_set_vcpu_options($set, 4, ''));
+        $this->assertSame(['', ''], [(string)$plain->vcpu['current'], (string)$plain->vcpu['cpuset']]);
+
+        $this->assertTrue(vm_cpuset_valid('0-3', 4));
+        $this->assertTrue(vm_cpuset_valid('1,3', 4));
+        $this->assertFalse(vm_cpuset_valid('0-4', 4), 'CPU 4 does not exist');
+        $this->assertFalse(vm_cpuset_valid('3-1', 4));
+        $this->assertFalse(vm_cpuset_valid('a', 4));
+        $this->assertFalse(vm_cpuset_valid('', 4));
+    }
 }

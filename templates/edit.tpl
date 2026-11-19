@@ -183,6 +183,15 @@
               <input type="number" class="form-control" id="threads" name="threads" value="{$cpu.threads}" min="1" max="{$max_vcpus}" required>
             </div>
             <div class="col-12 form-text mt-n2 mb-3">{'vCPUs = sockets x cores x threads (now %d, host has %d). Desktop Windows uses at most 2 sockets.'|t:$vcpus:$max_vcpus}</div>
+            <div class="col-6 mb-3">
+              <label class="form-label" for="current_vcpus">{'Current vCPUs'|t}</label>
+              <input type="number" class="form-control" id="current_vcpus" name="current_vcpus" value="{$vcpu.current}" min="1" max="{$max_vcpus}" required>
+            </div>
+            <div class="col-6 mb-3">
+              <label class="form-label" for="cpuset">{'Host CPUs (pinning)'|t}</label>
+              <input type="text" class="form-control font-monospace" id="cpuset" name="cpuset" value="{$vcpu.cpuset}" placeholder="{'any'|t}" pattern="[0-9,\- ]*">
+            </div>
+            <div class="col-12 form-text mt-n2 mb-3">{'Fewer current than maximum vCPUs allows adding them while the machine runs (some Linux guests then need: echo 1 > /sys/devices/system/cpu/cpuN/online). Pinning keeps the vCPUs on the given host CPUs, e.g. 2-3 (0-%d on this host); both change live.'|t:($max_vcpus-1)}</div>
             <div class="col-12 mb-3">
               <label class="form-label" for="cpu_mode">{'CPU model'|t}</label>
               <select class="form-select" id="cpu_mode" name="cpu_mode">

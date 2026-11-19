@@ -620,3 +620,52 @@ function vm_xml_remove_filesystem($xml, $tag) {
     }
     return vm_xml($doc);
 }
+
+// host CPU list such as "0-3,6" (pinning); validated against the host CPU count
+const VM_CPUSET_PATTERN = '/^\d+(-\d+)?(,\d+(-\d+)?)*$/';
+
+// vCPU details of a definition: max (the <vcpu> value), current (hot-plugged count), cpuset (pinning, '' = any)
+function vm_vcpu_settings($xml) {
+    $vcpu = vm_first(vm_dom($xml), '/domain/vcpu');
+    $max = max(1, (int)($vcpu->textContent ?? 1));
+    $current = $vcpu && $vcpu->getAttribute('current') !== '' ? (int)$vcpu->getAttribute('current') : $max;
+    return ['max' => $max, 'current' => min($max, max(1, $current)), 'cpuset' => $vcpu ? $vcpu->getAttribute('cpuset') : ''];
+}
+
+// true when every CPU of the set exists on a host with $host_cpus CPUs
+function vm_cpuset_valid($cpuset, $host_cpus) {
+    if (!preg_match(VM_CPUSET_PATTERN, (string)$cpuset)) {
+        return false;
+    }
+    foreach (explode(',', $cpuset) as $part) {
+        [$from, $to] = array_pad(array_map('intval', explode('-', $part)), 2, null);
+        $to ??= $from;
+        if ($from > $to || $to >= $host_cpus) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// current vCPU count and pinning on the <vcpu> element ('' cpuset removes the pinning)
+function vm_xml_set_vcpu_options($xml, $current, $cpuset) {
+    $doc = vm_dom($xml);
+    $vcpu = vm_first($doc, '/domain/vcpu');
+    if ($vcpu) {
+        $max = (int)$vcpu->textContent;
+        if ((int)$current > 0 && (int)$current < $max) {
+            $vcpu->setAttribute('current', (string)(int)$current);
+        }
+        else {
+            $vcpu->removeAttribute('current');
+        }
+        if ($cpuset !== '') {
+            $vcpu->setAttribute('cpuset', $cpuset);
+            $vcpu->setAttribute('placement', 'static');
+        }
+        else {
+            $vcpu->removeAttribute('cpuset');
+        }
+    }
+    return vm_xml($doc);
+}

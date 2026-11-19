@@ -81,6 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'threads' => (int)($_POST['threads'] ?? 1),
             ];
             $vcpus = $cpu['sockets'] * $cpu['cores'] * $cpu['threads'];
+            // vCPUs online now (hot-plug up to the topology maximum) and pinning to host CPUs
+            $current_vcpus = (int)($_POST['current_vcpus'] ?? $vcpus);
+            $cpuset = str_replace(' ', '', (string)($_POST['cpuset'] ?? ''));
             if ($memory < 128 || $memory > $max_memory_mb) {
                 throw new RuntimeException(t('Memory must be between %d and %d MB.', 128, $max_memory_mb));
             }
@@ -96,9 +99,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!isset(VM_CPU_MODES[$cpu['mode']]) && $cpu['mode'] !== $old_cpu['mode']) {
                 throw new RuntimeException(t('Unknown CPU mode.'));
             }
+            if ($current_vcpus < 1 || $current_vcpus > $vcpus) {
+                throw new RuntimeException(t('Current vCPUs must be between 1 and the maximum (sockets x cores x threads).'));
+            }
+            if ($cpuset !== '' && !vm_cpuset_valid($cpuset, $max_vcpus)) {
+                throw new RuntimeException(t('Host CPUs: a list such as 0-3 or 2,3 within 0-%d.', $max_vcpus - 1));
+            }
+            $old_vcpu = vm_vcpu_settings($xml);
             $old_vcpus = $old_cpu['sockets'] * $old_cpu['cores'] * $old_cpu['threads'];
-            define_or_fail($con, vm_xml_set_resources($xml, $memory, $vcpus, $current, $cpu));
-            $details = sprintf('%d/%d MB, %d vCPU (%dx%dx%d), %s', $current, $memory, $vcpus, $cpu['sockets'], $cpu['cores'], $cpu['threads'], $cpu['mode']);
+            define_or_fail($con, vm_xml_set_vcpu_options(vm_xml_set_resources($xml, $memory, $vcpus, $current, $cpu), $current_vcpus, $cpuset));
+            $details = sprintf('%d/%d MB, %d/%d vCPU (%dx%dx%d), %s, cpuset %s', $current, $memory, $current_vcpus, $vcpus,
+                $cpu['sockets'], $cpu['cores'], $cpu['threads'], $cpu['mode'], $cpuset ?: '-');
             $message = t('Memory and vCPUs saved.');
             // the balloon target of a running machine changes at once (up to the current maximum)
             $only_balloon = $memory === $old_max && $cpu == $old_cpu && $vcpus === $old_vcpus;
@@ -107,7 +118,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ? ' '.t('The running machine now has %d MB.', $current)
                     : ' '.t('Live change failed (%s).', libvirt_get_last_error());
             }
-            if ($active && !$only_balloon) {
+            // vCPU hot-plug and pinning of the running machine (the maximum stays until a restart)
+            $live_vcpus = $active && $vcpus === $old_vcpus;
+            if ($live_vcpus && $current_vcpus !== $old_vcpu['current']) {
+                [$status, $output] = domain_virsh($connection, ['setvcpus', $node, (string)$current_vcpus, '--live']);
+                $message .= ' '.($status === 0 ? t('The running machine now has %d vCPUs.', $current_vcpus) : t('Live change failed (%s).', trim($output)));
+            }
+            if ($active && $cpuset !== $old_vcpu['cpuset']) {
+                $pin = $cpuset !== '' ? $cpuset : '0-'.($max_vcpus - 1);
+                $failed = '';
+                for ($i = 0; $i < min($current_vcpus, $old_vcpu['current']); $i++) {
+                    [$status, $output] = domain_virsh($connection, ['vcpupin', $node, (string)$i, $pin, '--live']);
+                    $failed = $status === 0 ? $failed : trim($output);
+                }
+                $message .= ' '.($failed === '' ? t('vCPU pinning applied to the running machine.') : t('Live change failed (%s).', $failed));
+            }
+            $only_balloon = $only_balloon && $current_vcpus === $old_vcpu['current'] && $cpuset === $old_vcpu['cpuset'];
+            if ($active && !$only_balloon && !($live_vcpus && $memory === $old_max && $cpu == $old_cpu)) {
                 $message .= $after_restart;
             }
         }
@@ -515,6 +542,7 @@ $smarty->assign('active', $active);
 $smarty->assign('memory_mb', vm_memory_mb($xml));
 $smarty->assign('current_memory_mb', vm_memory_mb($xml, 'currentMemory'));
 $smarty->assign('cpu', vm_cpu_settings($xml));
+$smarty->assign('vcpu', vm_vcpu_settings($xml));
 $smarty->assign('cpu_modes', VM_CPU_MODES);
 $smarty->assign('vcpus', (int)$doc->vcpu);
 $smarty->assign('max_memory_mb', $max_memory_mb);

@@ -190,7 +190,8 @@ them in bug reports.
 - power actions: start, shutdown, reboot, pause/resume, force stop, hard
   reset, save state to disk (restored by the next start)
 - editing: maximum and current memory (balloon, changed live), CPU topology
-  (sockets, cores, threads) and model, CD/DVD medium, boot order, rename
+  (sockets, cores, threads) and model, current vCPUs (hot-plug) and pinning to
+  host CPUs (both live), CD/DVD medium, boot order, rename
 - disks: add a new one or attach an existing volume (virtio, SCSI or SATA bus,
   cache mode), grow (also while running), detach (optionally deleting the
   file); network interfaces: add, switch network (live) or model, detach -
