@@ -140,4 +140,13 @@ final class DomainXmlTest extends TestCase
             $this->assertArrayHasKey($p['firmware'], DOMAIN_FIRMWARES);
         }
     }
+
+    public function testTextKeycodes(): void
+    {
+        $this->assertSame([[42, 35], [23], [42, 2], [57], [28]], domain_text_keycodes("Hi! \n"));
+        $this->assertSame([[42, 39], [39]], domain_text_keycodes(':;'));
+        $this->assertSame([], domain_text_keycodes(''));
+        $this->assertNull(domain_text_keycodes('zażółć'), 'no diacritics on a US layout');
+        $this->assertCount(95, array_filter(array_map(fn($c) => domain_text_keycodes(chr($c)), range(32, 126))), 'all printable ASCII');
+    }
 }

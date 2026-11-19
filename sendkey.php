@@ -21,12 +21,29 @@ $key = (string)($_POST['key'] ?? '');
 if (!in_array($node, libvirt_list_domains($con) ?: [], true)) {
     $fail(400, t('Unknown machine: %s', $node));
 }
-if (!isset(DOMAIN_KEY_COMBOS[$key])) {
+$text = (string)($_POST['text'] ?? '');
+if ($text === '' && !isset(DOMAIN_KEY_COMBOS[$key])) {
     $fail(400, t('Unknown key combination.'));
 }
 $res = libvirt_domain_lookup_by_name($con, $node);
 if (!libvirt_domain_is_active($res)) {
     $fail(409, t('The machine is not running.'));
+}
+// "type text": every character as a key press (US layout), e.g. a password into a login prompt
+if ($text !== '') {
+    $codes = mb_strlen($text) <= 1000 ? domain_text_keycodes($text) : null;
+    if ($codes === null) {
+        $fail(400, t('Only US keyboard characters can be typed (up to 1000), no letters with diacritics.'));
+    }
+    foreach ($codes as $combo) {
+        if (!libvirt_domain_send_key_api($res, 0, 20, $combo)) {
+            $fail(500, (string)libvirt_get_last_error());
+        }
+        usleep(15000);
+    }
+    action_log('type_text', $node, true, mb_strlen($text).' characters');
+    echo json_encode(['ok' => true]);
+    exit;
 }
 // codeset 0 = Linux key codes, hold 100 ms
 $ok = (bool)libvirt_domain_send_key_api($res, 0, 100, DOMAIN_KEY_COMBOS[$key][1]);

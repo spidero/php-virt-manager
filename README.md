@@ -210,7 +210,9 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 **Consoles**
 
 - graphical console (noVNC) with key combinations (Ctrl+Alt+Del,
-  Ctrl+Alt+F1...), SPICE to VNC switch
+  Ctrl+Alt+F1...), full screen and "type text" (sends text as key presses,
+  e.g. a password - a shared clipboard needs an agent in the guest), SPICE to
+  VNC switch
 - text (serial) console in the browser (xterm.js)
 
 **New machines**

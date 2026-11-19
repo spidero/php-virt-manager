@@ -14,9 +14,9 @@
   <body>
     <div class="console-bar d-flex align-items-center gap-3">
       <span class="small text-body-secondary">{$node}</span>
-      {include file="sendkeys.tpl" btn_class='btn-outline-light'}
+      {include file="sendkeys.tpl" btn_class='btn-outline-light' fullscreen=true}
     </div>
-    <iframe src="{$console_url}" title="{'console of %s'|t:$node}"></iframe>
+    <iframe src="{$console_url}" title="{'console of %s'|t:$node}" allowfullscreen></iframe>
     <script src="assets/js/sendkey.js"></script>
   </body>
 </html>
