@@ -15,6 +15,7 @@
       <a class="btn btn-sm btn-outline-primary" href="{$repo_url}/issues/new?template=bug_report.yml" target="_blank" rel="noopener">{'Report a bug'|t}</a>
       <a class="btn btn-sm btn-outline-secondary" href="{$repo_url}/security/advisories/new" target="_blank" rel="noopener">{'Security issue (private)'|t}</a>
       <a class="btn btn-sm btn-outline-secondary" href="https://github.com/spidero" target="_blank" rel="noopener">{'Other: contact the author'|t}</a>
+      <a class="btn btn-sm btn-outline-success" href="https://github.com/sponsors/spidero" target="_blank" rel="noopener" title="{'A voluntary donation to the author, not a payment for features or support.'|t}">{'Support the project (GitHub Sponsors)'|t}</a>
     </div>
   </div>
   <form method="post" action="dismiss.php" class="m-0">

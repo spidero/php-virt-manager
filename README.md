@@ -510,6 +510,8 @@ same links in a box on the dashboard:
 - [report a bug](https://github.com/spidero/php-virt-manager/issues/new?template=bug_report.yml)
 - [report a security issue privately](https://github.com/spidero/php-virt-manager/security/advisories/new)
 - pull requests: see [CONTRIBUTING.md](.github/CONTRIBUTING.md)
+- support the project: [GitHub Sponsors](https://github.com/sponsors/spidero)
+  (a voluntary donation to the author)
 
 ## License
 
