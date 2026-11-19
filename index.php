@@ -6,8 +6,13 @@ $get_hypervisor = libvirt_connect_get_hypervisor($con);
 $smarty->assign('get_hypervisor', $get_hypervisor);
 
 $node_info = libvirt_node_get_info($con);
-$node_info['memory'] = round($node_info['memory']/(1024*1024));
 $smarty->assign('node_info', $node_info);
+$memory = node_memory(libvirt_node_get_mem_stats($con) ?: []);
+foreach (['used', 'total', 'available'] as $key) {
+    $memory[$key.'_text'] = format_bytes($memory[$key]);
+}
+$smarty->assign('memory', $memory);
+$smarty->assign('cpu_model', node_cpu_model(libvirt_connect_get_sysinfo($con), libvirt_connect_get_capabilities($con)));
 
 // number of machines per state label for the summary tiles
 $state_counts = [];

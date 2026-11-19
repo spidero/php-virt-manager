@@ -50,4 +50,33 @@ final class StatsTest extends TestCase
         $this->assertSame(0.0, $r['cpu']);
         $this->assertSame(0.0, $r['disk_rd']);
     }
+
+    public function testNodeMemory(): void
+    {
+        // KiB, as returned by libvirt_node_get_mem_stats()
+        $m = node_memory(['total' => 32 * 1048576, 'free' => 3 * 1048576, 'available' => 12 * 1048576, 'buffers' => 1, 'cached' => 1]);
+        $this->assertSame(32 * 1073741824, $m['total']);
+        $this->assertSame(20 * 1073741824, $m['used']);
+        $this->assertSame(12 * 1073741824, $m['available']);
+        $this->assertSame(63, $m['percent']);
+        // without "available": free + buffers + cached
+        $m = node_memory(['total' => 1000, 'free' => 100, 'buffers' => 50, 'cached' => 250]);
+        $this->assertSame(600 * 1024, $m['used']);
+        $this->assertSame(60, $m['percent']);
+        $this->assertSame(0, node_memory([])['percent']);
+    }
+
+    public function testNodeCpuModel(): void
+    {
+        $sysinfo = '<sysinfo type="smbios"><processor><entry name="manufacturer">Intel(R) Corporation</entry>'
+            .'<entry name="version">Intel(R) Core(TM) i3-8100 CPU @ 3.60GHz</entry></processor></sysinfo>';
+        $caps = '<capabilities><host><cpu><arch>x86_64</arch><model>Skylake-Client-v3</model><vendor>Intel</vendor></cpu></host></capabilities>';
+        $this->assertSame('Intel(R) Core(TM) i3-8100 CPU @ 3.60GHz', node_cpu_model($sysinfo, $caps));
+        // firmware placeholder or no sysinfo: CPU model from capabilities
+        $placeholder = '<sysinfo type="smbios"><processor><entry name="version">To Be Filled By O.E.M.</entry></processor></sysinfo>';
+        $this->assertSame('Intel Skylake-Client-v3', node_cpu_model($placeholder, $caps));
+        $this->assertSame('Intel Skylake-Client-v3', node_cpu_model(false, $caps));
+        $this->assertSame('', node_cpu_model(false, false));
+        $this->assertSame('', node_cpu_model('not xml', ''));
+    }
 }

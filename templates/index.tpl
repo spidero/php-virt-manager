@@ -17,7 +17,15 @@
     <tr><th style="width: 30%">{'Connection'|t}</th><td>{$connection}</td></tr>
     <tr><th>{'Version'|t}</th><td>{$get_hypervisor['hypervisor_string']}</td></tr>
     <tr><th>{'Architecture'|t}</th><td>{$node_info['model']}</td></tr>
-    <tr><th>{'Memory'|t}</th><td>{$node_info['memory']} GB</td></tr>
+    <tr><th>{'Memory'|t}</th><td>
+      {'%s used of %s, %s available'|t:$memory.used_text:$memory.total_text:$memory.available_text}
+      <div class="progress mt-1" role="progressbar" aria-label="{'Memory'|t}" aria-valuenow="{$memory.percent}" aria-valuemin="0" aria-valuemax="100" style="height: 6px; max-width: 320px;">
+        <div class="progress-bar{if $memory.percent >= 90} bg-danger{elseif $memory.percent >= 75} bg-warning{/if}" style="width: {$memory.percent}%"></div>
+      </div>
+    </td></tr>
+{if $cpu_model}
+    <tr><th>{'Processor'|t}</th><td>{$cpu_model}</td></tr>
+{/if}
     <tr><th>{'CPUs'|t}</th><td>{'%d (%d socket, %d cores, %d MHz)'|t:$node_info['cpus']:$node_info['sockets']:$node_info['cores']:$node_info['mhz']}</td></tr>
     <tr><th>{'NUMA nodes'|t}</th><td>{$node_info['nodes']}</td></tr>
   </table>
