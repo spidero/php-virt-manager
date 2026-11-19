@@ -133,6 +133,13 @@ function domain_overview($con) {
     return $rows;
 }
 
+// persistent definition for changing and redefining a machine: with the SECURE flag,
+// otherwise libvirt leaves out secrets such as the VNC password and a redefinition
+// built from it would silently drop them
+function domain_definition_xml($res) {
+    return (string)libvirt_domain_get_xml_desc($res, null, VIR_DOMAIN_XML_INACTIVE | VIR_DOMAIN_XML_SECURE);
+}
+
 function domain_xml($res, $inactive = false) {
     $xml = libvirt_domain_get_xml_desc($res, null, $inactive ? VIR_DOMAIN_XML_INACTIVE : 0);
     return simplexml_load_string((string)$xml) ?: null;
@@ -352,4 +359,40 @@ function volume_new_xml($name, $capacity_gb) {
 function domain_rename_references($conn, $old, $new) {
     db_query('UPDATE favorites SET name = ? WHERE conn = ? AND name = ?', [$new, $conn, $old]);
     db_query('UPDATE schedules SET domain = ? WHERE conn = ? AND domain = ?', [$new, $conn, $old]);
+}
+
+// Linux input key codes of a text typed into a machine (US keyboard layout):
+// one entry per character, [code] or [shift, code]; null when a character cannot be typed
+function domain_text_keycodes($text) {
+    static $map = null;
+    if ($map === null) {
+        $map = [];
+        $rows = [
+            // unshifted => shifted, key code
+            ['1', '!', 2], ['2', '@', 3], ['3', '#', 4], ['4', '$', 5], ['5', '%', 6], ['6', '^', 7], ['7', '&', 8],
+            ['8', '*', 9], ['9', '(', 10], ['0', ')', 11], ['-', '_', 12], ['=', '+', 13], ['[', '{', 26], [']', '}', 27],
+            [';', ':', 39], ["'", '"', 40], ['`', '~', 41], ['\\', '|', 43], [',', '<', 51], ['.', '>', 52], ['/', '?', 53],
+        ];
+        foreach ($rows as [$plain, $shifted, $code]) {
+            $map[$plain] = [$code];
+            $map[$shifted] = [42, $code];
+        }
+        foreach (['q' => 16, 'w' => 17, 'e' => 18, 'r' => 19, 't' => 20, 'y' => 21, 'u' => 22, 'i' => 23, 'o' => 24, 'p' => 25,
+                  'a' => 30, 's' => 31, 'd' => 32, 'f' => 33, 'g' => 34, 'h' => 35, 'j' => 36, 'k' => 37, 'l' => 38,
+                  'z' => 44, 'x' => 45, 'c' => 46, 'v' => 47, 'b' => 48, 'n' => 49, 'm' => 50] as $letter => $code) {
+            $map[$letter] = [$code];
+            $map[strtoupper($letter)] = [42, $code];
+        }
+        $map[' '] = [57];
+        $map["\n"] = [28];
+        $map["\t"] = [15];
+    }
+    $codes = [];
+    foreach (preg_split('//u', str_replace("\r\n", "\n", (string)$text), -1, PREG_SPLIT_NO_EMPTY) as $char) {
+        if (!isset($map[$char])) {
+            return null;
+        }
+        $codes[] = $map[$char];
+    }
+    return $codes;
 }

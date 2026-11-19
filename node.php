@@ -105,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = t('Saved state discarded.');
     }
     elseif ($action === 'switch_vnc') {
-        $new_xml = domain_xml_spice_to_vnc((string)libvirt_domain_get_xml_desc($res, null, VIR_DOMAIN_XML_INACTIVE));
+        $new_xml = domain_xml_spice_to_vnc(domain_definition_xml($res));
         if ($new_xml === null) {
             flash_set('danger', t('Machine has no SPICE graphics to switch.'));
             redirect($node_url);

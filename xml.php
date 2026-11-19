@@ -13,7 +13,7 @@ if (!in_array($node, libvirt_list_domains($con) ?: [], true)) {
 }
 $res = libvirt_domain_lookup_by_name($con, $node);
 $uuid = (string)libvirt_domain_get_uuid_string($res);
-$current = (string)libvirt_domain_get_xml_desc($res, null, VIR_DOMAIN_XML_INACTIVE);
+$current = domain_definition_xml($res);
 $text = $current;
 $errors = [];
 

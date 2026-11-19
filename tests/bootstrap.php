@@ -7,7 +7,7 @@ require dirname(__DIR__).'/vendor/autoload.php';
 
 if (!extension_loaded('libvirt')) {
     // constants only, functions are not called by the tests
-    foreach (['VIR_DOMAIN_XML_INACTIVE' => 2] as $name => $value) {
+    foreach (['VIR_DOMAIN_XML_INACTIVE' => 2, 'VIR_DOMAIN_XML_SECURE' => 1] as $name => $value) {
         define($name, $value);
     }
 }

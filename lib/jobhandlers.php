@@ -173,7 +173,7 @@ function job_clone(array $params, $con, $job_id, $uri) {
     if (in_array($name, libvirt_list_domains($con) ?: [], true)) {
         throw new RuntimeException('machine '.$name.' already exists');
     }
-    $xml = (string)libvirt_domain_get_xml_desc($res, null, VIR_DOMAIN_XML_INACTIVE);
+    $xml = domain_definition_xml($res);
 
     $path_map = [];
     $created = [];

@@ -18,7 +18,7 @@ if (!in_array($node, libvirt_list_domains($con) ?: [], true)) {
 $edit_url = 'edit.php?node='.urlencode($node);
 $res = libvirt_domain_lookup_by_name($con, $node);
 $active = (bool)libvirt_domain_is_active($res);
-$xml = (string)libvirt_domain_get_xml_desc($res, null, VIR_DOMAIN_XML_INACTIVE);
+$xml = domain_definition_xml($res);
 
 $node_info = libvirt_node_get_info($con);
 $max_memory_mb = (int)floor($node_info['memory'] / 1024);
@@ -176,7 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     throw new RuntimeException(t('Error: %s', libvirt_get_last_error()));
                 }
-                $xml = (string)libvirt_domain_get_xml_desc($res, null, VIR_DOMAIN_XML_INACTIVE);
+                $xml = domain_definition_xml($res);
             }
             $note = attach_device($con, $res, $xml, $active, $device);
             if ($note === false) {
