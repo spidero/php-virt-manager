@@ -10,10 +10,11 @@ $node_info = libvirt_node_get_info($con);
 $max_memory_mb = (int)floor($node_info['memory'] / 1024);
 $max_vcpus = (int)$node_info['cpus'];
 
+$saved_keys = ssh_key_list(current_user()['id']);
 $form = [
     'image' => '', 'name' => '', 'memory' => 2048, 'vcpus' => min(2, $max_vcpus), 'disk' => 20,
     'pool' => array_key_first($pools) ?? '', 'network' => in_array('default', $networks, true) ? 'default' : ($networks[0] ?? ''),
-    'user' => 'admin', 'ssh_keys' => '', 'start' => 1,
+    'user' => 'admin', 'ssh_keys' => '', 'ssh_key_ids' => array_column($saved_keys, 'id'), 'start' => 1,
 ];
 $errors = [];
 
@@ -64,6 +65,8 @@ $smarty->assign('downloading', $downloading);
 $smarty->assign('pools', $pools);
 $smarty->assign('networks', $networks);
 $smarty->assign('form', $form);
+$smarty->assign('saved_keys', $saved_keys);
+$smarty->assign('selected_keys', array_flip($form['ssh_key_ids']));
 $smarty->assign('errors', $errors);
 $smarty->assign('max_memory_mb', $max_memory_mb);
 $smarty->assign('max_vcpus', $max_vcpus);

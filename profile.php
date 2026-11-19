@@ -34,6 +34,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash_set('success', t('Token revoked.'));
         }
     }
+    elseif ($action === 'sshkey_add') {
+        $error = ssh_key_add($user['id'], (string)($_POST['name'] ?? ''), (string)($_POST['public_key'] ?? ''));
+        if ($error) {
+            flash_set('danger', $error);
+        }
+        else {
+            action_log('ssh_key_add', $user['username'], true);
+            flash_set('success', t('SSH key saved.'));
+        }
+    }
+    elseif ($action === 'sshkey_delete') {
+        if (ssh_key_delete($user['id'], (int)($_POST['id'] ?? 0))) {
+            action_log('ssh_key_delete', $user['username'], true);
+            flash_set('success', t('SSH key removed.'));
+        }
+    }
     elseif ($action === 'password') {
         $current = (string)($_POST['current'] ?? '');
         $password = (string)($_POST['password'] ?? '');
@@ -57,6 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $smarty->assign('user', $user);
 $smarty->assign('tokens', api_token_list($user['id']));
+$smarty->assign('ssh_keys', ssh_key_list($user['id']));
+$smarty->assign('ssh_key_name_max', SSH_KEY_NAME_MAX);
 $smarty->assign('new_token', $_SESSION['new_token'] ?? null);
 unset($_SESSION['new_token']);
 $smarty->assign('api_url', (!empty($_SERVER['HTTPS']) ? 'https' : 'http').'://'.($_SERVER['HTTP_HOST'] ?? 'localhost')

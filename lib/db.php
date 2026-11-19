@@ -60,6 +60,17 @@ const DB_MIGRATIONS = [
         // percent of the current phase, NULL when unknown (indeterminate progress bar)
         'ALTER TABLE jobs ADD COLUMN progress INTEGER',
     ],
+    6 => [
+        'CREATE TABLE ssh_keys (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            public_key TEXT NOT NULL,
+            fingerprint TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            UNIQUE (user_id, fingerprint)
+        )',
+    ],
 ];
 
 function db() {

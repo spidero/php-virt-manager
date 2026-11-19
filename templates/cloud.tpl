@@ -106,7 +106,19 @@
           <div class="form-text">{'Enables password login over SSH and on the console.'|t}</div>
         </div>
         <div class="col-12 mb-3">
-          <label class="form-label" for="ssh_keys">{'SSH public keys'|t} ({'one per line'|t})</label>
+          <div class="form-label">{'Saved SSH keys'|t}</div>
+{foreach $saved_keys as $k}
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="ssh_key_{$k.id}" name="ssh_key_ids[]" value="{$k.id}"{if isset($selected_keys[$k.id])} checked{/if}>
+            <label class="form-check-label" for="ssh_key_{$k.id}">{$k.name} <small class="text-body-secondary font-monospace">{$k.fingerprint}</small></label>
+          </div>
+{foreachelse}
+          <div class="form-text mt-0">{'No saved keys yet.'|t}</div>
+{/foreach}
+          <div class="form-text"><a href="profile.php#ssh-keys">{'Manage your SSH keys in the profile.'|t}</a></div>
+        </div>
+        <div class="col-12 mb-3">
+          <label class="form-label" for="ssh_keys">{'Additional SSH public keys'|t} ({'one per line'|t})</label>
           <textarea class="form-control font-monospace small" id="ssh_keys" name="ssh_keys" rows="3" placeholder="ssh-ed25519 AAAA... user@host">{$form.ssh_keys}</textarea>
         </div>
       </div>

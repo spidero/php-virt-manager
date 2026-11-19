@@ -159,7 +159,8 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 - new machine wizard (qcow2 disk in any active pool, ISO from any pool, network)
 - machines from cloud images with cloud-init: Ubuntu 26.04/24.04, Debian 13/12,
   AlmaLinux 10, Rocky Linux 10 (downloaded in the background), user with SSH
-  keys and/or password, hostname, disk size - ready to log in within a minute
+  keys and/or password, hostname, disk size - ready to log in within a minute;
+  SSH keys saved in the profile are offered as checkboxes
 - storage pools (start/stop, autostart, refresh) with volumes (create, delete;
   volumes used by machines are protected), libvirt networks (start/stop,
   autostart) with DHCP leases

@@ -284,6 +284,18 @@ downloaded by an administrator in the panel).
 ]
 ```
 
+#### GET /ssh-keys
+
+SSH public keys the token owner saved in the panel profile; pass their ids
+as `ssh_key_ids` to `POST /cloud`.
+
+```json
+[
+  {"id": 3, "name": "me@laptop", "fingerprint": "SHA256:6I+kh3+vyDwBCBY6QOPBXEHk41G05bpaKpDzFSLM9Ag",
+   "public_key": "ssh-ed25519 AAAAC3Nza... me@laptop", "created_at": 1795085136}
+]
+```
+
 #### POST /cloud
 
 `operator`. Creates a machine from a downloaded image with cloud-init; runs
@@ -300,6 +312,7 @@ as a background job.
   "network": "default",
   "user": "admin",
   "ssh_keys": ["ssh-ed25519 AAAAC3Nza... me@laptop"],
+  "ssh_key_ids": [3],
   "password": "optional-password",
   "start": true
 }
@@ -315,8 +328,9 @@ as a background job.
 | `pool` | no | first active pool | storage pool for the disk |
 | `network` | no | `default` | libvirt network |
 | `user` | no | `admin` | user created in the guest, gets sudo without a password |
-| `ssh_keys` | one of `ssh_keys`/`password` | | list of public keys (or a string with one key per line) |
-| `password` | one of `ssh_keys`/`password` | | at least 8 characters; enables password login over SSH |
+| `ssh_keys` | a key or `password` | | list of public keys (or a string with one key per line) |
+| `ssh_key_ids` | a key or `password` | | ids of your saved keys from `GET /ssh-keys`; combined with `ssh_keys` |
+| `password` | a key or `password` | | at least 8 characters; enables password login over SSH |
 | `start` | no | false | start the machine when it is created |
 
 Response: `{"ok": true, "job": 13}`. Validation problems return `400` with

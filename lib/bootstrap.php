@@ -18,6 +18,7 @@ require_once __DIR__.'/jobs.php';
 require_once __DIR__.'/jobhandlers.php';
 require_once __DIR__.'/stats.php';
 require_once __DIR__.'/cloud.php';
+require_once __DIR__.'/sshkeys.php';
 require_once __DIR__.'/schedules.php';
 require_once __DIR__.'/api.php';
 

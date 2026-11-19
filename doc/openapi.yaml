@@ -231,14 +231,31 @@ paths:
         '4XX': {$ref: '#/components/responses/Error'}
         '5XX': {$ref: '#/components/responses/Error'}
 
+  /ssh-keys:
+    get:
+      operationId: listSshKeys
+      tags: [cloud]
+      summary: Saved SSH keys of the token owner
+      description: |
+        Keys saved in the panel profile; their ids can be passed as `ssh_key_ids`
+        to `POST /cloud`. Required role - viewer.
+      responses:
+        '200':
+          description: Keys
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/SshKey'}}
+        '4XX': {$ref: '#/components/responses/Error'}
+        '5XX': {$ref: '#/components/responses/Error'}
+
   /cloud:
     post:
       operationId: createFromCloudImage
       tags: [cloud]
       summary: Create a machine from a cloud image (background job)
       description: |
-        The image must be downloaded. At least one of `ssh_keys` and `password`
-        is required. Required role - operator.
+        The image must be downloaded. At least one SSH key (`ssh_keys` or
+        `ssh_key_ids`) or a `password` is required. Required role - operator.
       parameters: [{$ref: '#/components/parameters/conn'}]
       requestBody:
         required: true
@@ -500,8 +517,21 @@ components:
           oneOf:
             - {type: array, items: {type: string}}
             - {type: string, description: one key per line}
+        ssh_key_ids:
+          type: array
+          items: {type: integer}
+          description: 'ids of saved keys of the token owner, from /ssh-keys'
         password: {type: string, minLength: 8}
         start: {type: boolean, default: false}
+
+    SshKey:
+      type: object
+      properties:
+        id: {type: integer}
+        name: {type: string}
+        fingerprint: {type: string, example: 'SHA256:6I+kh3+vyDwBCBY6QOPBXEHk41G05bpaKpDzFSLM9Ag'}
+        public_key: {type: string}
+        created_at: {type: integer}
 
     Job:
       type: object

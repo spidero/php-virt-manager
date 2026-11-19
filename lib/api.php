@@ -19,6 +19,7 @@ const API_ROUTES = [
     ['POST',   '#^/v1/domains/([^/]+)/clone$#',                    'api_domain_clone',    'operate'],
     ['POST',   '#^/v1/cloud$#',                                    'api_cloud_create',    'operate'],
     ['GET',    '#^/v1/cloud/images$#',                             'api_cloud_images',    'view'],
+    ['GET',    '#^/v1/ssh-keys$#',                                 'api_ssh_keys',        'view'],
     ['GET',    '#^/v1/jobs$#',                                     'api_jobs',            'operate'],
     ['GET',    '#^/v1/jobs/([0-9]+)$#',                            'api_job',             'operate'],
     ['GET',    '#^/v1/networks$#',                                 'api_networks',        'view'],
@@ -194,6 +195,14 @@ function api_cloud_images($con) {
         $list[] = ['key' => $key, 'label' => $image['label'], 'downloaded' => isset($downloaded[$key]), 'pool' => $downloaded[$key]['pool'] ?? null];
     }
     return $list;
+}
+
+// saved SSH keys of the token owner (ids for ssh_key_ids in POST /cloud)
+function api_ssh_keys($con) {
+    return array_map(fn($k) => [
+        'id' => (int)$k['id'], 'name' => $k['name'], 'fingerprint' => $k['fingerprint'],
+        'public_key' => $k['public_key'], 'created_at' => (int)$k['created_at'],
+    ], ssh_key_list(current_user()['id']));
 }
 
 function api_cloud_create($con) {

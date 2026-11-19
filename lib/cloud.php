@@ -65,10 +65,15 @@ function cloud_create_request($con, array $input) {
         'network'  => (string)($input['network'] ?? 'default'),
         'user'     => trim((string)($input['user'] ?? 'admin')),
         'ssh_keys' => is_array($input['ssh_keys'] ?? null) ? implode("\n", $input['ssh_keys']) : (string)($input['ssh_keys'] ?? ''),
+        // saved keys of the current user (profile), selected by id
+        'ssh_key_ids' => array_values(array_unique(array_map('intval', (array)($input['ssh_key_ids'] ?? [])))),
         'start'    => empty($input['start']) ? 0 : 1,
     ];
     $password = (string)($input['password'] ?? '');
-    $keys = cloud_ssh_keys($form['ssh_keys']);
+    $typed_keys = cloud_ssh_keys($form['ssh_keys']);
+    $user = current_user();
+    $saved_keys = $user ? ssh_keys_by_ids($user['id'], $form['ssh_key_ids']) : [];
+    $keys = array_values(array_unique(array_merge($saved_keys, $typed_keys)));
 
     $errors = [];
     if (!isset($downloaded[$form['image']])) {
@@ -98,7 +103,10 @@ function cloud_create_request($con, array $input) {
     if (!preg_match(CLOUD_USER_PATTERN, $form['user'])) {
         $errors[] = t('Invalid user name (lowercase letters, digits, _ -).');
     }
-    if (trim($form['ssh_keys']) !== '' && count($keys) !== count(array_filter(array_map('trim', preg_split('/\R/', $form['ssh_keys']))))) {
+    if (count($saved_keys) !== count($form['ssh_key_ids'])) {
+        $errors[] = t('Some selected SSH keys do not exist.');
+    }
+    if (trim($form['ssh_keys']) !== '' && count($typed_keys) !== count(array_filter(array_map('trim', preg_split('/\R/', $form['ssh_keys']))))) {
         $errors[] = t('Some SSH keys are not valid public keys.');
     }
     if (!$keys && $password === '') {
