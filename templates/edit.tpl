@@ -338,6 +338,35 @@
 
   <div class="col-md-6">
     <div class="card mb-3">
+      <div class="card-header">{'Firmware and TPM'|t}</div>
+      <div class="card-body">
+{if $active}
+        <p class="mb-1">{$firmwares[$firmware.firmware]}{if $firmware.tpm}, TPM 2.0{/if}</p>
+        <p class="text-body-secondary small mb-0">{'Shut the machine down to change the firmware or the TPM.'|t}</p>
+{else}
+        <form method="post" action="edit.php" data-confirm="{'Change the firmware of %s? A system installed for the other firmware will usually not start.'|t:$node}">
+          <input type="hidden" name="csrf" value="{$csrf_token}">
+          <input type="hidden" name="node" value="{$node}">
+          <input type="hidden" name="action" value="firmware">
+          <div class="mb-2">
+            <label class="form-label small" for="fw">{'Firmware'|t}</label>
+            <select class="form-select form-select-sm" id="fw" name="firmware">
+{foreach $firmwares as $fw => $label}
+              <option value="{$fw}"{if $firmware.firmware==$fw} selected{/if}>{$label}</option>
+{/foreach}
+            </select>
+          </div>
+          <div class="form-check mb-2"><input type="checkbox" class="form-check-input" id="fw-tpm" name="tpm" value="1"{if $firmware.tpm} checked{/if}> <label class="form-check-label small" for="fw-tpm">{'TPM 2.0 (emulated)'|t}</label></div>
+          <div class="form-text mb-2">{'Switching between BIOS and UEFI makes an installed system unbootable unless it supports both; Secure Boot can be turned on and off for an UEFI system. A TPM can be added or removed safely (e.g. for Windows 11).'|t}</div>
+          <button type="submit" class="btn btn-primary btn-sm">{'Save'|t}</button>
+        </form>
+{/if}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card mb-3">
       <div class="card-header">{'Hardware'|t}</div>
       <div class="card-body">
         {call form_start action='hardware'}

@@ -700,3 +700,58 @@ function vm_mbit_to_kib($mbit) {
 function vm_kib_to_mbit($kib) {
     return round($kib * 1024 * 8 / 1000000, 1);
 }
+
+// firmware of a definition: bios, efi or efi-secure, and whether it has a TPM
+function vm_firmware_settings($xml) {
+    $doc = vm_dom($xml);
+    $xpath = new DOMXPath($doc);
+    $os = vm_first($doc, '/domain/os');
+    $efi = ($os && $os->getAttribute('firmware') === 'efi') || $xpath->query('/domain/os/loader[@type="pflash"]')->length > 0;
+    $secure = $xpath->query("/domain/os/firmware/feature[@name='secure-boot'][@enabled='yes'] | /domain/os/loader[@secure='yes']")->length > 0;
+    return [
+        'firmware' => $efi ? ($secure ? 'efi-secure' : 'efi') : 'bios',
+        'tpm'      => $xpath->query('/domain/devices/tpm')->length > 0,
+        'q35'      => str_contains((string)$xpath->query('/domain/os/type/@machine')->item(0)?->nodeValue, 'q35'),
+    ];
+}
+
+// switches the firmware (libvirt picks the files again; the old loader and NVRAM
+// settings are dropped) and adds or removes the emulated TPM 2.0
+function vm_xml_set_firmware($xml, $firmware, $tpm) {
+    $doc = vm_dom($xml);
+    $xpath = new DOMXPath($doc);
+    $os = vm_first($doc, '/domain/os');
+    if ($os) {
+        foreach (iterator_to_array($xpath->query('/domain/os/loader | /domain/os/nvram | /domain/os/firmware') ?: []) as $node) {
+            $os->removeChild($node);
+        }
+        if ($firmware === 'bios') {
+            $os->removeAttribute('firmware');
+        }
+        else {
+            $os->setAttribute('firmware', 'efi');
+            $type = vm_first($doc, '/domain/os/type');
+            $features = $firmware === 'efi-secure'
+                ? "<firmware><feature enabled='yes' name='secure-boot'/><feature enabled='yes' name='enrolled-keys'/></firmware>"
+                : "<firmware><feature enabled='no' name='secure-boot'/></firmware>";
+            $os->insertBefore(vm_element($doc, $features), $type ? $type->nextSibling : $os->firstChild);
+        }
+    }
+    // Secure Boot needs SMM
+    $features_el = vm_first($doc, '/domain/features');
+    $smm = vm_first($doc, '/domain/features/smm');
+    if ($firmware === 'efi-secure' && !$smm) {
+        if (!$features_el) {
+            $features_el = $doc->createElement('features');
+            $doc->documentElement->insertBefore($features_el, vm_first($doc, '/domain/devices'));
+        }
+        $features_el->appendChild(vm_element($doc, "<smm state='on'/>"));
+    }
+    foreach (iterator_to_array($xpath->query('/domain/devices/tpm') ?: []) as $node) {
+        $node->parentNode->removeChild($node);
+    }
+    if ($tpm) {
+        vm_first($doc, '/domain/devices')?->appendChild(vm_element($doc, "<tpm model='tpm-crb'><backend type='emulator' version='2.0'/></tpm>"));
+    }
+    return vm_xml($doc);
+}

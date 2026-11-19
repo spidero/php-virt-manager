@@ -344,4 +344,26 @@ final class VmEditTest extends TestCase
         $this->assertSame(12207, vm_mbit_to_kib(100));
         $this->assertSame(100.0, vm_kib_to_mbit(12207));
     }
+
+    public function testFirmwareChange(): void
+    {
+        $bios = domain_new_xml('vm', 512, 1, '/d.qcow2', '', 'net');
+        $this->assertSame(['firmware' => 'bios', 'tpm' => false, 'q35' => true], vm_firmware_settings($bios));
+
+        $secure = vm_xml_set_firmware($bios, 'efi-secure', true);
+        $this->assertSame(['firmware' => 'efi-secure', 'tpm' => true, 'q35' => true], vm_firmware_settings($secure));
+        $doc = simplexml_load_string($secure);
+        $this->assertSame('on', (string)$doc->features->smm['state']);
+        $this->assertSame('hvm', (string)$doc->os->type, 'type stays first in <os>');
+
+        // a definition expanded by libvirt (loader, nvram) switches cleanly
+        $expanded = str_replace("<os firmware='efi'>", "<os firmware='efi'><loader readonly='yes' secure='yes' type='pflash'>/x/CODE.fd</loader><nvram>/x/VARS.fd</nvram>", $secure);
+        $plain = vm_xml_set_firmware($expanded, 'efi', false);
+        $this->assertSame(['firmware' => 'efi', 'tpm' => false, 'q35' => true], vm_firmware_settings($plain));
+        $this->assertCount(0, simplexml_load_string($plain)->os->loader);
+        $back = simplexml_load_string(vm_xml_set_firmware($expanded, 'bios', false));
+        $this->assertSame('', (string)$back->os['firmware']);
+        $this->assertCount(0, $back->os->nvram);
+        $this->assertCount(0, $back->devices->tpm);
+    }
 }

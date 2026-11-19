@@ -429,6 +429,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $details = $mac.': in '.$in.' Mbit/s, out '.$out.' Mbit/s';
             $message = t('Bandwidth limits of %s saved.', $mac);
         }
+        elseif ($action === 'firmware') {
+            $firmware = (string)($_POST['firmware'] ?? 'bios');
+            if ($active) {
+                throw new RuntimeException(t('Shut the machine down first.'));
+            }
+            if (!isset(DOMAIN_FIRMWARES[$firmware])) {
+                throw new RuntimeException(t('Select the firmware.'));
+            }
+            $current_fw = vm_firmware_settings($xml);
+            if ($firmware === 'efi-secure' && !$current_fw['q35']) {
+                throw new RuntimeException(t('Secure Boot needs the q35 machine type.'));
+            }
+            define_or_fail($con, vm_xml_set_firmware($xml, $firmware, !empty($_POST['tpm'])));
+            $details = $current_fw['firmware'].' -> '.$firmware.', tpm '.(empty($_POST['tpm']) ? 'off' : 'on');
+            $message = t('Firmware and TPM saved.');
+        }
         elseif ($action === 'hardware') {
             $video = (string)($_POST['video'] ?? 'virtio');
             $sound = (string)($_POST['sound'] ?? '');
@@ -623,6 +639,8 @@ $smarty->assign('disk_cache_modes', DISK_CACHE_MODES);
 $smarty->assign('free_volumes', storage_free_volumes($con));
 $smarty->assign('serial_port', vm_serial_port($xml));
 $smarty->assign('hardware', vm_hardware($xml));
+$smarty->assign('firmware', vm_firmware_settings($xml));
+$smarty->assign('firmwares', DOMAIN_FIRMWARES);
 $smarty->assign('video_models', VM_VIDEO_MODELS);
 $smarty->assign('sound_models', VM_SOUND_MODELS);
 $smarty->assign('watchdog_actions', VM_WATCHDOG_ACTIONS);
