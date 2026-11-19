@@ -25,8 +25,10 @@ function connections_list() {
         }
     }
     else {
-        // single connection from older config.php files
-        $list['default'] = ['uri' => (string)$connection, 'label' => (string)$connection, 'readonly' => (int)$readonly, 'source' => 'config'];
+        // single connection from older config.php files; function.php keeps the configured
+        // values in $config_connection before it sets $connection to the selected connection
+        $legacy = $GLOBALS['config_connection'] ?? ['uri' => (string)$connection, 'readonly' => (int)$readonly];
+        $list['default'] = ['uri' => $legacy['uri'], 'label' => $legacy['uri'], 'readonly' => $legacy['readonly'], 'source' => 'config'];
     }
     foreach (connection_panel_rows() as $row) {
         $list += [$row['key'] => ['uri' => $row['uri'], 'label' => $row['label'], 'readonly' => (int)$row['readonly'], 'source' => 'panel']];

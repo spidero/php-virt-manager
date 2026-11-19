@@ -26,6 +26,8 @@ if (isset($_GET['conn']) && isset(connections_list()[(string)$_GET['conn']])) {
     $_SESSION['conn'] = (string)$_GET['conn'];
 }
 $current_connection = connection_current();
+// the configured single connection (older config.php) before $connection becomes the selected one
+$config_connection = ['uri' => (string)$connection, 'readonly' => (int)$readonly];
 $connection = $current_connection['uri'];
 $readonly = $current_connection['readonly'];
 
