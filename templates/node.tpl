@@ -106,7 +106,7 @@
 {foreach from=$interfaces item=i}
       <tr>
         <td>{$i.target|default:'-'}</td><td>{$i.type}: {$i.source}</td><td>{$i.model}</td><td><code>{$i.mac}</code></td>
-        <td>{foreach $i.ips as $ip}{$ip}<br>{foreachelse}<span class="text-body-secondary">-</span>{/foreach}</td>
+        <td>{foreach $i.addresses as $a}<span class="user-select-all">{$a.addr}</span>{if $a.prefix !== ''} <small class="text-body-secondary user-select-none">/{$a.prefix}</small>{/if}<br>{foreachelse}<span class="text-body-secondary">-</span>{/foreach}</td>
       </tr>
 {foreachelse}
       <tr><td colspan="5">{'No network interfaces'|t}</td></tr>

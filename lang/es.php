@@ -167,6 +167,7 @@ return [
     'Machine from cloud image' => 'Máquina desde imagen en la nube',
     'Machine has no SPICE graphics to switch.' => 'La máquina no tiene gráficos SPICE que cambiar.',
     'Manage your SSH keys' => 'Gestionar claves SSH',
+    'Mask' => 'Máscara',
     'Medium' => 'Medio',
     'Memory' => 'Memoria',
     'Memory (MB)' => 'Memoria (MB)',

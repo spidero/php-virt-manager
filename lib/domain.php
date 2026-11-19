@@ -98,8 +98,13 @@ function domain_interfaces($res, SimpleXMLElement $xml, $active) {
             'mac'    => $mac,
             'model'  => (string)$iface->model['type'],
             'target' => (string)$iface->target['dev'],
-            'ips'    => array_unique($ips[$mac] ?? []),
+            'ips'    => array_values(array_unique($ips[$mac] ?? [])),
         ];
+        // address and prefix apart, so the address can be copied alone
+        $interfaces[array_key_last($interfaces)]['addresses'] = array_map(function ($ip) {
+            [$addr, $prefix] = array_pad(explode('/', $ip, 2), 2, '');
+            return ['addr' => $addr, 'prefix' => $prefix];
+        }, $interfaces[array_key_last($interfaces)]['ips']);
     }
     return $interfaces;
 }

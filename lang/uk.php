@@ -167,6 +167,7 @@ return [
     'Machine from cloud image' => 'Машина з хмарного образу',
     'Machine has no SPICE graphics to switch.' => 'Машина не має графіки SPICE для перемикання.',
     'Manage your SSH keys' => 'Керувати ключами SSH',
+    'Mask' => 'Маска',
     'Medium' => 'Носій',
     'Memory' => 'Памʼять',
     'Memory (MB)' => 'Памʼять (МБ)',

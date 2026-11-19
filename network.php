@@ -45,7 +45,8 @@ foreach (libvirt_list_networks($con) ?: [] as $name) {
     if ($active) {
         foreach (@libvirt_network_get_dhcp_leases($net) ?: [] as $lease) {
             $leases[] = [
-                'ip'       => ($lease['ipaddr'] ?? '').'/'.($lease['prefix'] ?? ''),
+                'ip'       => (string)($lease['ipaddr'] ?? ''),
+                'prefix'   => isset($lease['prefix']) ? '/'.$lease['prefix'] : '',
                 'mac'      => $lease['mac'] ?? '',
                 'hostname' => $lease['hostname'] ?? '',
                 'expires'  => isset($lease['expirytime']) ? date('Y-m-d H:i', (int)$lease['expirytime']) : '',

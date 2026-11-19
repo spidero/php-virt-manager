@@ -167,6 +167,7 @@ return [
     'Machine from cloud image' => 'Maskin fra skybilde',
     'Machine has no SPICE graphics to switch.' => 'Maskinen har ingen SPICE-grafikk å bytte.',
     'Manage your SSH keys' => 'Administrer SSH-nøkler',
+    'Mask' => 'Maske',
     'Medium' => 'Medium',
     'Memory' => 'Minne',
     'Memory (MB)' => 'Minne (MB)',
