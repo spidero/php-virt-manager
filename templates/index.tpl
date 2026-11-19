@@ -79,7 +79,7 @@
     <tbody>
 {foreach $vms as $vm}
       <tr data-vm="{$vm.name}" data-vm-state="{$vm.id}">
-        <td>
+        <td class="text-nowrap">
           {include file="star.tpl" name=$vm.name back='index'}
           <a href="node.php?node={$vm.name|escape:'url'}" class="fw-semibold text-decoration-none ms-1">{$vm.name}</a>
           <div class="small text-body-secondary vm-sub">{'%d vCPU'|t:$vm.vcpus}</div>

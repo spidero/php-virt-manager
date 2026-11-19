@@ -132,7 +132,7 @@
       <input type="hidden" name="csrf" value="{$csrf_token}">
       <input type="hidden" name="node" value="{$node}">
       <input type="hidden" name="action" value="hostdev_attach">
-      <select name="device" class="form-select form-select-sm w-auto" aria-label="{'Host device'|t}" required>
+      <select name="device" class="form-select form-select-sm w-auto mw-100" aria-label="{'Host device'|t}" required>
         <option value="">- {'select a device'|t} -</option>
         <optgroup label="USB">
 {foreach $host_devices as $key => $d}{if $d.type=='usb'}
