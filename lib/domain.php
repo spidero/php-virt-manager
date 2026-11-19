@@ -249,7 +249,7 @@ function domain_xml_spice_to_vnc($xml) {
 // CD-ROM on a virtio-scsi controller: cloud kernels (e.g. Debian 12 "cloud-amd64")
 // have no AHCI driver and would not see a SATA CD-ROM, while installer ISOs
 // (Windows without drivers) need SATA
-function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $network, array $boot = ['cdrom', 'hd'], $iso_bus = 'sata') {
+function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $network, array $boot = ['cdrom', 'hd'], $iso_bus = 'sata', $serial_port = 0) {
     $iso = '';
     if ($iso_path !== '') {
         $bus = $iso_bus === 'scsi' ? 'scsi' : 'sata';
@@ -275,7 +275,7 @@ function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $netwo
         .vnc_graphics_xml()
         ."<video><model type='virtio'/></video>"
         ."<input type='tablet' bus='usb'/>"
-        ."<console type='pty'/>"
+        .vm_serial_xml($serial_port)
         // guest agent channel: IP addresses and clean shutdown when qemu-guest-agent runs in the guest
         ."<channel type='unix'><target type='virtio' name='org.qemu.guest_agent.0'/></channel>"
         ."<memballoon model='virtio'/>"

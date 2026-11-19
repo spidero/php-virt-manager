@@ -159,7 +159,9 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
   choice of disks; disks used by other machines are protected
 - snapshots: create, revert, delete; automatic snapshots hourly, daily or
   weekly with retention (keep the newest N)
-- browser console (noVNC via websockify), SPICE to VNC graphics switch
+- browser console (noVNC via websockify) with key combinations
+  (Ctrl+Alt+Del, Ctrl+Alt+F1...), text (serial) console in the browser,
+  SPICE to VNC graphics switch
 - new machine wizard (qcow2 disk in any active pool, ISO from any pool, network)
 - machines from cloud images with cloud-init: Ubuntu 26.04/24.04, Debian 13/12,
   AlmaLinux 10, Rocky Linux 10 (downloaded in the background), user with SSH
@@ -344,6 +346,19 @@ The console works for machines with VNC graphics. Machines using SPICE show a
 channel and USB redirection are removed); the change takes effect after the
 machine is shut down and started again. Each console opening creates a
 one-hour token; the websocket proxy additionally requires a logged in session.
+
+A toolbar above the console (and the machine page) sends key combinations
+such as Ctrl+Alt+Del or Ctrl+Alt+F2 without disconnecting.
+
+The **text console** is a serial terminal in the browser
+([xterm.js](https://xtermjs.org/), MIT, bundled in `assets/vendor/xterm`):
+the machine's serial port listens on `127.0.0.1:7100-7999` (one port per
+machine, assigned by the panel) and websockify forwards it with the same
+tokens. Machines created from cloud images have it; for others enable it on
+the edit page (after a restart). Notes: only one client can be connected at
+a time, `virsh console` does not work for such a machine (it needs a pty
+serial port), and local users of the host can reach the port, like the VNC
+port of a machine.
 
 ## Development
 

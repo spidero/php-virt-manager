@@ -167,4 +167,26 @@ final class VmEditTest extends TestCase
         $this->assertSame('lab', vm_nic_devices($xml)['52:54:00:aa:00:01']['source']);
         $this->assertCount(2, vm_nic_devices($xml));
     }
+
+    public function testSerialConsole(): void
+    {
+        $xml = "<domain><name>vm</name><devices><serial type='pty'><target port='0'/></serial><console type='pty'><target type='serial' port='0'/></console></devices></domain>";
+        $this->assertSame(0, vm_serial_port($xml));
+        $tcp = vm_xml_set_serial($xml, 7105);
+        $this->assertSame(7105, vm_serial_port($tcp));
+        $doc = simplexml_load_string($tcp);
+        $this->assertCount(1, $doc->devices->serial, 'old serial ports replaced');
+        $this->assertCount(0, $doc->devices->console);
+        $this->assertSame('127.0.0.1', (string)$doc->devices->serial->source['host']);
+        $back = vm_xml_set_serial($tcp, 0);
+        $this->assertSame(0, vm_serial_port($back));
+        $this->assertSame('pty', (string)simplexml_load_string($back)->devices->serial['type']);
+        // a port on another address is not a browser console
+        $this->assertSame(0, vm_serial_port(str_replace('127.0.0.1', '0.0.0.0', $tcp)));
+        // clones must not reuse the port
+        $this->assertSame(0, vm_serial_port(vm_xml_clone($tcp, 'vm-2', [])));
+        // new machines
+        $this->assertSame(7200, vm_serial_port(domain_new_xml('vm', 512, 1, '/d.qcow2', '', 'net', ['hd'], 'sata', 7200)));
+        $this->assertSame(0, vm_serial_port(domain_new_xml('vm', 512, 1, '/d.qcow2', '', 'net')));
+    }
 }

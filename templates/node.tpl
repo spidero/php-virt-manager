@@ -33,6 +33,9 @@
     {if $graphics && $graphics.type=='vnc' && $active && $console_enabled}
         <a href="console.php?node={$node|escape:'url'}" target="_blank" class="btn btn-secondary mb-1">{'Console'|t}</a>
     {/if}
+    {if $serial_port && $active && $console_enabled}
+        <a href="serial.php?node={$node|escape:'url'}" target="_blank" class="btn btn-secondary mb-1">{'Text console'|t}</a>
+    {/if}
     </div>
     {if $info['state']==1 && !$readonly}
     <div class="mb-3">{include file="sendkeys.tpl"}</div>

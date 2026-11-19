@@ -193,6 +193,24 @@
 
   <div class="col-md-6">
     <div class="card mb-3">
+      <div class="card-header">{'Text console'|t}</div>
+      <div class="card-body">
+        <p class="small text-body-secondary">{'A serial console in the browser (login prompt, boot messages, emergency shell); the guest needs a console on ttyS0, which cloud images have.'|t}</p>
+        {call form_start action='serial_console'}
+{if $serial_port}
+          <p class="mb-2"><span class="badge text-bg-success">{'enabled'|t}</span> <small class="text-body-secondary">127.0.0.1:{$serial_port}</small></p>
+          <button type="submit" class="btn btn-outline-secondary">{'Disable'|t}</button>
+{else}
+          <input type="hidden" name="enable" value="1">
+          <button type="submit" class="btn btn-primary">{'Enable'|t}</button>
+{/if}
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card mb-3">
       <div class="card-header">{'Boot order'|t}</div>
       <div class="card-body">
         {call form_start action='boot'}

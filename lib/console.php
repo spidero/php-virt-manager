@@ -32,3 +32,25 @@ function console_token_create($host, $port) {
 function console_vnc_host($listen) {
     return ($listen === '' || $listen === '0.0.0.0' || $listen === '::') ? '127.0.0.1' : $listen;
 }
+
+// TCP ports of the browser text consoles (serial ports bound to 127.0.0.1)
+const SERIAL_PORT_MIN = 7100;
+const SERIAL_PORT_MAX = 7999;
+
+// first port of the range not used by any machine of the connection
+function console_serial_free_port($con) {
+    $used = [];
+    foreach (libvirt_list_domains($con) ?: [] as $name) {
+        $res = libvirt_domain_lookup_by_name($con, $name);
+        $xml = $res ? (string)libvirt_domain_get_xml_desc($res, null, VIR_DOMAIN_XML_INACTIVE) : '';
+        if ($xml !== '') {
+            $used[] = vm_serial_port($xml);
+        }
+    }
+    for ($port = SERIAL_PORT_MIN; $port <= SERIAL_PORT_MAX; $port++) {
+        if (!in_array($port, $used, true)) {
+            return $port;
+        }
+    }
+    throw new RuntimeException('No free text console port');
+}

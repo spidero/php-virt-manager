@@ -246,6 +246,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $details = $mac.': '.$network.', '.$model;
         }
+        elseif ($action === 'serial_console') {
+            $enable = !empty($_POST['enable']);
+            $port = $enable ? (vm_serial_port($xml) ?: console_serial_free_port($con)) : 0;
+            define_or_fail($con, vm_xml_set_serial($xml, $port));
+            $details = $enable ? 'tcp 127.0.0.1:'.$port : 'pty';
+            $message = ($enable ? t('Text console enabled.') : t('Text console disabled.')).$after_restart;
+        }
         elseif ($action === 'boot') {
             $order = array_values(array_filter(array_map('strval', (array)($_POST['boot'] ?? []))));
             if (!$order) {
@@ -349,4 +356,5 @@ foreach (vm_disk_devices($xml) as $target => $d) {
 $smarty->assign('device_disks', $device_disks);
 $smarty->assign('device_nics', vm_nic_devices($xml));
 $smarty->assign('nic_models', NIC_MODELS);
+$smarty->assign('serial_port', vm_serial_port($xml));
 $smarty->display('edit.tpl');

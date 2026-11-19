@@ -137,6 +137,8 @@ $smarty->assign('autostart', (bool)libvirt_domain_get_autostart($res));
 $smarty->assign('disks', $xml ? domain_disks($res, $xml) : []);
 $smarty->assign('interfaces', $xml ? domain_interfaces($res, $xml, $active) : []);
 $smarty->assign('graphics', $xml ? domain_graphics($xml) : null);
+// text console of the running definition (port 0 = none)
+$smarty->assign('serial_port', $xml ? vm_serial_port($xml->asXML()) : 0);
 $smarty->assign('snapshots', domain_snapshots($res));
 $smarty->assign('schedules', schedule_list(connection_current_key(), $node));
 // spice in the persistent definition decides whether the switch button is shown

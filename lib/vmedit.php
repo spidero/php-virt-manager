@@ -219,6 +219,10 @@ function vm_xml_clone($xml, $new_name, array $path_map) {
             $source->setAttribute('file', $path_map[$source->getAttribute('file')]);
         }
     }
+    // a TCP text console port is unique per machine: the clone gets the default console
+    if (vm_serial_port(vm_xml($doc)) > 0) {
+        return vm_xml_set_serial(vm_xml($doc), 0);
+    }
     return vm_xml($doc);
 }
 
@@ -359,4 +363,37 @@ function vm_xpath_literal($value) {
         return '"'.$value.'"';
     }
     return "concat('".str_replace("'", "',\"'\",'", $value)."')";
+}
+
+// text console: $port > 0 = serial port on TCP 127.0.0.1:$port (reachable by websockify
+// for the browser terminal), 0 = the default pty console (virsh console)
+function vm_serial_xml($port) {
+    $port = (int)$port;
+    return $port > 0
+        ? "<serial type='tcp'><source mode='bind' host='127.0.0.1' service='".$port."'/>"
+            ."<protocol type='raw'/><target port='0'/></serial>"
+        : "<serial type='pty'><target port='0'/></serial>";
+}
+
+// replaces serial ports and consoles of the definition with one text console (see vm_serial_xml)
+function vm_xml_set_serial($xml, $port) {
+    $doc = vm_dom($xml);
+    foreach (iterator_to_array((new DOMXPath($doc))->query('/domain/devices/serial | /domain/devices/console') ?: []) as $node) {
+        $node->parentNode->removeChild($node);
+    }
+    $devices = vm_first($doc, '/domain/devices');
+    if ($devices) {
+        $devices->appendChild(vm_element($doc, vm_serial_xml($port)));
+    }
+    return vm_xml($doc);
+}
+
+// TCP port of the text console (serial on 127.0.0.1), 0 when the machine has none
+function vm_serial_port($xml) {
+    $xpath = new DOMXPath(vm_dom($xml));
+    $source = $xpath->query("/domain/devices/serial[@type='tcp']/source[@mode='bind']")->item(0);
+    if (!$source instanceof DOMElement || !in_array($source->getAttribute('host'), ['127.0.0.1', 'localhost'], true)) {
+        return 0;
+    }
+    return (int)$source->getAttribute('service');
 }
