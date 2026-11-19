@@ -56,6 +56,19 @@ function user_delete($id) {
     db_query('DELETE FROM users WHERE id = ?', [$id]);
 }
 
+// password set explicitly by the operator (Docker PVM_PASSWORD, bin/set-password.php):
+// overwrites the stored hash of an existing account (role unchanged) or creates
+// the account as admin; returns 'updated' or 'created'
+function user_set_password($username, $password_hash) {
+    $user = user_find_by_name($username);
+    if ($user) {
+        user_update($user['id'], ['password_hash' => $password_hash]);
+        return 'updated';
+    }
+    user_create($username, $password_hash, 'admin');
+    return 'created';
+}
+
 // first run: the admin account from config.php becomes the first user
 function users_bootstrap($username, $password_hash) {
     if ($password_hash !== '' && (int)db_query('SELECT COUNT(*) FROM users')->fetchColumn() === 0) {

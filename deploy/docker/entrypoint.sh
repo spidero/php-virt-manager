@@ -47,6 +47,17 @@ if [ ! -f "$APP_DIR/config.php" ] || [ -n "${PVM_PASSWORD:-}${PVM_PASSWORD_HASH:
     chmod 640 "$APP_DIR/config.php"
 fi
 
+# an explicitly set password always wins over the one stored in the user
+# database (config.php alone only seeds the very first user)
+if [ -n "${PVM_PASSWORD:-}${PVM_PASSWORD_HASH:-}" ]; then
+    if [ -n "${PVM_PASSWORD:-}" ] && [ "${#PVM_PASSWORD}" -lt 8 ]; then
+        echo "WARNING: PVM_PASSWORD is shorter than 8 characters" >&2
+    fi
+    mkdir -p "$APP_DIR/data"
+    chown www-data:www-data "$APP_DIR/data"
+    su -s /bin/sh www-data -c "php $APP_DIR/bin/set-password.php"
+fi
+
 # self-signed certificate unless one is mounted
 if [ ! -f "$SSL_DIR/cert.pem" ]; then
     mkdir -p "$SSL_DIR"

@@ -64,6 +64,11 @@ docker logs php-virt-manager 2>&1 | grep login    # Compose: docker compose logs
 
 The first administrator is created on the first start and stored in the
 `pvm-data` volume; change the password and add further users in the panel.
+When `PVM_PASSWORD` (or `PVM_PASSWORD_HASH`) is set, it is applied to the
+`PVM_USER` account on every start, overwriting a password changed in the panel -
+handy to recover access; remove the variable to manage the password in the panel.
+Without it a password stored in the volume stays, and a random one printed in
+the log applies only to a fresh volume.
 
 ### Ports
 
@@ -86,7 +91,7 @@ Choose ports that are free on the host (`ss -tlnp`).
 |---------------------|------------------|------------------------------------------|
 | `LIBVIRT_URI`       | `qemu:///system` | libvirt connection                       |
 | `PVM_USER`          | `admin`          | first administrator (created on first start) |
-| `PVM_PASSWORD`      | random           | its password (or `PVM_PASSWORD_HASH`, a `password_hash()` bcrypt hash) |
+| `PVM_PASSWORD`      | random           | its password (or `PVM_PASSWORD_HASH`, a `password_hash()` bcrypt hash); applied on every start when set |
 | `PVM_READONLY`      | `0`              | `1` = view only                          |
 | `TZ`                | `UTC`            | time zone (logs, snapshot schedules)     |
 | `HTTPS_PORT`, `HTTP_PORT`, `WS_PORT` | see [Ports](#ports) | |
@@ -198,6 +203,7 @@ cp config-default.php config.php
 php -r 'echo password_hash("your-password", PASSWORD_DEFAULT), PHP_EOL;'
 # paste the hash into $auth_password_hash in config.php - this account becomes
 # the first administrator, further users are managed in the panel
+# (lost the password later? put a new hash there and run: php bin/set-password.php)
 php -d extension=libvirt-php -S 127.0.0.1:8099
 # background jobs (image downloads, clones), snapshot schedules and cleanup;
 # on a server this runs every minute from systemd/Docker, here keep it running:
