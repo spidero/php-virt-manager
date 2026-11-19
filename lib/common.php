@@ -14,11 +14,20 @@ function csrf_token() {
 
 // stops the request unless it is a POST carrying a valid CSRF token
 function csrf_require() {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST'
-        || !hash_equals(csrf_token(), (string)($_POST['csrf'] ?? ''))) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(400);
         exit('Invalid request (CSRF token mismatch).');
     }
+    if (!hash_equals(csrf_token(), (string)($_POST['csrf'] ?? ''))) {
+        // usually a form left open while the session expired (or the server
+        // restarted): send the user back to the form with a hint instead of an error
+        session_expired_redirect(current_user() ? ($_SERVER['REQUEST_URI'] ?? 'index.php') : 'login.php');
+    }
+}
+
+function session_expired_redirect($url): never {
+    flash_set('warning', t('Your session has expired, please try again.'));
+    redirect($url);
 }
 
 // flash message shown once after a redirect; $type is a bootstrap color

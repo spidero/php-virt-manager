@@ -59,6 +59,10 @@ $smarty->assign('weekdays', ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursd
 // every page except login.php requires an authenticated session
 if (!defined('PUBLIC_PAGE') && $user === null) {
     unset($_SESSION['user_id']);
+    // a form sent after the session expired: tell the user why the login page appears
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        session_expired_redirect('login.php');
+    }
     redirect('login.php');
 }
 

@@ -364,4 +364,5 @@ return [
     'bin/cron.php has never run.' => 'bin/cron.php ще жодного разу не запускався.',
     'bin/cron.php last ran at %s.' => 'bin/cron.php востаннє запускався: %s.',
     'It is started by the systemd timer (deploy/install.sh) or in the Docker image; on the development server run:' => 'Його запускає таймер systemd (deploy/install.sh) або образ Docker; на сервері розробки виконайте:',
+    'Your session has expired, please try again.' => 'Сеанс завершився, спробуйте ще раз.',
 ];
