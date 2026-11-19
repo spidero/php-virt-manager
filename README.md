@@ -151,8 +151,10 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 - machine details: memory, vCPUs, disks, network interfaces with guest IPs,
   autostart, live screen preview
 - power actions: start, shutdown, reboot, pause/resume, force stop
-- machine editing: memory, vCPUs, CD/DVD medium, boot order, new disks and
-  network interfaces (hot-plugged into running machines)
+- machine editing: memory, vCPUs, CD/DVD medium, boot order; disks: add,
+  grow (also while running), detach (optionally deleting the file);
+  network interfaces: add, switch network (live) or model, detach - devices
+  are hot-plugged into running machines
 - cloning (disks copied in the background) and deleting machines with a
   choice of disks; disks used by other machines are protected
 - snapshots: create, revert, delete; automatic snapshots hourly, daily or

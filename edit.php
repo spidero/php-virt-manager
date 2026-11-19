@@ -42,6 +42,17 @@ function attach_device($con, $res, $xml, $active, $device) {
         : false;
 }
 
+// capacity of a disk in bytes (running machine: block info, otherwise the volume), null when unknown
+function disk_capacity($con, $res, $active, $target, $path) {
+    if ($active) {
+        $block = @libvirt_domain_get_block_info($res, $target);
+        return is_array($block) ? (int)$block['capacity'] : null;
+    }
+    $vol = $path !== '' ? @libvirt_storagevolume_lookup_by_path($con, $path) : false;
+    $info = $vol ? @libvirt_storagevolume_get_info($vol) : false;
+    return is_array($info) ? (int)$info['capacity'] : null;
+}
+
 // redefines the machine with the new persistent XML or throws
 function define_or_fail($con, $new_xml) {
     if (!libvirt_domain_define_xml($con, $new_xml)) {
@@ -123,6 +134,117 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $details = $network.($note ? ', after restart' : '');
             $message = t('Network interface added.').$note;
+        }
+        elseif ($action === 'detach_disk') {
+            $target = (string)($_POST['target'] ?? '');
+            $disks = vm_disk_devices($xml);
+            if (!isset($disks[$target]) || $disks[$target]['device'] !== 'disk') {
+                throw new RuntimeException(t('Unknown disk.'));
+            }
+            $delete = !empty($_POST['delete_volume']);
+            if ($delete && ($active || !can('admin'))) {
+                throw new RuntimeException(t('The disk file can be deleted only by an administrator, with the machine shut down.'));
+            }
+            $path = $disks[$target]['path'];
+            if ($delete && in_array($path, storage_sources_in_use($con, $node), true)) {
+                throw new RuntimeException(t('The disk is used by another machine and cannot be deleted.'));
+            }
+            if ($active) {
+                // the guest releases the disk (hot-unplug), the definition changes at once
+                if (!libvirt_domain_detach_device($res, $disks[$target]['xml'], AFFECT_LIVE_CONFIG)) {
+                    throw new RuntimeException(t('Error: %s', libvirt_get_last_error()));
+                }
+            }
+            else {
+                define_or_fail($con, vm_xml_remove_disk($xml, $target));
+            }
+            $message = t('Disk %s detached.', $target);
+            $details = $target.' '.$path;
+            if ($delete) {
+                $vol = libvirt_storagevolume_lookup_by_path($con, $path);
+                if ($vol && libvirt_storagevolume_delete($vol, 0)) {
+                    $message .= ' '.t('The disk file was deleted.');
+                    $details .= ', file deleted';
+                }
+                else {
+                    $message .= ' '.t('Could not delete: %s', $path);
+                }
+            }
+        }
+        elseif ($action === 'resize_disk') {
+            $target = (string)($_POST['target'] ?? '');
+            $size_gb = (int)($_POST['size'] ?? 0);
+            $disks = vm_disk_devices($xml);
+            if (!isset($disks[$target]) || $disks[$target]['device'] !== 'disk') {
+                throw new RuntimeException(t('Unknown disk.'));
+            }
+            $bytes = $size_gb * 1073741824;
+            $current = disk_capacity($con, $res, $active, $target, $disks[$target]['path']);
+            if ($size_gb < 1 || $size_gb > 65536) {
+                throw new RuntimeException(t('Disk size must be between %d and %d GB.', 1, 65536));
+            }
+            if ($current !== null && $bytes <= $current) {
+                throw new RuntimeException(t('The new size must be larger than the current %s (shrinking would destroy data).', format_bytes($current)));
+            }
+            if ($active) {
+                // flag 1 = size in bytes; the guest sees the bigger disk at once
+                $ok = libvirt_domain_block_resize($res, $target, $bytes, 1);
+            }
+            else {
+                $vol = libvirt_storagevolume_lookup_by_path($con, $disks[$target]['path']);
+                $ok = $vol && libvirt_storagevolume_resize($vol, $bytes, 0) !== false;
+            }
+            if (!$ok) {
+                throw new RuntimeException(t('Error: %s', libvirt_get_last_error()));
+            }
+            $details = $target.' -> '.$size_gb.' GB';
+            $message = t('Disk %s resized to %d GB. Grow the partition and file system in the guest (e.g. growpart, resize2fs); cloud images do it at the next boot.', $target, $size_gb);
+        }
+        elseif ($action === 'detach_nic') {
+            $mac = strtolower((string)($_POST['mac'] ?? ''));
+            $nics = vm_nic_devices($xml);
+            if (!isset($nics[$mac])) {
+                throw new RuntimeException(t('Unknown network interface.'));
+            }
+            if ($active) {
+                if (!libvirt_domain_detach_device($res, $nics[$mac]['xml'], AFFECT_LIVE_CONFIG)) {
+                    throw new RuntimeException(t('Error: %s', libvirt_get_last_error()));
+                }
+            }
+            else {
+                define_or_fail($con, vm_xml_remove_nic($xml, $mac));
+            }
+            $details = $mac;
+            $message = t('Network interface %s detached.', $mac);
+        }
+        elseif ($action === 'nic_change') {
+            $mac = strtolower((string)($_POST['mac'] ?? ''));
+            $network = (string)($_POST['network'] ?? '');
+            $model = (string)($_POST['model'] ?? '');
+            $nics = vm_nic_devices($xml);
+            if (!isset($nics[$mac])) {
+                throw new RuntimeException(t('Unknown network interface.'));
+            }
+            if (!in_array($network, $networks, true)) {
+                throw new RuntimeException(t('Select a network.'));
+            }
+            if (!isset(NIC_MODELS[$model])) {
+                throw new RuntimeException(t('Unknown network card model.'));
+            }
+            $new_nic = vm_nic_xml_change($nics[$mac]['xml'], $network, $model);
+            $model_changed = $model !== $nics[$mac]['model'];
+            if ($active && !$model_changed) {
+                // network switch of the running machine (link stays, new network at once)
+                if (!libvirt_domain_update_device($res, $new_nic, AFFECT_LIVE_CONFIG)) {
+                    throw new RuntimeException(t('Error: %s', libvirt_get_last_error()));
+                }
+                $message = t('Network interface %s connected to %s.', $mac, $network);
+            }
+            else {
+                define_or_fail($con, vm_xml_replace_nic($xml, $mac, $new_nic));
+                $message = t('Network interface %s saved.', $mac).($model_changed ? $after_restart : '');
+            }
+            $details = $mac.': '.$network.', '.$model;
         }
         elseif ($action === 'boot') {
             $order = array_values(array_filter(array_map('strval', (array)($_POST['boot'] ?? []))));
@@ -213,4 +335,18 @@ $smarty->assign('pools', $pools);
 $smarty->assign('networks', $networks);
 $smarty->assign('boot', vm_boot_order($xml));
 $smarty->assign('disks', $disks);
+// devices for the disk and network interface tables
+$device_disks = [];
+foreach (vm_disk_devices($xml) as $target => $d) {
+    if ($d['device'] !== 'disk') {
+        continue;
+    }
+    $capacity = disk_capacity($con, $res, $active, $target, $d['path']);
+    $device_disks[] = $d + ['target' => $target, 'capacity' => $capacity !== null ? format_bytes($capacity) : '-',
+        'capacity_gb' => $capacity !== null ? (int)ceil($capacity / 1073741824) : 0,
+        'shared' => in_array($d['path'], $shared, true)];
+}
+$smarty->assign('device_disks', $device_disks);
+$smarty->assign('device_nics', vm_nic_devices($xml));
+$smarty->assign('nic_models', NIC_MODELS);
 $smarty->display('edit.tpl');

@@ -112,4 +112,59 @@ final class VmEditTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         vm_dom('<broken');
     }
+
+    private const DEVICES_XML = "<domain><name>vm</name><devices>
+        <disk type='file' device='disk'><source file='/p/vm.qcow2'/><target dev='vda' bus='virtio'/></disk>
+        <disk type='file' device='disk'><source file='/p/vm-vdb.qcow2'/><target dev='vdb' bus='virtio'/></disk>
+        <disk type='file' device='cdrom'><source file='/p/os.iso'/><target dev='sda' bus='sata'/></disk>
+        <interface type='network'><mac address='52:54:00:AA:00:01'/><source network='default'/><model type='virtio'/><address type='pci' slot='0x01'/></interface>
+        <interface type='bridge'><mac address='52:54:00:aa:00:02'/><source bridge='br0'/><model type='e1000e'/></interface>
+        </devices></domain>";
+
+    public function testDeviceLists(): void
+    {
+        $disks = vm_disk_devices(self::DEVICES_XML);
+        $this->assertSame(['vda', 'vdb', 'sda'], array_keys($disks));
+        $this->assertSame('/p/vm-vdb.qcow2', $disks['vdb']['path']);
+        $this->assertSame('cdrom', $disks['sda']['device']);
+        $this->assertStringContainsString("dev=\"vdb\"", $disks['vdb']['xml']);
+
+        $nics = vm_nic_devices(self::DEVICES_XML);
+        $this->assertSame(['52:54:00:aa:00:01', '52:54:00:aa:00:02'], array_keys($nics), 'MACs lower case');
+        $this->assertSame(['network', 'default', 'virtio'], [$nics['52:54:00:aa:00:01']['type'], $nics['52:54:00:aa:00:01']['source'], $nics['52:54:00:aa:00:01']['model']]);
+        $this->assertSame('br0', $nics['52:54:00:aa:00:02']['source']);
+    }
+
+    public function testRemoveDevices(): void
+    {
+        $xml = vm_xml_remove_disk(self::DEVICES_XML, 'vdb');
+        $this->assertSame(['vda', 'sda'], array_keys(vm_disk_devices($xml)));
+        $xml = vm_xml_remove_nic($xml, '52:54:00:AA:00:02');
+        $this->assertSame(['52:54:00:aa:00:01'], array_keys(vm_nic_devices($xml)));
+        $this->assertSame(['vda', 'sda'], array_keys(vm_disk_devices(vm_xml_remove_disk($xml, "x' or '1'='1"))), 'quotes in the target');
+    }
+
+    public function testNicChange(): void
+    {
+        $nic = vm_nic_devices(self::DEVICES_XML)['52:54:00:aa:00:01']['xml'];
+        // network only: the PCI address stays
+        $same_model = simplexml_load_string(vm_nic_xml_change($nic, 'lab', 'virtio'));
+        $this->assertSame('lab', (string)$same_model->source['network']);
+        $this->assertCount(1, $same_model->address);
+        // another model: the address is dropped, MAC kept
+        $other = simplexml_load_string(vm_nic_xml_change($nic, 'lab', 'e1000e'));
+        $this->assertSame('e1000e', (string)$other->model['type']);
+        $this->assertCount(0, $other->address);
+        $this->assertSame('52:54:00:AA:00:01', (string)$other->mac['address']);
+        // a bridge interface becomes a network interface
+        $bridge = vm_nic_devices(self::DEVICES_XML)['52:54:00:aa:00:02']['xml'];
+        $changed = simplexml_load_string(vm_nic_xml_change($bridge, 'default', 'virtio'));
+        $this->assertSame('network', (string)$changed['type']);
+        $this->assertCount(1, $changed->source);
+        $this->assertSame('', (string)$changed->source['bridge']);
+
+        $xml = vm_xml_replace_nic(self::DEVICES_XML, '52:54:00:aa:00:01', vm_nic_xml_change($nic, 'lab', 'e1000e'));
+        $this->assertSame('lab', vm_nic_devices($xml)['52:54:00:aa:00:01']['source']);
+        $this->assertCount(2, vm_nic_devices($xml));
+    }
 }

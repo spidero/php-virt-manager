@@ -10,6 +10,98 @@
 <div class="alert alert-info">{'The machine is running: memory, vCPU and boot order changes take effect after it is shut down and started again. Disks and network interfaces are attached immediately.'|t}</div>
 {/if}
 
+<div class="card mb-3">
+  <div class="card-header">{'Disks'|t}</div>
+  <div class="table-responsive">
+  <table class="table table-sm align-middle mb-0">
+    <thead class="small"><tr><th>{'Device'|t}</th><th>{'File'|t}</th><th>{'Size'|t}</th><th>{'Resize'|t}</th><th></th></tr></thead>
+    <tbody>
+{foreach $device_disks as $d}
+      <tr>
+        <td><code>{$d.target}</code> <small class="text-body-secondary">{$d.bus}</small></td>
+        <td class="small text-break">{$d.path}{if $d.shared} <span class="badge text-bg-warning">{'shared'|t}</span>{/if}</td>
+        <td class="text-nowrap">{$d.capacity}</td>
+        <td>
+          <form method="post" action="edit.php" class="d-flex gap-1" style="max-width: 14rem;">
+            <input type="hidden" name="csrf" value="{$csrf_token}">
+            <input type="hidden" name="node" value="{$node}">
+            <input type="hidden" name="action" value="resize_disk">
+            <input type="hidden" name="target" value="{$d.target}">
+            <input type="number" name="size" class="form-control form-control-sm" min="{$d.capacity_gb+1}" max="65536" value="{$d.capacity_gb+10}" aria-label="{'New size (GB)'|t}" required>
+            <button type="submit" class="btn btn-outline-primary btn-sm text-nowrap">{'GB, resize'|t}</button>
+          </form>
+        </td>
+        <td class="text-end">
+          <form method="post" action="edit.php" class="d-inline-flex gap-2 align-items-center" data-confirm="{'Detach disk %s from the machine?'|t:$d.target}">
+            <input type="hidden" name="csrf" value="{$csrf_token}">
+            <input type="hidden" name="node" value="{$node}">
+            <input type="hidden" name="action" value="detach_disk">
+            <input type="hidden" name="target" value="{$d.target}">
+{if !$active && $can.admin && !$d.shared}
+            <label class="small text-nowrap"><input type="checkbox" class="form-check-input" name="delete_volume" value="1"> {'delete file'|t}</label>
+{/if}
+            <button type="submit" class="btn btn-outline-danger btn-sm">{'Detach'|t}</button>
+          </form>
+        </td>
+      </tr>
+{foreachelse}
+      <tr><td colspan="5" class="text-body-secondary">{'No disks'|t}</td></tr>
+{/foreach}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">{'Network interfaces'|t}</div>
+  <div class="table-responsive">
+  <table class="table table-sm align-middle mb-0">
+    <thead class="small"><tr><th>MAC</th><th>{'Network'|t} / {'Model'|t}</th><th></th></tr></thead>
+    <tbody>
+{foreach $device_nics as $mac => $n}
+      <tr>
+        <td><code>{$mac}</code></td>
+        <td>
+{if $n.type == 'network'}
+          <form method="post" action="edit.php" class="d-flex gap-1 flex-wrap">
+            <input type="hidden" name="csrf" value="{$csrf_token}">
+            <input type="hidden" name="node" value="{$node}">
+            <input type="hidden" name="action" value="nic_change">
+            <input type="hidden" name="mac" value="{$mac}">
+            <select name="network" class="form-select form-select-sm w-auto" aria-label="{'Network'|t}">
+{foreach $networks as $net}
+              <option value="{$net}"{if $net==$n.source} selected{/if}>{$net}</option>
+{/foreach}
+            </select>
+            <select name="model" class="form-select form-select-sm w-auto" aria-label="{'Model'|t}">
+{foreach $nic_models as $m => $label}
+              <option value="{$m}"{if $m==$n.model} selected{/if}>{$label}</option>
+{/foreach}
+            </select>
+            <button type="submit" class="btn btn-outline-primary btn-sm">{'Save'|t}</button>
+          </form>
+{else}
+          <span class="small">{$n.type}: {$n.source} ({$n.model})</span>
+{/if}
+        </td>
+        <td class="text-end">
+          <form method="post" action="edit.php" class="d-inline" data-confirm="{'Detach network interface %s?'|t:$mac}">
+            <input type="hidden" name="csrf" value="{$csrf_token}">
+            <input type="hidden" name="node" value="{$node}">
+            <input type="hidden" name="action" value="detach_nic">
+            <input type="hidden" name="mac" value="{$mac}">
+            <button type="submit" class="btn btn-outline-danger btn-sm">{'Detach'|t}</button>
+          </form>
+        </td>
+      </tr>
+{foreachelse}
+      <tr><td colspan="3" class="text-body-secondary">{'No network interfaces'|t}</td></tr>
+{/foreach}
+    </tbody>
+  </table>
+  </div>
+</div>
+
 <div class="row">
   <div class="col-md-6">
     <div class="card mb-3">

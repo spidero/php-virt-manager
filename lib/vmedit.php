@@ -239,3 +239,124 @@ function vm_memory_mb($xml) {
     $unit = strtolower($memory->getAttribute('unit') ?: 'KiB');
     return (int)round((float)$memory->textContent * ($factors[$unit] ?? 1 / 1024));
 }
+
+// disks and CD-ROMs of a definition: [target => [device, bus, path, xml]]
+function vm_disk_devices($xml) {
+    $doc = vm_dom($xml);
+    $xpath = new DOMXPath($doc);
+    $list = [];
+    foreach ($xpath->query('/domain/devices/disk') ?: [] as $disk) {
+        $target = $xpath->query('target', $disk)->item(0);
+        if (!$target instanceof DOMElement) {
+            continue;
+        }
+        $source = $xpath->query('source/@file|source/@dev', $disk)->item(0);
+        $list[$target->getAttribute('dev')] = [
+            'device' => $disk instanceof DOMElement ? $disk->getAttribute('device') : '',
+            'bus'    => $target->getAttribute('bus'),
+            'path'   => $source ? $source->nodeValue : '',
+            'xml'    => (string)$doc->saveXML($disk),
+        ];
+    }
+    return $list;
+}
+
+// network interfaces: [mac => [type, source, model, xml]]
+function vm_nic_devices($xml) {
+    $doc = vm_dom($xml);
+    $xpath = new DOMXPath($doc);
+    $list = [];
+    foreach ($xpath->query('/domain/devices/interface') ?: [] as $iface) {
+        $mac = $xpath->query('mac/@address', $iface)->item(0);
+        if (!$mac || !$iface instanceof DOMElement) {
+            continue;
+        }
+        $source = $xpath->query('source/@network|source/@bridge|source/@dev', $iface)->item(0);
+        $model = $xpath->query('model/@type', $iface)->item(0);
+        $list[strtolower($mac->nodeValue)] = [
+            'type'   => $iface->getAttribute('type'),
+            'source' => $source ? $source->nodeValue : '',
+            'model'  => $model ? $model->nodeValue : '',
+            'xml'    => (string)$doc->saveXML($iface),
+        ];
+    }
+    return $list;
+}
+
+// definition without the disk with this target
+function vm_xml_remove_disk($xml, $target) {
+    $doc = vm_dom($xml);
+    foreach ((new DOMXPath($doc))->query('/domain/devices/disk[target/@dev='.vm_xpath_literal($target).']') ?: [] as $disk) {
+        $disk->parentNode->removeChild($disk);
+    }
+    return vm_xml($doc);
+}
+
+// definition without the interface with this MAC (case insensitive)
+function vm_xml_remove_nic($xml, $mac) {
+    $doc = vm_dom($xml);
+    $xpath = new DOMXPath($doc);
+    foreach (iterator_to_array($xpath->query('/domain/devices/interface') ?: []) as $iface) {
+        $address = $xpath->query('mac/@address', $iface)->item(0);
+        if ($address && strtolower($address->nodeValue) === strtolower($mac)) {
+            $iface->parentNode->removeChild($iface);
+        }
+    }
+    return vm_xml($doc);
+}
+
+const NIC_MODELS = ['virtio' => 'virtio', 'e1000e' => 'Intel e1000e', 'e1000' => 'Intel e1000', 'rtl8139' => 'Realtek rtl8139'];
+
+// interface XML connected to another libvirt network and/or with another model
+function vm_nic_xml_change($nic_xml, $network, $model) {
+    $doc = vm_dom($nic_xml);
+    $iface = $doc->documentElement;
+    $iface->setAttribute('type', 'network');
+    foreach (iterator_to_array($iface->getElementsByTagName('source')) as $old) {
+        $iface->removeChild($old);
+    }
+    $source = $doc->createElement('source');
+    $source->setAttribute('network', $network);
+    $iface->insertBefore($source, $iface->firstChild);
+    $model_el = $iface->getElementsByTagName('model')->item(0);
+    if (!$model_el) {
+        $model_el = $doc->createElement('model');
+        $iface->appendChild($model_el);
+    }
+    $old_model = $model_el->getAttribute('type');
+    $model_el->setAttribute('type', $model);
+    // another model may need another bus address; libvirt assigns a new one
+    if ($old_model !== $model) {
+        foreach (iterator_to_array($iface->getElementsByTagName('address')) as $address) {
+            if ($address->parentNode === $iface) {
+                $iface->removeChild($address);
+            }
+        }
+    }
+    return vm_xml($doc);
+}
+
+// definition with the interface (by MAC) replaced
+function vm_xml_replace_nic($xml, $mac, $new_nic_xml) {
+    $doc = vm_dom($xml);
+    $xpath = new DOMXPath($doc);
+    foreach (iterator_to_array($xpath->query('/domain/devices/interface') ?: []) as $iface) {
+        $address = $xpath->query('mac/@address', $iface)->item(0);
+        if ($address && strtolower($address->nodeValue) === strtolower($mac)) {
+            $iface->parentNode->replaceChild($doc->importNode(vm_dom($new_nic_xml)->documentElement, true), $iface);
+        }
+    }
+    return vm_xml($doc);
+}
+
+// XPath string literal for any value (quotes included)
+function vm_xpath_literal($value) {
+    $value = (string)$value;
+    if (!str_contains($value, "'")) {
+        return "'".$value."'";
+    }
+    if (!str_contains($value, '"')) {
+        return '"'.$value.'"';
+    }
+    return "concat('".str_replace("'", "',\"'\",'", $value)."')";
+}
