@@ -19,7 +19,8 @@
       .then(function (r) { return r.json(); })
       .then(function (res) {
         if (!status) return;
-        status.textContent = res.ok ? '✓ ' + label : '✗ ' + (res.error || '');
+        // plain text, the color tells success (green) from an error (red)
+        status.textContent = res.ok ? label : (res.error || '');
         status.className = 'small ms-1 ' + (res.ok ? 'text-success' : 'text-danger');
       })
       .catch(function () {});
