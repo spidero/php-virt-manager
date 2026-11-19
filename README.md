@@ -198,8 +198,9 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
   schema)
 - host device passthrough for administrators: USB (by vendor and product,
   also live) and PCI devices (next start, needs IOMMU)
-- cloning (disks copied in the background) and deleting machines with a
-  choice of disks; disks used by other machines are protected
+- cloning in the background with a choice per disk (copy, share the same
+  file, leave out) and deleting machines with a choice of disks; disks used
+  by other machines are protected
 - snapshots: create, revert, delete; automatic snapshots hourly, daily or
   weekly with retention (keep the newest N)
 

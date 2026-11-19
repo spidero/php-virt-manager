@@ -405,8 +405,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (in_array($name, libvirt_list_domains($con) ?: [], true) || job_pending('clone', 'name', $name)) {
                 throw new RuntimeException(t('A machine with this name already exists.'));
             }
-            $id = job_create('clone', ['source' => $node, 'name' => $name]);
-            action_log('clone_queued', $node, true, $name.' (job #'.$id.')');
+            $modes = vm_clone_disk_modes($xml, (array)($_POST['disk_mode'] ?? []));
+            $id = job_create('clone', ['source' => $node, 'name' => $name, 'disks' => $modes]);
+            action_log('clone_queued', $node, true, $name.' (job #'.$id.') '.json_encode($modes));
             flash_set('success', t('Cloning to %s started in the background (job #%d).', $name, $id));
             redirect('jobs.php');
         }
@@ -484,7 +485,7 @@ foreach (vm_disk_devices($xml) as $target => $d) {
         continue;
     }
     $capacity = disk_capacity($con, $res, $active, $target, $d['path']);
-    $device_disks[] = $d + ['target' => $target, 'capacity' => $capacity !== null ? format_bytes($capacity) : '-',
+    $device_disks[] = $d + ['target' => $target, 'file' => basename($d['path']), 'capacity' => $capacity !== null ? format_bytes($capacity) : '-',
         'capacity_gb' => $capacity !== null ? (int)ceil($capacity / 1073741824) : 0,
         'shared' => in_array($d['path'], $shared, true)];
 }

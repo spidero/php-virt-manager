@@ -259,9 +259,15 @@ function vm_all_sources($xml) {
 
 // definition of a clone: new name, no UUID/MACs/fixed ports, disk paths replaced
 // by $path_map [old path => new path]; UEFI variables get a fresh file from the template
-function vm_xml_clone($xml, $new_name, array $path_map) {
+// $skip: disk targets left out of the clone (shared disks keep their path: not in $path_map)
+function vm_xml_clone($xml, $new_name, array $path_map, array $skip = []) {
     $doc = vm_dom($xml);
     $xpath = new DOMXPath($doc);
+    foreach ($skip as $target) {
+        foreach (iterator_to_array($xpath->query('/domain/devices/disk[target/@dev='.vm_xpath_literal($target).']') ?: []) as $disk) {
+            $disk->parentNode->removeChild($disk);
+        }
+    }
     vm_set_text($doc, 'name', $new_name);
     $remove = '/domain/uuid | /domain/devices/interface/mac | /domain/devices/interface/target'
         .' | /domain/devices/graphics/@port | /domain/devices/graphics/@websocket | /domain/os/nvram';
@@ -511,4 +517,16 @@ function vm_xml_schema_error($xml) {
     }
     // drop the temporary file name from the messages
     return trim(str_replace($file, 'XML', $output));
+}
+
+const CLONE_DISK_MODES = ['copy', 'share', 'skip'];
+
+// disk modes for a clone from the request: target => copy|share|skip (default copy)
+function vm_clone_disk_modes($xml, array $input) {
+    $modes = [];
+    foreach (array_keys(vm_disk_paths($xml)) as $target) {
+        $mode = (string)($input[$target] ?? 'copy');
+        $modes[$target] = in_array($mode, CLONE_DISK_MODES, true) ? $mode : 'copy';
+    }
+    return $modes;
 }

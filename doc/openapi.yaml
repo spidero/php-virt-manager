@@ -209,7 +209,11 @@ paths:
               required: [name]
               properties:
                 name: {type: string, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'}
-            example: {name: web-02}
+                disks:
+                  type: object
+                  description: 'per disk target: copy (default), share or skip'
+                  additionalProperties: {type: string, enum: [copy, share, skip]}
+            example: {name: web-02, disks: {vda: copy, vdb: share}}
       responses:
         '200': {$ref: '#/components/responses/JobCreated'}
         '4XX': {$ref: '#/components/responses/Error'}

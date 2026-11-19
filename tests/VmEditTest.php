@@ -270,4 +270,18 @@ final class VmEditTest extends TestCase
         $this->assertFalse(vm_has_virtio_scsi('<domain><devices/></domain>'));
         $this->assertTrue(vm_has_virtio_scsi("<domain><devices><controller type='scsi' index='0' model='virtio-scsi'/></devices></domain>"));
     }
+
+    public function testCloneDiskModes(): void
+    {
+        $xml = "<domain><name>vm</name><uuid>x</uuid><devices>
+            <disk type='file' device='disk'><source file='/p/vm.qcow2'/><target dev='vda' bus='virtio'/></disk>
+            <disk type='file' device='disk'><source file='/p/data.qcow2'/><target dev='vdb' bus='virtio'/></disk>
+            <disk type='file' device='disk'><source file='/p/scratch.qcow2'/><target dev='vdc' bus='virtio'/></disk>
+            </devices></domain>";
+        $this->assertSame(['vda' => 'copy', 'vdb' => 'share', 'vdc' => 'copy'], vm_clone_disk_modes($xml, ['vdb' => 'share', 'vdc' => 'evil', 'vdz' => 'skip']));
+        $clone = simplexml_load_string(vm_xml_clone($xml, 'vm-2', ['/p/vm.qcow2' => '/p/vm-2.qcow2'], ['vdc']));
+        $this->assertCount(2, $clone->devices->disk, 'vdc left out');
+        $this->assertSame('/p/vm-2.qcow2', (string)$clone->devices->disk[0]->source['file'], 'copied');
+        $this->assertSame('/p/data.qcow2', (string)$clone->devices->disk[1]->source['file'], 'shared');
+    }
 }

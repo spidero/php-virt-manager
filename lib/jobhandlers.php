@@ -177,8 +177,14 @@ function job_clone(array $params, $con, $job_id, $uri) {
 
     $path_map = [];
     $created = [];
+    // per disk: copy (default), share (same file) or skip (left out)
+    $modes = (array)($params['disks'] ?? []);
+    $skip = array_keys(array_filter($modes, fn($m) => $m === 'skip'));
     try {
         foreach (vm_disk_paths($xml) as $target => $path) {
+            if (($modes[$target] ?? 'copy') !== 'copy') {
+                continue;
+            }
             $vol = libvirt_storagevolume_lookup_by_path($con, $path);
             if (!$vol) {
                 throw new RuntimeException('disk '.$path.' is not a libvirt volume');
@@ -196,7 +202,7 @@ function job_clone(array $params, $con, $job_id, $uri) {
             $created[] = $new;
             $path_map[$path] = (string)libvirt_storagevolume_get_path($new);
         }
-        if (!libvirt_domain_define_xml($con, vm_xml_clone($xml, $name, $path_map))) {
+        if (!libvirt_domain_define_xml($con, vm_xml_clone($xml, $name, $path_map, $skip))) {
             throw new RuntimeException('define failed: '.libvirt_get_last_error());
         }
     }
@@ -207,5 +213,7 @@ function job_clone(array $params, $con, $job_id, $uri) {
         }
         throw $e;
     }
-    return 'cloned from '.$source.', '.count($path_map).' disk(s) copied';
+    $shared = count(array_filter($modes, fn($m) => $m === 'share'));
+    return 'cloned from '.$source.', '.count($path_map).' disk(s) copied'
+        .($shared ? ', '.$shared.' shared' : '').($skip ? ', '.count($skip).' left out' : '');
 }

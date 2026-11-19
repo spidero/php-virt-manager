@@ -262,15 +262,17 @@ Response: `{"ok": true}`.
 background; the response contains the [job](#background-jobs) id.
 
 ```json
-{"name": "web-02"}
+{"name": "web-02", "disks": {"vda": "copy", "vdb": "share", "vdc": "skip"}}
 ```
 
 ```json
 {"ok": true, "job": 12}
 ```
 
-The clone gets a new UUID, new MAC addresses and automatic VNC/SPICE ports;
-CD/DVD images stay shared.
+`disks` (optional) chooses per disk target: `copy` (default), `share` (the
+clone uses the same file - run only one machine at a time) or `skip` (left
+out). The clone gets a new UUID, new MAC addresses and automatic VNC/SPICE
+ports; CD/DVD images stay shared.
 
 ### Cloud images
 

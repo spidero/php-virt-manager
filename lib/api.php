@@ -183,7 +183,8 @@ function api_domain_clone($con, $name) {
     if (in_array($target, libvirt_list_domains($con) ?: [], true) || job_pending('clone', 'name', $target)) {
         throw new ApiError('machine already exists', 409);
     }
-    $id = job_create('clone', ['source' => $name, 'name' => $target]);
+    $xml = (string)libvirt_domain_get_xml_desc($res, null, VIR_DOMAIN_XML_INACTIVE);
+    $id = job_create('clone', ['source' => $name, 'name' => $target, 'disks' => vm_clone_disk_modes($xml, (array)(api_json_body()['disks'] ?? []))]);
     action_log('clone_queued', $name, true, $target.' (job #'.$id.', api)');
     return ['ok' => true, 'job' => $id];
 }

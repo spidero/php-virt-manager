@@ -378,6 +378,18 @@
             <input type="text" class="form-control" id="clone_name" name="name" value="{$node}-clone" required pattern="[A-Za-z0-9][A-Za-z0-9._\-]{ldelim}0,63{rdelim}">
             <div class="form-text">{'Disks are copied in the background; CD/DVD images are shared.'|t}</div>
           </div>
+{foreach $device_disks as $d}
+          <div class="d-flex align-items-center gap-2 mb-1 small">
+            <code>{$d.target}</code>
+            <select class="form-select form-select-sm w-auto" name="disk_mode[{$d.target}]" aria-label="{'Disk %s'|t:$d.target}">
+              <option value="copy">{'copy'|t}</option>
+              <option value="share">{'share (same file)'|t}</option>
+              <option value="skip">{'leave out'|t}</option>
+            </select>
+            <span class="text-body-secondary text-truncate">{$d.file}</span>
+          </div>
+{/foreach}
+          <div class="form-text mb-3">{'A shared disk is used by both machines: run only one of them at a time unless the guest is made for shared disks.'|t}</div>
           <button type="submit" class="btn btn-primary">{'Clone'|t}</button>
         </form>
 {/if}
