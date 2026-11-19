@@ -36,6 +36,11 @@ else
 fi
 php -m | grep -qx libvirt || { echo "libvirt PHP extension not loaded" >&2; exit 1; }
 
+# libvirt's polkit rule allows members of the libvirt group; polkit checks the
+# user's groups, so the php-fpm pool group alone is not enough
+getent group "$APP_GROUP" >/dev/null || { echo "Group $APP_GROUP missing - install libvirt first." >&2; exit 1; }
+usermod -aG "$APP_GROUP" "$APP_USER"
+
 echo "== application in $APP_DIR"
 mkdir -p "$APP_DIR"
 rsync -a --delete \

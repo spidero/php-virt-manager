@@ -11,12 +11,21 @@ SOCK=/var/run/libvirt/libvirt-sock
 # access to the host libvirt socket: join a group with the socket's gid
 if [ -S "$SOCK" ]; then
     GID=$(stat -c %g "$SOCK")
-    GROUP=$(getent group "$GID" | cut -d: -f1 || true)
-    if [ -z "$GROUP" ]; then
-        GROUP=libvirt-host
-        groupadd -g "$GID" "$GROUP"
+    # gid 0: a root-owned socket (usually mode 666, access decided by polkit) -
+    # never put www-data into the root group
+    if [ "$GID" -ne 0 ]; then
+        GROUP=$(getent group "$GID" | cut -d: -f1 || true)
+        if [ -z "$GROUP" ]; then
+            GROUP=libvirt-host
+            groupadd -g "$GID" "$GROUP"
+        fi
+        usermod -aG "$GROUP" www-data
     fi
-    usermod -aG "$GROUP" www-data
+    # polkit on the host checks the host's groups of uid 33, not the container's
+    if [ "$(stat -c %a "$SOCK")" = 666 ]; then
+        echo "NOTE: libvirt access is checked by polkit on the host; if the panel reports" \
+             "'no polkit agent available', run on the host: usermod -aG libvirt \$(id -nu 33)" >&2
+    fi
 else
     echo "WARNING: $SOCK not found - mount /var/run/libvirt from the host" >&2
 fi

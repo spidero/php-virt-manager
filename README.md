@@ -132,6 +132,11 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 
 - `WARNING: /var/run/libvirt/libvirt-sock not found` - libvirt is not running
   on the host or the socket is not mounted (`-v /var/run/libvirt:/var/run/libvirt`).
+- `Cannot connect to qemu:///system: authentication unavailable: no polkit agent
+  available` - libvirt on the host checks access with polkit, which allows
+  members of the `libvirt` group. The panel runs as uid 33 (`www-data` in
+  the container), and polkit checks the host's groups of that uid, so add it on
+  the host: `sudo usermod -aG libvirt $(id -nu 33)` (usually `www-data`).
 - the panel does not open - check `docker logs php-virt-manager`, whether the
   port is free and allowed in the firewall.
 - the console does not connect - the machine needs a VNC graphics device; the
