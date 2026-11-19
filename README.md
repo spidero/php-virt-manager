@@ -162,7 +162,8 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 - browser console (noVNC via websockify) with key combinations
   (Ctrl+Alt+Del, Ctrl+Alt+F1...), text (serial) console in the browser,
   SPICE to VNC graphics switch
-- new machine wizard (qcow2 disk in any active pool, ISO from any pool, network)
+- new machine wizard (qcow2 disk in any active pool, ISO from any pool, network,
+  BIOS or UEFI with optional Secure Boot, emulated TPM 2.0 - e.g. for Windows 11)
 - machines from cloud images with cloud-init: Ubuntu 26.04/24.04, Debian 13/12,
   AlmaLinux 10, Rocky Linux 10 (downloaded in the background), user with SSH
   keys and/or password, hostname, disk size - ready to log in within a minute;

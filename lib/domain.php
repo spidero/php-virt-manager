@@ -13,6 +13,9 @@ const DOMAIN_STATES = [
 ];
 
 // power action => [libvirt function, message on success]
+// firmware choices of the new machine wizard
+const DOMAIN_FIRMWARES = ['bios' => 'BIOS', 'efi' => 'UEFI', 'efi-secure' => 'UEFI + Secure Boot'];
+
 // key combinations sent to the guest (Linux input key codes): label, codes
 const DOMAIN_KEY_COMBOS = [
     'ctrl-alt-del'       => ['Ctrl+Alt+Del', [29, 56, 111]],
@@ -249,7 +252,10 @@ function domain_xml_spice_to_vnc($xml) {
 // CD-ROM on a virtio-scsi controller: cloud kernels (e.g. Debian 12 "cloud-amd64")
 // have no AHCI driver and would not see a SATA CD-ROM, while installer ISOs
 // (Windows without drivers) need SATA
-function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $network, array $boot = ['cdrom', 'hd'], $iso_bus = 'sata', $serial_port = 0) {
+// $firmware: 'bios' (SeaBIOS), 'efi' or 'efi-secure' (UEFI with Secure Boot and the
+// Microsoft keys enrolled, e.g. for Windows 11) - the firmware files are chosen by libvirt;
+// $tpm adds an emulated TPM 2.0 (swtpm)
+function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $network, array $boot = ['cdrom', 'hd'], $iso_bus = 'sata', $serial_port = 0, $firmware = 'bios', $tpm = false) {
     $iso = '';
     if ($iso_path !== '') {
         $bus = $iso_bus === 'scsi' ? 'scsi' : 'sata';
@@ -261,9 +267,14 @@ function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $netwo
         .'<name>'.xml_escape($name).'</name>'
         ."<memory unit='MiB'>".(int)$memory_mb.'</memory>'
         .'<vcpu>'.(int)$vcpus.'</vcpu>'
-        ."<os><type arch='x86_64' machine='q35'>hvm</type>"
+        .($firmware === 'bios' ? '<os>' : "<os firmware='efi'>")
+        ."<type arch='x86_64' machine='q35'>hvm</type>"
+        .($firmware === 'efi-secure'
+            ? "<firmware><feature enabled='yes' name='secure-boot'/><feature enabled='yes' name='enrolled-keys'/></firmware>"
+            : ($firmware === 'efi' ? "<firmware><feature enabled='no' name='secure-boot'/></firmware>" : ''))
         .implode('', array_map(fn($dev) => "<boot dev='".xml_escape($dev)."'/>", $boot)).'</os>'
-        .'<features><acpi/><apic/></features>'
+        // Secure Boot needs SMM so the firmware variables cannot be changed by the guest
+        .'<features><acpi/><apic/>'.($firmware === 'efi-secure' ? "<smm state='on'/>" : '').'</features>'
         ."<cpu mode='host-passthrough'/>"
         ."<clock offset='utc'/>"
         .'<on_poweroff>destroy</on_poweroff><on_reboot>restart</on_reboot><on_crash>destroy</on_crash>'
@@ -279,6 +290,7 @@ function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $netwo
         // guest agent channel: IP addresses and clean shutdown when qemu-guest-agent runs in the guest
         ."<channel type='unix'><target type='virtio' name='org.qemu.guest_agent.0'/></channel>"
         ."<memballoon model='virtio'/>"
+        .($tpm ? "<tpm model='tpm-crb'><backend type='emulator' version='2.0'/></tpm>" : '')
         // spare PCIe root ports: q35 needs a free port for every hot-plugged disk or NIC
         ."<controller type='pci' index='0' model='pcie-root'/>"
         .str_repeat("<controller type='pci' model='pcie-root-port'/>", 8)

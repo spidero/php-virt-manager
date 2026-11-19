@@ -87,4 +87,24 @@ final class DomainXmlTest extends TestCase
         $this->assertSame('running', domain_state(1)['label']);
         $this->assertSame('unknown', domain_state(99)['label']);
     }
+
+    public function testFirmwareAndTpm(): void
+    {
+        $bios = simplexml_load_string(domain_new_xml('vm', 512, 1, '/d.qcow2', '', 'net'));
+        $this->assertSame('', (string)$bios->os['firmware']);
+        $this->assertCount(0, $bios->devices->tpm);
+
+        $efi = simplexml_load_string(domain_new_xml('vm', 512, 1, '/d.qcow2', '', 'net', ['hd'], 'sata', 0, 'efi'));
+        $this->assertSame('efi', (string)$efi->os['firmware']);
+        $this->assertSame('no', (string)$efi->xpath("/domain/os/firmware/feature[@name='secure-boot']")[0]['enabled']);
+        $this->assertCount(0, $efi->features->smm);
+
+        $secure = simplexml_load_string(domain_new_xml('vm', 512, 1, '/d.qcow2', '', 'net', ['hd'], 'sata', 0, 'efi-secure', true));
+        $this->assertSame('yes', (string)$secure->xpath("/domain/os/firmware/feature[@name='secure-boot']")[0]['enabled']);
+        $this->assertSame('yes', (string)$secure->xpath("/domain/os/firmware/feature[@name='enrolled-keys']")[0]['enabled']);
+        $this->assertSame('on', (string)$secure->features->smm['state']);
+        $this->assertSame('2.0', (string)$secure->devices->tpm->backend['version']);
+        // the boot order stays inside <os>
+        $this->assertSame('hd', (string)$secure->os->boot['dev']);
+    }
 }

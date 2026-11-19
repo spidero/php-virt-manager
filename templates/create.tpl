@@ -53,6 +53,24 @@
 {/foreach}
         </select>
       </div>
+      <div class="row">
+        <div class="col-sm-6 mb-3">
+          <label class="form-label" for="firmware">{'Firmware'|t}</label>
+          <select class="form-select" id="firmware" name="firmware">
+{foreach $firmwares as $fw => $label}
+            <option value="{$fw}"{if $form.firmware==$fw} selected{/if}>{$label}</option>
+{/foreach}
+          </select>
+          <div class="form-text">{'Windows 11 needs UEFI + Secure Boot and TPM. With UEFI, snapshots of a running machine are not possible (shut it down first).'|t}</div>
+        </div>
+        <div class="col-sm-6 mb-3">
+          <div class="form-label">TPM</div>
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="tpm" name="tpm" value="1"{if $form.tpm} checked{/if}>
+            <label class="form-check-label" for="tpm">{'TPM 2.0 (emulated)'|t}</label>
+          </div>
+        </div>
+      </div>
       <div class="form-check mb-3">
         <input type="checkbox" class="form-check-input" id="start" name="start" value="1"{if $form.start} checked{/if}>
         <label class="form-check-label" for="start">{'Start after creation'|t}</label>

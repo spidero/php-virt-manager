@@ -34,6 +34,8 @@ $form = [
     'pool'    => array_key_first($pools) ?? '',
     'iso'     => '',
     'network' => in_array('default', $networks, true) ? 'default' : ($networks[0] ?? ''),
+    'firmware' => 'bios',
+    'tpm'     => 0,
     'start'   => 1,
 ];
 $errors = [];
@@ -52,6 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'pool'    => (string)($_POST['pool'] ?? ''),
         'iso'     => (string)($_POST['iso'] ?? ''),
         'network' => (string)($_POST['network'] ?? ''),
+        'firmware' => (string)($_POST['firmware'] ?? 'bios'),
+        'tpm'     => empty($_POST['tpm']) ? 0 : 1,
         'start'   => empty($_POST['start']) ? 0 : 1,
     ];
 
@@ -79,6 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!in_array($form['network'], $networks, true)) {
         $errors[] = t('Select a network.');
     }
+    if (!isset(DOMAIN_FIRMWARES[$form['firmware']])) {
+        $errors[] = t('Select the firmware.');
+    }
 
     if (!$errors) {
         $pool = libvirt_storagepool_lookup_by_name($con, $form['pool']);
@@ -97,7 +104,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$errors) {
         $xml = domain_new_xml($form['name'], $form['memory'], $form['vcpus'],
-            (string)libvirt_storagevolume_get_path($vol), $form['iso'], $form['network']);
+            (string)libvirt_storagevolume_get_path($vol), $form['iso'], $form['network'], ['cdrom', 'hd'], 'sata', 0,
+            $form['firmware'], (bool)$form['tpm']);
         $res = libvirt_domain_define_xml($con, $xml);
         if (!$res) {
             $errors[] = t('Cannot define machine: %s', libvirt_get_last_error());
@@ -106,8 +114,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    $details = sprintf('%d MB, %d vCPU, %d GB in %s, iso: %s, net: %s',
-        $form['memory'], $form['vcpus'], $form['disk'], $form['pool'], $form['iso'] ?: '-', $form['network']);
+    $details = sprintf('%d MB, %d vCPU, %d GB in %s, iso: %s, net: %s, %s%s',
+        $form['memory'], $form['vcpus'], $form['disk'], $form['pool'], $form['iso'] ?: '-', $form['network'],
+        $form['firmware'], $form['tpm'] ? ', tpm' : '');
     if ($errors) {
         action_log('create', $form['name'], false, $details.'; '.implode(' ', $errors));
     }
@@ -129,6 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $smarty->assign('form', $form);
+$smarty->assign('firmwares', DOMAIN_FIRMWARES);
 $smarty->assign('errors', $errors);
 $smarty->assign('pools', $pools);
 $smarty->assign('isos', $isos);
