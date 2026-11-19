@@ -8,13 +8,14 @@ FPM_SOCK=/run/php/php-virt-manager.sock
 
 # start banner: version (from the image build), author and where to report problems
 read -r PVM_VERSION PVM_REVISION < "$APP_DIR/VERSION" 2>/dev/null || { PVM_VERSION=dev; PVM_REVISION=unknown; }
-# in a plain ASCII frame sized to the longest line
+# in a frame of box drawing characters (they join in every terminal font), sized to the
+# longest line; the text itself is ASCII, so awk's length() counts characters
 awk '{ line[NR] = $0; if (length($0) > w) w = length($0) }
      END {
-         border = "+"; for (i = 0; i < w + 2; i++) border = border "-"; border = border "+"
-         print border
-         for (i = 1; i <= NR; i++) printf "| %-" w "s |\n", line[i]
-         print border
+         bar = ""; for (i = 0; i < w + 2; i++) bar = bar "─"
+         print "┌" bar "┐"
+         for (i = 1; i <= NR; i++) printf "│ %-" w "s │\n", line[i]
+         print "└" bar "┘"
      }' <<EOF
 php-virt-manager $PVM_VERSION
 revision $(printf '%.7s' "$PVM_REVISION"), $(php -r 'echo "PHP ", PHP_VERSION;')
