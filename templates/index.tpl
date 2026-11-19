@@ -1,4 +1,10 @@
 {include file="header.tpl"}
+{if $update_info}
+<div class="alert alert-warning d-flex justify-content-between align-items-center" role="status">
+  <span>{'A new version of php-virt-manager is available: %s.'|t:$update_info.version}</span>
+  <a href="{$update_info.url}" class="btn btn-sm btn-outline-dark" target="_blank" rel="noopener">{'What is new'|t}</a>
+</div>
+{/if}
 {if $show_contact}
 <div class="alert alert-info d-flex align-items-start gap-3 mb-3" role="note">
   <div class="flex-grow-1">

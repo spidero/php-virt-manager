@@ -34,6 +34,7 @@ function cron_run_once() {
         'old jobs'            => fn() => ($n = job_cleanup()) ? $n.' removed' : '',
         'snapshot schedules'  => fn() => implode('; ', schedule_run_due(time())),
         'cloud image catalog' => fn() => cloud_catalog_sync_due(time()) ? cloud_catalog_sync()['message'] : '',
+        'update check'        => fn() => update_check_due(time()) ? json_encode(update_check()) : '',
         // long-running jobs last, with a limit so the next minute's run is not delayed much
         'jobs'                => fn() => implode(', ', job_run_queue(JOB_HANDLERS, 50)),
     ];

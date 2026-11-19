@@ -113,6 +113,7 @@ Choose ports that are free on the host (`ss -tlnp`).
 | `PVM_READONLY`      | `0`              | `1` = view only                          |
 | `PVM_CLOUD_CATALOG_URL` | GitHub list  | cloud image catalog to synchronize from (see [Cloud image catalog](#cloud-image-catalog)) |
 | `PVM_CLOUD_CATALOG_SYNC` | `1`         | `0` = no automatic daily synchronization |
+| `PVM_UPDATE_CHECK`  | `1`              | `0` = no daily check for a newer release (see [Updates](#update)) |
 | `TZ`                | `UTC`            | time zone (logs, snapshot schedules)     |
 | `HTTPS_PORT`, `HTTP_PORT`, `WS_PORT` | see [Ports](#ports) | |
 
@@ -135,6 +136,13 @@ docker rm -f php-virt-manager && docker run ...       # same command as above
 ```
 
 Users, logs and the certificate stay in the volumes.
+
+The panel checks once a day whether a newer release exists - it reads
+[`version.json`](version.json) from GitHub (only the IP address of the server
+is visible to GitHub) - and shows it to administrators in the footer and on
+the dashboard; *check for updates* in the footer checks at once.
+`$update_check = false` (`PVM_UPDATE_CHECK=0`) turns it off. A release tag
+must match `version.json`, CI refuses it otherwise.
 
 ### Versions
 

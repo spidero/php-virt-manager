@@ -23,6 +23,7 @@ require_once __DIR__.'/sshkeys.php';
 require_once __DIR__.'/favorites.php';
 require_once __DIR__.'/networks.php';
 require_once __DIR__.'/hostdev.php';
+require_once __DIR__.'/update.php';
 require_once __DIR__.'/schedules.php';
 require_once __DIR__.'/api.php';
 
@@ -40,6 +41,7 @@ $GLOBALS['action_log_max_bytes'] ??= 5 * 1024 * 1024;
 $GLOBALS['action_log_keep']      ??= 5;
 $GLOBALS['cloud_catalog_url']    ??= CLOUD_CATALOG_DEFAULT_URL;
 $GLOBALS['cloud_catalog_auto_sync'] ??= true;
+$GLOBALS['update_check']         ??= true;
 $GLOBALS['timezone']             ??= system_timezone();
 
 // all times in the panel, the logs and the snapshot schedules use this zone

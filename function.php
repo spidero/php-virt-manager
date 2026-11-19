@@ -55,6 +55,8 @@ $smarty->assign('can', permission_flags());
 $smarty->assign('allow', ['operate' => can('operate') && !$readonly, 'admin' => can('admin') && !$readonly]);
 $smarty->assign('lang', i18n_language());
 $smarty->assign('app_version', app_version());
+// a newer release than the running one (administrators only, from the daily check)
+$smarty->assign('update_info', $user && role_allows($user['role'], 'admin') ? update_available(app_version(), update_last()) : null);
 $smarty->assign('flash', flash_get());
 $smarty->assign('page', basename($_SERVER['SCRIPT_NAME'], '.php'));
 $smarty->assign('weekdays', ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);

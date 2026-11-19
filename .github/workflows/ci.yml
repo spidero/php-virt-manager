@@ -75,6 +75,17 @@ jobs:
             echo "publish=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # the panels check for updates in version.json: a release must update it
+      - name: Check version.json of a release
+        if: steps.release.outputs.version != ''
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          listed=$(jq -r .version version.json)
+          if [ "$listed" != "$VERSION" ]; then
+            echo "::error::version.json says $listed, the release tag is v$VERSION - update version.json first"; exit 1
+          fi
+
       - id: meta
         uses: docker/metadata-action@v5
         with:

@@ -83,6 +83,9 @@ if [ ! -f "$APP_DIR/config.php" ] || [ -n "${PVM_PASSWORD:-}${PVM_PASSWORD_HASH:
         if (getenv("PVM_CLOUD_CATALOG_SYNC") !== false) {
             $set["cloud_catalog_auto_sync"] = getenv("PVM_CLOUD_CATALOG_SYNC") !== "0";
         }
+        if (getenv("PVM_UPDATE_CHECK") !== false) {
+            $set["update_check"] = getenv("PVM_UPDATE_CHECK") !== "0";
+        }
         foreach ($set as $k => $v) {
             // callback: a bcrypt hash contains "$2y$..." which would be read as backreferences;
             // /s: the $connections array spans several lines

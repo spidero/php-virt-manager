@@ -44,6 +44,10 @@ $console_ws_path = 'websockify';
 $cloud_catalog_url = 'https://raw.githubusercontent.com/spidero/php-virt-manager/master/cloud-images.json';
 $cloud_catalog_auto_sync = true;
 
+// check once a day whether a newer release exists (version.json on GitHub);
+// administrators see it in the footer and on the dashboard
+$update_check = true;
+
 // additional fixed cloud images (key => label, qcow2 URL), added to the
 // catalog edited in the panel
 // $cloud_images = [
