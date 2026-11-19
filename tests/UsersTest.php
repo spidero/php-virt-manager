@@ -73,4 +73,14 @@ final class UsersTest extends TestCase
     {
         $this->assertSame('bcrypt', password_get_info(LOGIN_DUMMY_HASH)['algoName']);
     }
+
+    public function testDismissedNoticesPerUser(): void
+    {
+        $this->assertFalse(notice_dismissed(901, 'contact'));
+        notice_dismiss(901, 'contact');
+        $this->assertTrue(notice_dismissed(901, 'contact'));
+        $this->assertFalse(notice_dismissed(902, 'contact'), 'per user');
+        notice_dismiss(901, 'unknown-notice');
+        $this->assertFalse(notice_dismissed(901, 'unknown-notice'), 'only known notices');
+    }
 }

@@ -36,4 +36,7 @@ foreach (domain_overview($con) as $vm) {
 $smarty->assign('vms', $vms);
 $smarty->assign('mem_titles', ['guest' => t('used by the guest system (without cache)'), 'host' => t('memory of the QEMU process on the host')]);
 
+$smarty->assign('show_contact', !notice_dismissed(current_user()['id'], 'contact'));
+$smarty->assign('repo_url', 'https://github.com/spidero/php-virt-manager');
+
 $smarty->display('index.tpl');

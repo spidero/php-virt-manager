@@ -1,4 +1,23 @@
 {include file="header.tpl"}
+{if $show_contact}
+<div class="alert alert-info d-flex align-items-start gap-3 mb-3" role="note">
+  <div class="flex-grow-1">
+    <div class="fw-semibold mb-1">{'Ideas, bugs, questions?'|t}</div>
+    <div class="small mb-2">{'php-virt-manager is developed in the open on GitHub - suggest new features, report bugs or ask about anything else there.'|t}</div>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-sm btn-outline-primary" href="{$repo_url}/issues/new?template=feature_request.yml" target="_blank" rel="noopener">{'Suggest a feature'|t}</a>
+      <a class="btn btn-sm btn-outline-primary" href="{$repo_url}/issues/new?template=bug_report.yml" target="_blank" rel="noopener">{'Report a bug'|t}</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{$repo_url}/security/advisories/new" target="_blank" rel="noopener">{'Security issue (private)'|t}</a>
+      <a class="btn btn-sm btn-outline-secondary" href="https://github.com/spidero" target="_blank" rel="noopener">{'Other: contact the author'|t}</a>
+    </div>
+  </div>
+  <form method="post" action="dismiss.php" class="m-0">
+    <input type="hidden" name="csrf" value="{$csrf_token}">
+    <input type="hidden" name="notice" value="contact">
+    <button type="submit" class="btn-close" aria-label="{'Close'|t}" title="{'Close (it will not be shown again)'|t}"></button>
+  </form>
+</div>
+{/if}
 <div class="row">
 {foreach [['running','success',1],['paused','warning',3],['shut off','danger',5]] as $s}
   <div class="col-4 mb-3">

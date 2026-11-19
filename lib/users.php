@@ -155,3 +155,16 @@ function permission_flags() {
     }
     return $flags;
 }
+
+// notices a user closed (e.g. the contact box of the hypervisor page), remembered per user
+const DISMISSIBLE_NOTICES = ['contact'];
+
+function notice_dismissed($user_id, $notice) {
+    return setting_get('dismissed:'.$notice.':'.(int)$user_id) !== null;
+}
+
+function notice_dismiss($user_id, $notice) {
+    if (in_array($notice, DISMISSIBLE_NOTICES, true)) {
+        setting_set('dismissed:'.$notice.':'.(int)$user_id, (string)time());
+    }
+}
