@@ -100,6 +100,8 @@ function api_domain($con, $name) {
     return [
         'name'       => $name,
         'uuid'       => libvirt_domain_get_uuid_string($res),
+        'title'      => $xml ? trim((string)$xml->title) : '',
+        'description' => $xml ? (string)$xml->description : '',
         'state'      => domain_state($info['state'])['label'],
         'memory_mb'  => (int)round($info['memory'] / 1024),
         'vcpus'      => (int)$info['nrVirtCpu'],

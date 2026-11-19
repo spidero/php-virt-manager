@@ -158,6 +158,8 @@ $xml = domain_xml($res);
 $smarty->assign('node', $node);
 $smarty->assign('key_combos', DOMAIN_KEY_COMBOS);
 $smarty->assign('domain_uuid', libvirt_domain_get_uuid_string($res));
+$smarty->assign('vm_title', $xml ? trim((string)$xml->title) : '');
+$smarty->assign('vm_description', $xml ? (string)$xml->description : '');
 $smarty->assign('active', $active);
 $smarty->assign('managed_save', !$active && domain_has_managed_save($connection, $node));
 // other writable connections as migration destinations

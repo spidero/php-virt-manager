@@ -429,6 +429,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $details = $mac.': in '.$in.' Mbit/s, out '.$out.' Mbit/s';
             $message = t('Bandwidth limits of %s saved.', $mac);
         }
+        elseif ($action === 'describe') {
+            $title = trim(preg_replace('/\s+/', ' ', (string)($_POST['title'] ?? '')));
+            $description = trim(str_replace("\r\n", "\n", (string)($_POST['description'] ?? '')));
+            if (mb_strlen($title) > 120 || mb_strlen($description) > 4000) {
+                throw new RuntimeException(t('Title: up to 120 characters, description: up to 4000.'));
+            }
+            // virsh desc changes the definition and, for a running machine, the live state
+            foreach (['--title' => $title, '' => $description] as $flag => $text) {
+                $args = array_values(array_filter(['desc', $node, '--config', $active ? '--live' : '', $flag, '--new-desc', $text], fn($a) => $a !== ''));
+                // an empty text must still be passed to clear the field
+                if ($text === '') {
+                    $args[] = '';
+                }
+                [$status, $output] = domain_virsh($connection, $args);
+                if ($status !== 0) {
+                    throw new RuntimeException(t('Error: %s', trim($output)));
+                }
+            }
+            $details = $title;
+            $message = t('Title and description saved.');
+        }
         elseif ($action === 'firmware') {
             $firmware = (string)($_POST['firmware'] ?? 'bios');
             if ($active) {
@@ -640,6 +661,9 @@ $smarty->assign('free_volumes', storage_free_volumes($con));
 $smarty->assign('serial_port', vm_serial_port($xml));
 $smarty->assign('hardware', vm_hardware($xml));
 $smarty->assign('firmware', vm_firmware_settings($xml));
+$xml_doc = simplexml_load_string($xml);
+$smarty->assign('vm_title', $xml_doc ? trim((string)$xml_doc->title) : '');
+$smarty->assign('vm_description', $xml_doc ? (string)$xml_doc->description : '');
 $smarty->assign('firmwares', DOMAIN_FIRMWARES);
 $smarty->assign('video_models', VM_VIDEO_MODELS);
 $smarty->assign('sound_models', VM_SOUND_MODELS);

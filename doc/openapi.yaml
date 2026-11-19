@@ -440,6 +440,8 @@ components:
       properties:
         name: {type: string}
         uuid: {type: string, format: uuid}
+        title: {type: string, description: 'set on the edit page, empty when none'}
+        description: {type: string}
         state: {$ref: '#/components/schemas/DomainState'}
         memory_mb: {type: integer}
         vcpus: {type: integer}

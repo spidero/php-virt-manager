@@ -203,6 +203,8 @@ them in bug reports.
   connections
 - firmware (BIOS, UEFI, UEFI with Secure Boot) and the emulated TPM of an
   existing machine (shut off)
+- title and description of a machine (shown in the machine table and on its
+  page, also in the API)
 - hardware: video model, sound, watchdog, virtio-rng, VNC password (passed to
   the browser console automatically), shared host folders (virtiofs, for
   administrators)

@@ -123,6 +123,7 @@ function domain_overview($con) {
         $rows[] = $d + [
             'active'     => $active,
             'vcpus'      => (int)$info['nrVirtCpu'],
+            'title'      => $xml ? trim((string)$xml->title) : '',
             'mem_used'   => $mem_used * 1024,
             'mem_total'  => $mem_total * 1024,
             'mem_source' => $mem_source,

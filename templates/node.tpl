@@ -14,6 +14,12 @@
 <div class="card mb-3">
   <div class="card-body">
     <h5>{include file="star.tpl" name=$node back='node'} {$node} <span class="badge text-bg-{$state.color}">{$state.label|t}</span>{if $managed_save} <span class="badge text-bg-info">{'saved state'|t}</span>{/if}</h5>
+{if $vm_title}
+    <div class="fw-semibold">{$vm_title}</div>
+{/if}
+{if $vm_description}
+    <div class="small text-body-secondary mb-1" style="white-space: pre-line">{$vm_description}</div>
+{/if}
     <p class="text-body-secondary mb-3"><small>UUID: {$domain_uuid}</small></p>
 
 {if $allow.operate}

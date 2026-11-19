@@ -142,6 +142,8 @@ created from cloud images have it).
 {
   "name": "web-01",
   "uuid": "51796b60-d5ec-4368-81b3-1b23a5e6a371",
+  "title": "Web server (production)",
+  "description": "",
   "state": "running",
   "memory_mb": 2048,
   "vcpus": 2,

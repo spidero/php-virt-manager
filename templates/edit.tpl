@@ -12,6 +12,23 @@
 {/if}
 
 <div class="card mb-3">
+  <div class="card-header">{'Title and description'|t}</div>
+  <div class="card-body">
+    {call form_start action='describe'}
+      <div class="row g-2">
+        <div class="col-md-4">
+          <input type="text" class="form-control form-control-sm" name="title" value="{$vm_title}" maxlength="120" placeholder="{'title, e.g. Web server (production)'|t}" aria-label="{'Title'|t}">
+        </div>
+        <div class="col-md-6">
+          <textarea class="form-control form-control-sm" name="description" rows="1" maxlength="4000" placeholder="{'description, notes'|t}" aria-label="{'Description'|t}">{$vm_description}</textarea>
+        </div>
+        <div class="col-md-2"><button type="submit" class="btn btn-primary btn-sm w-100">{'Save'|t}</button></div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card mb-3">
   <div class="card-header">{'Disks'|t}</div>
   <div class="table-responsive">
   <table class="table table-sm align-middle mb-0">

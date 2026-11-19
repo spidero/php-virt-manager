@@ -82,7 +82,7 @@
         <td class="text-nowrap">
           {include file="star.tpl" name=$vm.name back='index'}
           <a href="node.php?node={$vm.name|escape:'url'}" class="fw-semibold text-decoration-none ms-1">{$vm.name}</a>
-          <div class="small text-body-secondary vm-sub">{'%d vCPU'|t:$vm.vcpus}</div>
+          <div class="small text-body-secondary vm-sub">{if $vm.title}{$vm.title} - {/if}{'%d vCPU'|t:$vm.vcpus}</div>
         </td>
         <td><span class="badge rounded-pill text-bg-{$vm.color}" data-vm-badge>{$vm.label|t}</span></td>
         <td class="small text-nowrap">
