@@ -88,6 +88,15 @@ const DB_MIGRATIONS = [
             value TEXT
         )',
     ],
+    8 => [
+        // machines starred by a user, listed in the menu; per connection key
+        'CREATE TABLE favorites (
+            user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+            conn TEXT NOT NULL,
+            name TEXT NOT NULL,
+            PRIMARY KEY (user_id, conn, name)
+        )',
+    ],
 ];
 
 function db() {

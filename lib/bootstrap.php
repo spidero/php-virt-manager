@@ -20,6 +20,7 @@ require_once __DIR__.'/stats.php';
 require_once __DIR__.'/cloud.php';
 require_once __DIR__.'/cloudcatalog.php';
 require_once __DIR__.'/sshkeys.php';
+require_once __DIR__.'/favorites.php';
 require_once __DIR__.'/schedules.php';
 require_once __DIR__.'/api.php';
 

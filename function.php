@@ -72,7 +72,11 @@ if (!defined('PUBLIC_PAGE')) {
         http_response_code(500);
         exit('Cannot connect to '.htmlspecialchars($connection).': '.htmlspecialchars((string)libvirt_get_last_error()));
     }
-    $smarty->assign('domains', domain_list($con));
+
+    // starred machines of the user, listed in the menu
+    $favorites = favorite_menu_items($con, $user['id'], connection_current_key());
+    $smarty->assign('favorites', $favorites);
+    $smarty->assign('favorite_set', array_flip(array_column($favorites, 'name')));
 
     // background tasks are queued but bin/cron.php does not run (e.g. development server)
     $cron_pages = ['jobs', 'cloud', 'schedules'];

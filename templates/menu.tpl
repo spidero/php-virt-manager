@@ -13,20 +13,21 @@
 {/if}
     {if $readonly}<span class="badge text-bg-secondary mt-1">{'read-only'|t}</span>{/if}
   </div>
+{* starred machines only; all machines are in the table of the hypervisor page *}
+{if $favorites || $allow.operate}
   <div class="card-body px-3 py-2">
-{foreach from=$domains item=d}
+{foreach $favorites as $d}
     <div class="text-truncate">
       <span class="text-{$d.color}" title="{$d.label|t}" data-domain-dot="{$d.name}">&#9679;</span>
       <a href="node.php?node={$d.name|escape:'url'}"{if isset($node) && $node==$d.name} class="fw-bold"{/if}>{$d.name}</a>
     </div>
-{foreachelse}
-    {'No machines found'|t}
 {/foreach}
 {if $allow.operate}
-    <a href="cloud.php" class="btn btn-outline-primary btn-sm w-100 mt-2">+ {'From cloud image'|t}</a>
+    <a href="cloud.php" class="btn btn-outline-primary btn-sm w-100{if $favorites} mt-2{/if}">+ {'From cloud image'|t}</a>
     <a href="create.php" class="btn btn-outline-secondary btn-sm w-100 mt-1">+ {'From ISO'|t}</a>
 {/if}
   </div>
+{/if}
   <div class="list-group list-group-flush">
     <a href="index.php" class="list-group-item list-group-item-action py-2{if $page=='index'} active{/if}">{'Hypervisor'|t}</a>
     <a href="storage.php" class="list-group-item list-group-item-action py-2{if $page=='storage'} active{/if}">{'Storage'|t}</a>

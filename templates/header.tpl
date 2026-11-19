@@ -33,6 +33,8 @@
       .vm-table .vm-usage { min-width: 9rem; width: 17%; }
       .vm-table .vm-num { font-variant-numeric: tabular-nums; white-space: nowrap; margin-bottom: .2rem; }
       .vm-bar { height: 5px; }
+      .vm-table .vm-sub { padding-left: 1.3rem; }
+      .star-btn:hover { color: var(--bs-warning) !important; }
       .vm-bar .progress-bar { transition: width .6s ease; }
       /* let the content column shrink (long table cells must not push it below the menu) */
       .row > .col { min-width: 0; }

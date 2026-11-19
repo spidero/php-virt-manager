@@ -15,7 +15,7 @@
     return v || fallback;
   }
 
-  // menu dots and dashboard tiles
+  // state dots of the starred machines in the menu and the state tiles
   function updateStates(domains) {
     var counts = {};
     domains.forEach(function (d) {

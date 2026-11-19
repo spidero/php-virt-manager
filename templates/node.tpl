@@ -13,7 +13,7 @@
 {/function}
 <div class="card mb-3">
   <div class="card-body">
-    <h5>{$node} <span class="badge text-bg-{$state.color}">{$state.label|t}</span></h5>
+    <h5>{include file="star.tpl" name=$node back='node'} {$node} <span class="badge text-bg-{$state.color}">{$state.label|t}</span></h5>
     <p class="text-body-secondary mb-3"><small>UUID: {$domain_uuid}</small></p>
 
 {if $allow.operate}
