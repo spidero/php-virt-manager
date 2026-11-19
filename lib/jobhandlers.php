@@ -8,7 +8,41 @@ const JOB_HANDLERS = [
     'cloud_create'   => 'job_cloud_create',
     'volume_clone'   => 'job_volume_clone',
     'iso_download'   => 'job_iso_download',
+    'migrate'        => 'job_migrate',
 ];
+
+// params: name, dest (connection key), copy_storage; a running machine moves live,
+// a shut off one as its definition only; it stays on the destination for good
+function job_migrate(array $params, $con, $job_id, $uri) {
+    $name = (string)$params['name'];
+    $dest = connections_list()[(string)$params['dest']] ?? null;
+    if (!$dest) {
+        throw new RuntimeException('unknown destination connection '.$params['dest']);
+    }
+    $res = libvirt_domain_lookup_by_name($con, $name);
+    if (!$res) {
+        throw new RuntimeException('machine not found');
+    }
+    $live = (bool)libvirt_domain_is_active($res);
+    $args = ['migrate', '--persistent', '--undefinesource', '--verbose'];
+    $args[] = $live ? '--live' : '--offline';
+    if ($live && !empty($params['copy_storage'])) {
+        $args[] = '--copy-storage-all';
+    }
+    array_push($args, $name, $dest['uri']);
+    job_progress($job_id, ($live ? 'live migration' : 'moving the definition').' to '.$dest['label']);
+    [$status, $output] = domain_virsh($uri, $args, function ($output) use ($job_id) {
+        // virsh --verbose prints "Migration: [ 45 %]"
+        if (preg_match_all('/Migration: \[\s*(\d+)\s*%\]/', (string)$output, $m)) {
+            job_progress($job_id, 'migrating', (int)end($m[1]));
+        }
+    });
+    if ($status !== 0) {
+        throw new RuntimeException('migration failed: '.trim(preg_replace('/Migration: \[[^\]]*\]\s*/', '', $output)));
+    }
+    domain_move_references((string)$params['conn'], (string)$params['dest'], $name);
+    return ($live ? 'migrated live' : 'moved (shut off)').' to '.$dest['label'];
+}
 
 // params: url, pool, name (volume name ending with .iso)
 function job_iso_download(array $params, $con, $job_id, $uri) {

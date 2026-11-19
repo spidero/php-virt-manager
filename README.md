@@ -201,6 +201,9 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
   schema)
 - host device passthrough for administrators: USB (by vendor and product,
   also live) and PCI devices (next start, needs IOMMU)
+- migration to another hypervisor for administrators (live for a running
+  machine, optionally copying the disks; the definition for a shut off one)
+  as a background job with progress
 - cloning in the background with a choice per disk (copy, share the same
   file, leave out) and deleting machines with a choice of disks; disks used
   by other machines are protected

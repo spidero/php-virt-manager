@@ -98,6 +98,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ok = true;
         }
     }
+    elseif ($action === 'migrate') {
+        require_permission('admin', $node_url);
+        $dest = (string)($_POST['dest'] ?? '');
+        $list = connections_list();
+        if (!isset($list[$dest]) || $dest === connection_current_key() || $list[$dest]['uri'] === $connection) {
+            flash_set('danger', t('Select another hypervisor as the destination.'));
+            redirect($node_url);
+        }
+        if ($list[$dest]['readonly']) {
+            flash_set('danger', t('The destination connection is read-only.'));
+            redirect($node_url);
+        }
+        if (job_pending('migrate', 'name', $node)) {
+            flash_set('warning', t('The machine is already being migrated.'));
+            redirect($node_url);
+        }
+        $id = job_create('migrate', ['name' => $node, 'conn' => connection_current_key(), 'dest' => $dest, 'copy_storage' => !empty($_POST['copy_storage'])]);
+        action_log('migrate_queued', $node, true, $list[$dest]['uri'].' (job #'.$id.')');
+        flash_set('success', t('Migration of %s to %s started in the background (job #%d).', $node, $list[$dest]['label'], $id));
+        redirect('jobs.php');
+    }
     elseif ($action === 'discard_save') {
         [$status, $output] = domain_virsh($connection, ['managedsave-remove', $node]);
         $ok = $status === 0;
@@ -139,6 +160,9 @@ $smarty->assign('key_combos', DOMAIN_KEY_COMBOS);
 $smarty->assign('domain_uuid', libvirt_domain_get_uuid_string($res));
 $smarty->assign('active', $active);
 $smarty->assign('managed_save', !$active && domain_has_managed_save($connection, $node));
+// other writable connections as migration destinations
+$smarty->assign('migration_targets', array_filter(connections_list(),
+    fn($c, $key) => $key !== connection_current_key() && $c['uri'] !== $connection && !$c['readonly'], ARRAY_FILTER_USE_BOTH));
 $smarty->assign('info', $info);
 $smarty->assign('state', domain_state($info['state']));
 $smarty->assign('autostart', (bool)libvirt_domain_get_autostart($res));

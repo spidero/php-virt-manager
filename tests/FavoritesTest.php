@@ -24,4 +24,21 @@ final class FavoritesTest extends TestCase
         $this->assertSame([], favorite_names($a, 'remote'), 'removed with the user');
         user_delete($b);
     }
+
+    public function testReferencesFollowMigrationAndRename(): void
+    {
+        db_query('DELETE FROM users WHERE username = ?', ['fav-m']);
+        $u = user_create('fav-m', password_hash('x', PASSWORD_DEFAULT), 'admin');
+        favorite_toggle($u, 'local', 'vm1');
+        $id = schedule_create('local', 'vm1', 'daily', 3, 0, 7, 'fav-m');
+        domain_move_references('local', 'remote', 'vm1');
+        $this->assertSame([], favorite_names($u, 'local'));
+        $this->assertSame(['vm1'], favorite_names($u, 'remote'));
+        $this->assertSame('remote', db_query('SELECT conn FROM schedules WHERE id = ?', [$id])->fetchColumn());
+        domain_rename_references('remote', 'vm1', 'vm2');
+        $this->assertSame(['vm2'], favorite_names($u, 'remote'));
+        $this->assertSame('vm2', db_query('SELECT domain FROM schedules WHERE id = ?', [$id])->fetchColumn());
+        db_query('DELETE FROM schedules WHERE id = ?', [$id]);
+        user_delete($u);
+    }
 }

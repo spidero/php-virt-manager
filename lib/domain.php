@@ -60,9 +60,10 @@ function domain_reset($res) {
     return libvirt_domain_reset($res, 0);
 }
 
-// virsh command for what libvirt-php lacks (rename, managed save state); [exit code, output]
-function domain_virsh($uri, array $args) {
-    return cloud_run(array_merge(['virsh', '-q', '-c', $uri], $args));
+// virsh command for what libvirt-php lacks (rename, managed save state, migration);
+// [exit code, output]; $tick($output) is called about once a second
+function domain_virsh($uri, array $args, ?callable $tick = null) {
+    return cloud_run(array_merge(['virsh', '-q', '-c', $uri], $args), $tick);
 }
 
 // true when the stopped machine has a saved state that the next start restores
@@ -395,4 +396,10 @@ function domain_text_keycodes($text) {
         $codes[] = $map[$char];
     }
     return $codes;
+}
+
+// after a migration: starred machines and snapshot schedules move to the destination connection
+function domain_move_references($from_conn, $to_conn, $name) {
+    db_query('UPDATE OR IGNORE favorites SET conn = ? WHERE conn = ? AND name = ?', [$to_conn, $from_conn, $name]);
+    db_query('UPDATE schedules SET conn = ? WHERE conn = ? AND domain = ?', [$to_conn, $from_conn, $name]);
 }

@@ -250,7 +250,7 @@ function cloud_run(array $cmd, ?callable $tick = null) {
         }
         if ($tick && microtime(true) - $last_tick >= 1) {
             $last_tick = microtime(true);
-            $tick();
+            $tick($output);
         }
         $proc_status = proc_get_status($proc);
     } while ($proc_status['running']);

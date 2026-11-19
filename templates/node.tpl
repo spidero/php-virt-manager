@@ -200,6 +200,31 @@
 {/if}
 </div>
 
+{if $allow.admin}
+<div class="card mb-3">
+  <div class="card-header">{'Migration'|t}</div>
+  <div class="card-body">
+{if $migration_targets}
+    <form method="post" action="node.php" class="d-flex flex-wrap gap-2 align-items-center" data-confirm="{'Move %s to the selected hypervisor? It is removed from this one.'|t:$node}">
+      <input type="hidden" name="csrf" value="{$csrf_token}">
+      <input type="hidden" name="node" value="{$node}">
+      <input type="hidden" name="action" value="migrate">
+      <select name="dest" class="form-select form-select-sm w-auto" aria-label="{'Destination'|t}">
+{foreach $migration_targets as $key => $c}
+        <option value="{$key}">{$c.label} ({$c.uri})</option>
+{/foreach}
+      </select>
+      <div class="form-check mb-0"><input type="checkbox" class="form-check-input" id="copy_storage" name="copy_storage" value="1"> <label class="form-check-label small" for="copy_storage">{'copy the disks (no shared storage)'|t}</label></div>
+      <button type="submit" class="btn btn-outline-primary btn-sm">{'Migrate'|t}</button>
+    </form>
+    <div class="form-text">{'A running machine moves live (it keeps running), a shut off one as its definition only. With copied disks the destination needs storage pools with the same paths; otherwise both hosts need the disks on shared storage.'|t}</div>
+{else}
+    <p class="small text-body-secondary mb-0">{'Add another hypervisor on the Connections page to migrate machines.'|t}</p>
+{/if}
+  </div>
+</div>
+{/if}
+
 {if $active}
 <script>
   // refresh screen preview without caching
