@@ -29,6 +29,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (in_array($name, $pools, true)) {
                 throw new RuntimeException(t('A storage pool with this name already exists.'));
             }
+            if (!isset(storage_supported_pool_types($connection)[$type])) {
+                throw new RuntimeException(t('This pool type is not supported by the hypervisor.'));
+            }
             [$xml, $errors] = storage_pool_xml($type, $name, $_POST);
             if ($errors) {
                 throw new RuntimeException(implode(' ', $errors));
@@ -38,13 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException(t('Error: %s', libvirt_get_last_error()));
             }
             // dir: creates the directory; netfs: the mount point; logical: nothing to do for an existing VG
-            if ($type !== 'logical') {
+            if (in_array($type, STORAGE_BUILD_TYPES, true)) {
                 @libvirt_storagepool_build($new);
             }
             if (!libvirt_storagepool_create($new)) {
                 $error = libvirt_get_last_error();
                 // remove what build created (the empty directory or mount point), then the definition
-                if ($type !== 'logical') {
+                if (in_array($type, STORAGE_BUILD_TYPES, true)) {
                     @libvirt_storagepool_delete($new);
                 }
                 libvirt_storagepool_undefine($new);
@@ -219,7 +222,7 @@ if ($storage === '') {
         ];
     }
     $smarty->assign('pools', $list);
-    $smarty->assign('pool_types', STORAGE_POOL_TYPES);
+    $smarty->assign('pool_types', storage_supported_pool_types($connection));
 }
 else {
     $pool = libvirt_storagepool_lookup_by_name($con, $storage);

@@ -25,8 +25,9 @@ the KVM host itself and manages that host's libvirt.
 **Host requirements:** Linux with KVM and libvirt running (`libvirtd` or
 `virtqemud`, socket in `/var/run/libvirt`), Docker with the Compose plugin.
 Optional, on the host: `ovmf` for UEFI machines, `swtpm` for the emulated TPM,
-the NFS client (`nfs-common`) for NFS storage pools, IOMMU (VT-d/AMD-Vi) for
-PCI passthrough.
+the NFS client (`nfs-common`) for NFS storage pools, `open-iscsi` for iSCSI
+pools, the libvirt ZFS/RBD storage drivers for those pools, `virtiofsd` for
+shared folders, IOMMU (VT-d/AMD-Vi) for PCI passthrough.
 
 **Access to libvirt (required, once):** the panel runs as uid 33 (`www-data`)
 and libvirt checks access with polkit, which allows members of the `libvirt`
@@ -233,8 +234,9 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
 
 **Storage and networks**
 
-- storage pools: create (directory, NFS share, existing LVM volume group),
-  remove (files are kept), start/stop, autostart, refresh; volumes: create,
+- storage pools: create (directory, NFS share, existing LVM volume group,
+  iSCSI target, whole disk, ZFS pool, Ceph RBD - only the types the
+  hypervisor supports are offered), remove (files are kept), start/stop, autostart, refresh; volumes: create,
   grow, copy (in the background), delete - volumes in use are protected
 - networks: create (NAT, routed, isolated) and delete, start/stop, autostart,
   DHCP range and static IP addresses per MAC (changed live), DHCP leases

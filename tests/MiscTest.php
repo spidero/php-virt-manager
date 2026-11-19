@@ -90,4 +90,33 @@ final class MiscTest extends TestCase
             $this->assertNotEmpty(storage_pool_xml($type, $name, $params)[1], $type.' '.json_encode($params));
         }
     }
+
+    public function testMorePoolTypes(): void
+    {
+        [$xml, $errors] = storage_pool_xml('iscsi', 'san', ['host' => 'san.local', 'iqn' => 'iqn.2004-04.com.example:storage']);
+        $this->assertSame([], $errors);
+        $p = simplexml_load_string($xml);
+        $this->assertSame(['iscsi', 'san.local', 'iqn.2004-04.com.example:storage', '/dev/disk/by-path'],
+            [(string)$p['type'], (string)$p->source->host['name'], (string)$p->source->device['path'], (string)$p->target->path]);
+
+        [$xml] = storage_pool_xml('disk', 'sdb', ['device' => '/dev/sdb']);
+        $this->assertSame('/dev/sdb', (string)simplexml_load_string($xml)->source->device['path']);
+        [$xml] = storage_pool_xml('zfs', 'tank', ['vg' => 'tank']);
+        $this->assertSame('tank', (string)simplexml_load_string($xml)->source->name);
+
+        [$xml, $errors] = storage_pool_xml('rbd', 'ceph', ['host' => 'mon1.local', 'vg' => 'vms', 'auth_user' => 'libvirt', 'secret' => '0b6f1b2a-1111-2222-3333-444455556666']);
+        $this->assertSame([], $errors);
+        $rbd = simplexml_load_string($xml);
+        $this->assertSame(['vms', 'mon1.local', 'libvirt'], [(string)$rbd->source->name, (string)$rbd->source->host['name'], (string)$rbd->source->auth['username']]);
+        $this->assertCount(0, simplexml_load_string(storage_pool_xml('rbd', 'c', ['host' => 'm', 'vg' => 'v'])[0])->source->auth, 'no auth');
+
+        foreach ([
+            ['iscsi', ['host' => 'san', 'iqn' => 'not-an-iqn']], ['iscsi', ['host' => 'a b', 'iqn' => 'iqn.2004-04.com.example:x']],
+            ['disk', ['device' => '/etc/passwd']], ['disk', ['device' => '/dev/../sda']], ['zfs', ['vg' => '../x']],
+            ['rbd', ['host' => 'm', 'vg' => 'v', 'auth_user' => 'u']], ['rbd', ['host' => 'm', 'vg' => 'v', 'auth_user' => 'u', 'secret' => 'nope']],
+        ] as [$type, $params]) {
+            $this->assertNotEmpty(storage_pool_xml($type, 'x', $params)[1], $type.' '.json_encode($params));
+        }
+        $this->assertNotContains('disk', STORAGE_BUILD_TYPES, 'a whole disk is never built (partition table)');
+    }
 }

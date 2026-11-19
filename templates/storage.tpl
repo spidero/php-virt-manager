@@ -55,7 +55,7 @@
         <input type="text" class="form-control form-control-sm font-monospace" id="pool-path" name="path" placeholder="/srv/vm-images">
       </div>
       <div class="col-md-3">
-        <label class="form-label" for="pool-host">{'NFS server'|t}</label>
+        <label class="form-label" for="pool-host">{'Server (NFS, iSCSI, Ceph monitor)'|t}</label>
         <input type="text" class="form-control form-control-sm font-monospace" id="pool-host" name="host" placeholder="nas.local">
       </div>
       <div class="col-md-3">
@@ -63,14 +63,32 @@
         <input type="text" class="form-control form-control-sm font-monospace" id="pool-export" name="export" placeholder="/export/vm">
       </div>
       <div class="col-md-3">
-        <label class="form-label" for="pool-vg">{'LVM volume group'|t}</label>
+        <label class="form-label" for="pool-vg">{'LVM group / ZFS pool / Ceph pool'|t}</label>
         <input type="text" class="form-control form-control-sm font-monospace" id="pool-vg" name="vg" placeholder="vg_vms">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="pool-iqn">{'iSCSI target (IQN)'|t}</label>
+        <input type="text" class="form-control form-control-sm font-monospace" id="pool-iqn" name="iqn" placeholder="iqn.2004-04.com.example:storage">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="pool-device">{'Disk device'|t}</label>
+        <input type="text" class="form-control form-control-sm font-monospace" id="pool-device" name="device" placeholder="/dev/sdb">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="pool-auth">{'Ceph user (optional)'|t}</label>
+        <input type="text" class="form-control form-control-sm font-monospace" id="pool-auth" name="auth_user" placeholder="libvirt">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="pool-secret">{'Ceph secret UUID'|t}</label>
+        <input type="text" class="form-control form-control-sm font-monospace" id="pool-secret" name="secret" placeholder="uuid of a libvirt secret">
       </div>
       <div class="col-md-3">
         <div class="form-check mb-1"><input type="checkbox" class="form-check-input" id="pool-auto" name="autostart" value="1" checked> <label class="form-check-label" for="pool-auto">{'autostart'|t}</label></div>
         <button type="submit" class="btn btn-primary btn-sm w-100">{'Create'|t}</button>
       </div>
-      <div class="col-12 form-text">{'Fill in the fields of the chosen type. The LVM volume group must already exist. Removing a pool later keeps its files.'|t}</div>
+      <div class="col-12 form-text">{'Fill in the fields of the chosen type. The LVM volume group, ZFS pool and Ceph pool must already exist. Removing a pool later keeps its files.'|t}
+        <span class="text-danger">{'Whole disk: the disk must already have a partition table - the panel never creates one, libvirt adds partitions as volumes.'|t}</span>
+        {'Only the types this hypervisor supports are offered.'|t}</div>
     </form>
   </div>
 </div>

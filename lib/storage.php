@@ -63,7 +63,22 @@ function storage_sources_in_use($con, $except_name = null) {
 }
 
 // storage pool types offered by the "new pool" form
-const STORAGE_POOL_TYPES = ['dir' => 'Directory', 'netfs' => 'NFS share', 'logical' => 'LVM volume group'];
+const STORAGE_POOL_TYPES = ['dir' => 'Directory', 'netfs' => 'NFS share', 'logical' => 'LVM volume group',
+    'iscsi' => 'iSCSI target', 'disk' => 'Whole disk (partitions)', 'zfs' => 'ZFS pool', 'rbd' => 'Ceph RBD'];
+// types whose target libvirt creates with "build" (never the disk type: it writes a partition table)
+const STORAGE_BUILD_TYPES = ['dir', 'netfs'];
+const STORAGE_IQN_PATTERN = '/^(iqn\.\d{4}-\d{2}\.[A-Za-z0-9.-]+(:[A-Za-z0-9.:_-]+)?|eui\.[0-9A-Fa-f]{16})$/';
+const STORAGE_UUID_PATTERN = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+
+// pool types the hypervisor supports (virsh pool-capabilities), limited to the offered ones;
+// all offered types when the capabilities cannot be read
+function storage_supported_pool_types($uri) {
+    [$status, $output] = domain_virsh($uri, ['pool-capabilities']);
+    if ($status !== 0 || !preg_match_all("/<pool type='([a-z]+)' supported='yes'/", $output, $m)) {
+        return STORAGE_POOL_TYPES;
+    }
+    return array_intersect_key(STORAGE_POOL_TYPES, array_flip($m[1]));
+}
 const STORAGE_PATH_PATTERN = '#^/[A-Za-z0-9._/-]*$#';
 const STORAGE_HOST_PATTERN = '/^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$/';
 
@@ -91,8 +106,25 @@ function storage_pool_xml($type, $name, array $p) {
             $errors[] = t('NFS export: an absolute path such as /export/vm.');
         }
     }
-    if ($type === 'logical' && !preg_match('/^[A-Za-z0-9][A-Za-z0-9+_.-]{0,127}$/', $vg)) {
-        $errors[] = t('Invalid volume group name.');
+    if (in_array($type, ['logical', 'zfs', 'rbd'], true) && !preg_match('/^[A-Za-z0-9][A-Za-z0-9+_.-]{0,127}$/', $vg)) {
+        $errors[] = t('Invalid volume group / pool name.');
+    }
+    $iqn = trim((string)($p['iqn'] ?? ''));
+    $device = trim((string)($p['device'] ?? ''));
+    $auth_user = trim((string)($p['auth_user'] ?? ''));
+    $secret = trim((string)($p['secret'] ?? ''));
+    if (in_array($type, ['iscsi', 'rbd'], true) && !preg_match(STORAGE_HOST_PATTERN, $host)) {
+        $errors[] = t('Invalid server address.');
+    }
+    if ($type === 'iscsi' && !preg_match(STORAGE_IQN_PATTERN, $iqn)) {
+        $errors[] = t('iSCSI target: an IQN such as iqn.2004-04.com.example:storage.');
+    }
+    if ($type === 'disk' && !preg_match('#^/dev/(disk/by-id/[A-Za-z0-9._:-]+|[a-z]+[a-z0-9]*)$#', $device)) {
+        $errors[] = t('Device: e.g. /dev/sdb or /dev/disk/by-id/...');
+    }
+    if ($type === 'rbd' && ($auth_user !== '' || $secret !== '')
+        && (!preg_match('/^[A-Za-z0-9._-]{1,64}$/', $auth_user) || !preg_match(STORAGE_UUID_PATTERN, $secret))) {
+        $errors[] = t('Ceph authentication needs a user name and the UUID of a libvirt secret.');
     }
     if (!isset(STORAGE_POOL_TYPES[$type])) {
         $errors[] = t('Unknown pool type.');
@@ -106,6 +138,15 @@ function storage_pool_xml($type, $name, array $p) {
         'netfs'   => "<pool type='netfs'>".$name_xml."<source><host name='".xml_escape($host)."'/>"
             ."<dir path='".xml_escape($export)."'/><format type='nfs'/></source>"
             .'<target><path>'.xml_escape($path).'</path></target></pool>',
+        'iscsi'   => "<pool type='iscsi'>".$name_xml."<source><host name='".xml_escape($host)."'/>"
+            ."<device path='".xml_escape($iqn)."'/></source><target><path>/dev/disk/by-path</path></target></pool>",
+        'disk'    => "<pool type='disk'>".$name_xml."<source><device path='".xml_escape($device)."'/></source>"
+            .'<target><path>/dev</path></target></pool>',
+        'zfs'     => "<pool type='zfs'>".$name_xml.'<source><name>'.xml_escape($vg).'</name></source></pool>',
+        'rbd'     => "<pool type='rbd'>".$name_xml.'<source><name>'.xml_escape($vg).'</name>'
+            ."<host name='".xml_escape($host)."'/>"
+            .($auth_user !== '' ? "<auth type='ceph' username='".xml_escape($auth_user)."'><secret uuid='".xml_escape($secret)."'/></auth>" : '')
+            .'</source></pool>',
         default   => "<pool type='logical'>".$name_xml.'<source><name>'.xml_escape($vg).'</name><format type="lvm2"/></source>'
             .'<target><path>/dev/'.xml_escape($vg).'</path></target></pool>',
     };

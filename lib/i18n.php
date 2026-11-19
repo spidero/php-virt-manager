@@ -55,7 +55,7 @@ const I18N_DYNAMIC = [
     'Starting machine, it may take some time', 'Shutting down machine, it may take some time',
     'Machine forcibly stopped', 'Machine reset', 'Machine state saved; the next start restores it',
     'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
-    'NAT', 'routed', 'isolated', 'virtio', 'QXL', 'VGA', 'Bochs', 'none', 'Intel HDA (ich9)', 'Intel HDA (ich6)', 'AC97', 'reset', 'power off', 'pause', 'Linux / other', 'Windows 11', 'Windows 10', 'Windows Server 2022/2025', 'Directory', 'NFS share', 'LVM volume group', 'Volume copy', 'ISO download', 'Migration',
+    'NAT', 'routed', 'isolated', 'virtio', 'QXL', 'VGA', 'Bochs', 'none', 'Intel HDA (ich9)', 'Intel HDA (ich6)', 'AC97', 'reset', 'power off', 'pause', 'Linux / other', 'Windows 11', 'Windows 10', 'Windows Server 2022/2025', 'Directory', 'NFS share', 'LVM volume group', 'iSCSI target', 'Whole disk (partitions)', 'ZFS pool', 'Ceph RBD', 'Volume copy', 'ISO download', 'Migration',
     'Cloning', 'Image download', 'Machine from cloud image', 'Hard disk', 'CD/DVD', 'Network (PXE)', 'Rebooting machine, it may take some time', 'Suspending machine', 'Resuming machine',
 ];
 
