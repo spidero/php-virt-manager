@@ -235,4 +235,24 @@ final class VmEditTest extends TestCase
         $this->assertSame(['mode' => 'host-passthrough', 'sockets' => 1, 'cores' => 3, 'threads' => 1],
             vm_cpu_settings("<domain><vcpu>3</vcpu></domain>"), 'defaults');
     }
+
+    public function testHostDevices(): void
+    {
+        $this->assertNull(hostdev_xml('usb:046d'));
+        $this->assertNull(hostdev_xml("usb:046d:082c' or 'x"));
+        $this->assertNull(hostdev_xml('pci:0000:02:00.9'));
+        $usb = simplexml_load_string(hostdev_xml('usb:046d:082c'));
+        $this->assertSame(['usb', 'yes', '0x046d', '0x082c'], [(string)$usb['type'], (string)$usb['managed'], (string)$usb->source->vendor['id'], (string)$usb->source->product['id']]);
+        $pci = simplexml_load_string(hostdev_xml('pci:0000:02:00.0'));
+        $this->assertSame(['0x0000', '0x02', '0x00', '0x0'], [(string)$pci->source->address['domain'], (string)$pci->source->address['bus'], (string)$pci->source->address['slot'], (string)$pci->source->address['function']]);
+
+        $xml = vm_xml_add_device(vm_xml_add_device("<domain><name>vm</name><devices/></domain>", hostdev_xml('usb:046d:082c')), hostdev_xml('pci:0000:02:00.0'));
+        // libvirt writes ids and addresses in its own way; keys stay the same
+        $xml = str_replace(["0x046d", "bus='0x02'"], ["0x046D", "bus='2'"], $xml);
+        $this->assertSame(['usb:046d:082c', 'pci:0000:02:00.0'], array_keys(vm_hostdevs($xml)));
+        $without = vm_xml_remove_hostdev($xml, 'usb:046d:082c');
+        $this->assertSame(['pci:0000:02:00.0'], array_keys(vm_hostdevs($without)));
+        $this->assertSame([], vm_hostdevs(vm_xml_remove_hostdev($without, 'pci:0000:02:00.0')));
+        $this->assertSame($without, vm_xml_remove_hostdev($without, 'usb:ffff:ffff'), 'unknown key: unchanged');
+    }
 }

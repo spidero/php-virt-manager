@@ -543,7 +543,7 @@ function libvirt_node_get_mem_stats(mixed $conn) {}
 /** @return mixed */
 function libvirt_node_get_free_memory(mixed $conn) {}
 /** @return mixed */
-function libvirt_nodedev_get(mixed $conn) {}
+function libvirt_nodedev_get(mixed $conn, mixed $name = null) {} // name param missing in extension arginfo
 /** @return mixed */
 function libvirt_nodedev_capabilities(mixed $conn) {}
 /** @return mixed */

@@ -273,6 +273,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $details = $mac.': '.$network.', '.$model;
         }
+        elseif ($action === 'hostdev_attach' || $action === 'hostdev_detach') {
+            if (!can('admin')) {
+                throw new RuntimeException(t('You do not have permission for this action.'));
+            }
+            $key = (string)($_POST['device'] ?? '');
+            $attached = vm_hostdevs($xml);
+            if ($action === 'hostdev_attach') {
+                $available = hostdev_usb_list($con) + hostdev_pci_list($con);
+                $device = isset($available[$key]) ? hostdev_xml($key) : null;
+                if ($device === null) {
+                    throw new RuntimeException(t('Unknown host device.'));
+                }
+                if (isset($attached[$key])) {
+                    throw new RuntimeException(t('The device is already attached.'));
+                }
+                // USB goes live into a running machine; PCI only into the definition (next start)
+                if (str_starts_with($key, 'usb:')) {
+                    $note = attach_device($con, $res, $xml, $active, $device);
+                    if ($note === false) {
+                        throw new RuntimeException(t('Error: %s', libvirt_get_last_error()));
+                    }
+                }
+                else {
+                    define_or_fail($con, vm_xml_add_device($xml, $device));
+                    $note = $after_restart;
+                }
+                $message = t('Host device %s attached.', $available[$key]['label']).$note;
+            }
+            else {
+                if (!isset($attached[$key])) {
+                    throw new RuntimeException(t('Unknown host device.'));
+                }
+                if ($active) {
+                    if (!libvirt_domain_detach_device($res, $attached[$key], AFFECT_LIVE_CONFIG)) {
+                        throw new RuntimeException(t('Error: %s', libvirt_get_last_error()));
+                    }
+                }
+                else {
+                    define_or_fail($con, vm_xml_remove_hostdev($xml, $key));
+                }
+                $message = t('Host device %s detached.', $key);
+            }
+            $details = $key;
+        }
         elseif ($action === 'serial_console') {
             $enable = !empty($_POST['enable']);
             $port = $enable ? (vm_serial_port($xml) ?: console_serial_free_port($con)) : 0;
@@ -407,4 +451,11 @@ $smarty->assign('device_disks', $device_disks);
 $smarty->assign('device_nics', vm_nic_devices($xml));
 $smarty->assign('nic_models', NIC_MODELS);
 $smarty->assign('serial_port', vm_serial_port($xml));
+// host devices: only administrators see and change them
+if (can('admin')) {
+    $host_devices = hostdev_usb_list($con) + hostdev_pci_list($con);
+    $smarty->assign('host_devices', $host_devices);
+    $smarty->assign('vm_hostdevs', array_map(fn($key) => ['key' => $key, 'label' => $host_devices[$key]['label'] ?? t('(not present on the host)')],
+        array_keys(vm_hostdevs($xml))));
+}
 $smarty->display('edit.tpl');

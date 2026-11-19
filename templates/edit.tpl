@@ -103,6 +103,54 @@
   </div>
 </div>
 
+{if $can.admin}
+<div class="card mb-3">
+  <div class="card-header">{'Host devices (USB, PCI)'|t}</div>
+  <div class="card-body">
+    <div class="alert alert-warning small py-2">{'A passed through device belongs to the machine while it runs: the host loses it (a USB keyboard stops working on the host, a PCI disk controller or network card can take the host down). PCI needs IOMMU (VT-d/AMD-Vi) and takes effect at the next start.'|t}</div>
+    <table class="table table-sm align-middle">
+      <tbody>
+{foreach $vm_hostdevs as $d}
+        <tr>
+          <td><code>{$d.key}</code></td><td>{$d.label}</td>
+          <td class="text-end">
+            <form method="post" action="edit.php" class="d-inline" data-confirm="{'Detach host device %s?'|t:$d.label}">
+              <input type="hidden" name="csrf" value="{$csrf_token}">
+              <input type="hidden" name="node" value="{$node}">
+              <input type="hidden" name="action" value="hostdev_detach">
+              <input type="hidden" name="device" value="{$d.key}">
+              <button type="submit" class="btn btn-outline-danger btn-sm">{'Detach'|t}</button>
+            </form>
+          </td>
+        </tr>
+{foreachelse}
+        <tr><td class="text-body-secondary">{'No host devices attached.'|t}</td></tr>
+{/foreach}
+      </tbody>
+    </table>
+    <form method="post" action="edit.php" class="d-flex flex-wrap gap-1" data-confirm="{'Attach the selected host device to %s? The host loses it while the machine runs.'|t:$node}">
+      <input type="hidden" name="csrf" value="{$csrf_token}">
+      <input type="hidden" name="node" value="{$node}">
+      <input type="hidden" name="action" value="hostdev_attach">
+      <select name="device" class="form-select form-select-sm w-auto" aria-label="{'Host device'|t}" required>
+        <option value="">- {'select a device'|t} -</option>
+        <optgroup label="USB">
+{foreach $host_devices as $key => $d}{if $d.type=='usb'}
+          <option value="{$key}">{$d.label} ({$d.detail})</option>
+{/if}{/foreach}
+        </optgroup>
+        <optgroup label="PCI">
+{foreach $host_devices as $key => $d}{if $d.type=='pci'}
+          <option value="{$key}">{$d.label} ({$d.detail})</option>
+{/if}{/foreach}
+        </optgroup>
+      </select>
+      <button type="submit" class="btn btn-outline-primary btn-sm">{'Attach'|t}</button>
+    </form>
+  </div>
+</div>
+{/if}
+
 <div class="row">
   <div class="col-md-6">
     <div class="card mb-3">

@@ -170,6 +170,9 @@ rebuilt from Actions → CI → Run workflow. To build the image from source:
   grow (also while running), detach (optionally deleting the file);
   network interfaces: add, switch network (live) or model, detach - devices
   are hot-plugged into running machines
+- host device passthrough for administrators: USB devices (by vendor and
+  product, also live) and PCI devices (next start, needs IOMMU); hubs and PCI
+  bridges are not offered, the host driver of each device is shown
 - cloning (disks copied in the background) and deleting machines with a
   choice of disks; disks used by other machines are protected
 - snapshots: create, revert, delete; automatic snapshots hourly, daily or
