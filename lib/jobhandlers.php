@@ -90,7 +90,7 @@ function job_cloud_create(array $params, $con, $job_id, $uri) {
 
         $xml = domain_new_xml($name, (int)$params['memory'], (int)$params['vcpus'],
             (string)libvirt_storagevolume_get_path($disk), (string)libvirt_storagevolume_get_path($seed),
-            (string)$params['network'], ['hd']);
+            (string)$params['network'], ['hd'], 'scsi');
         $res = libvirt_domain_define_xml($con, $xml);
         if (!$res) {
             throw new RuntimeException('define failed: '.libvirt_get_last_error());

@@ -188,12 +188,17 @@ function domain_xml_spice_to_vnc($xml) {
     return $doc->saveXML($doc->documentElement);
 }
 
-// XML definition for a new VM created by the wizard
-function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $network, array $boot = ['cdrom', 'hd']) {
+// XML definition for a new VM created by the wizard; $iso_bus 'scsi' puts the
+// CD-ROM on a virtio-scsi controller: cloud kernels (e.g. Debian 12 "cloud-amd64")
+// have no AHCI driver and would not see a SATA CD-ROM, while installer ISOs
+// (Windows without drivers) need SATA
+function domain_new_xml($name, $memory_mb, $vcpus, $disk_path, $iso_path, $network, array $boot = ['cdrom', 'hd'], $iso_bus = 'sata') {
     $iso = '';
     if ($iso_path !== '') {
+        $bus = $iso_bus === 'scsi' ? 'scsi' : 'sata';
         $iso = "<disk type='file' device='cdrom'><driver name='qemu' type='raw'/>"
-            ."<source file='".xml_escape($iso_path)."'/><target dev='sda' bus='sata'/><readonly/></disk>";
+            ."<source file='".xml_escape($iso_path)."'/><target dev='sda' bus='".$bus."'/><readonly/></disk>"
+            .($bus === 'scsi' ? "<controller type='scsi' model='virtio-scsi'/>" : '');
     }
     return "<domain type='kvm'>"
         .'<name>'.xml_escape($name).'</name>'

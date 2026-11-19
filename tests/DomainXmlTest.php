@@ -17,6 +17,20 @@ final class DomainXmlTest extends TestCase
         $this->assertSame('127.0.0.1', (string)$doc->devices->graphics['listen']);
     }
 
+    public function testIsoBus(): void
+    {
+        // installer ISOs: SATA, no SCSI controller
+        $doc = simplexml_load_string(domain_new_xml('vm', 512, 1, '/d.qcow2', '/os.iso', 'net'));
+        $this->assertSame('sata', (string)$doc->devices->disk[1]->target['bus']);
+        $this->assertCount(0, $doc->xpath("/domain/devices/controller[@type='scsi']"));
+        // cloud-init seed: virtio-scsi (cloud kernels lack AHCI)
+        $doc = simplexml_load_string(domain_new_xml('vm', 512, 1, '/d.qcow2', '/vm-seed.iso', 'net', ['hd'], 'scsi'));
+        $this->assertSame('cdrom', (string)$doc->devices->disk[1]['device']);
+        $this->assertSame('scsi', (string)$doc->devices->disk[1]->target['bus']);
+        $this->assertSame('virtio-scsi', (string)$doc->xpath("/domain/devices/controller[@type='scsi']")[0]['model']);
+        $this->assertSame(['sda' => '/vm-seed.iso'], vm_seed_paths($doc->asXML()), 'still found as the seed CD-ROM');
+    }
+
     public function testNewDomainHasSparePcieRootPorts(): void
     {
         $doc = simplexml_load_string(domain_new_xml('vm', 512, 1, '/d.qcow2', '', 'net'));
