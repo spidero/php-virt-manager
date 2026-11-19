@@ -23,10 +23,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $message = '';
 
     try {
+        if ($action === 'pool_create') {
+            $name = trim((string)($_POST['name'] ?? ''));
+            $type = (string)($_POST['type'] ?? 'dir');
+            if (in_array($name, $pools, true)) {
+                throw new RuntimeException(t('A storage pool with this name already exists.'));
+            }
+            [$xml, $errors] = storage_pool_xml($type, $name, $_POST);
+            if ($errors) {
+                throw new RuntimeException(implode(' ', $errors));
+            }
+            $new = libvirt_storagepool_define_xml($con, $xml, 0);
+            if (!$new) {
+                throw new RuntimeException(t('Error: %s', libvirt_get_last_error()));
+            }
+            // dir: creates the directory; netfs: the mount point; logical: nothing to do for an existing VG
+            if ($type !== 'logical') {
+                @libvirt_storagepool_build($new);
+            }
+            if (!libvirt_storagepool_create($new)) {
+                $error = libvirt_get_last_error();
+                // remove what build created (the empty directory or mount point), then the definition
+                if ($type !== 'logical') {
+                    @libvirt_storagepool_delete($new);
+                }
+                libvirt_storagepool_undefine($new);
+                throw new RuntimeException(t('The pool could not be started, it was not added: %s', $error));
+            }
+            if (!empty($_POST['autostart'])) {
+                libvirt_storagepool_set_autostart($new, true);
+            }
+            action_log('pool_create', $name, true, $type);
+            flash_set('success', t('Storage pool %s created.', $name));
+            redirect('storage.php?storage='.urlencode($name));
+        }
         if (!$pool) {
             throw new RuntimeException(t('Unknown storage pool: %s', $storage));
         }
-        if ($action === 'pool_start') {
+        if ($action === 'pool_delete') {
+            $pool_paths = [];
+            $pool_active = (bool)libvirt_storagepool_is_active($pool);
+            foreach ($pool_active ? (libvirt_storagepool_list_volumes($pool) ?: []) : [] as $vol_name) {
+                $pool_paths[] = (string)libvirt_storagevolume_get_path(libvirt_storagevolume_lookup_by_name($pool, $vol_name));
+            }
+            if (array_intersect($pool_paths, storage_sources_in_use($con))) {
+                throw new RuntimeException(t('Volumes of %s are used by machines.', $storage));
+            }
+            // only the definition goes away, the files (directory, NFS share, LVM volumes) stay
+            $ok = (!$pool_active || libvirt_storagepool_destroy($pool)) && libvirt_storagepool_undefine($pool);
+            $message = t('Storage pool %s removed; its files were kept.', $storage);
+            $back = 'storage.php';
+        }
+        elseif ($action === 'volume_resize') {
+            $name = (string)($_POST['volume'] ?? '');
+            $size = (int)($_POST['size'] ?? 0);
+            if (!in_array($name, libvirt_storagepool_list_volumes($pool) ?: [], true)) {
+                throw new RuntimeException(t('Unknown volume: %s', $name));
+            }
+            $vol = libvirt_storagevolume_lookup_by_name($pool, $name);
+            $info = libvirt_storagevolume_get_info($vol);
+            if ($size < 1 || $size > 65536 || $size * 1073741824 <= (int)$info['capacity']) {
+                throw new RuntimeException(t('The new size must be larger than the current %s (shrinking would destroy data).', format_bytes($info['capacity'])));
+            }
+            // a disk of a running machine must grow through the machine (block resize)
+            if (in_array((string)libvirt_storagevolume_get_path($vol), storage_sources_in_use_running($con), true)) {
+                throw new RuntimeException(t('The volume is a disk of a running machine - resize it on the machine edit page.'));
+            }
+            $ok = libvirt_storagevolume_resize($vol, $size * 1073741824, 0) !== false;
+            $target = $storage.'/'.$name;
+            $details = $size.' GB';
+            $message = t('Volume %s resized to %d GB.', $name, $size);
+        }
+        elseif ($action === 'volume_clone') {
+            $name = (string)($_POST['volume'] ?? '');
+            $new_name = trim((string)($_POST['name'] ?? ''));
+            $existing = libvirt_storagepool_list_volumes($pool) ?: [];
+            if (!in_array($name, $existing, true)) {
+                throw new RuntimeException(t('Unknown volume: %s', $name));
+            }
+            if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/', $new_name)) {
+                throw new RuntimeException(t('Invalid volume name (letters, digits, . _ - only).'));
+            }
+            if (in_array($new_name, $existing, true) || job_pending('volume_clone', 'name', $new_name)) {
+                throw new RuntimeException(t('Volume %s already exists in pool %s.', $new_name, $storage));
+            }
+            $id = job_create('volume_clone', ['pool' => $storage, 'source' => $name, 'name' => $new_name]);
+            action_log('volume_clone_queued', $storage.'/'.$name, true, $new_name.' (job #'.$id.')');
+            flash_set('success', t('Copy of %s to %s started in the background (job #%d).', $name, $new_name, $id));
+            redirect('jobs.php');
+        }
+        elseif ($action === 'pool_start') {
             $ok = libvirt_storagepool_create($pool);
             $message = t('Storage pool %s started.', $storage);
         }
@@ -113,6 +199,7 @@ if ($storage === '') {
         ];
     }
     $smarty->assign('pools', $list);
+    $smarty->assign('pool_types', STORAGE_POOL_TYPES);
 }
 else {
     $pool = libvirt_storagepool_lookup_by_name($con, $storage);
@@ -130,6 +217,7 @@ else {
                 'path'       => $path,
                 'capacity'   => format_bytes($info['capacity']),
                 'allocation' => format_bytes($info['allocation']),
+                'capacity_gb' => (int)ceil($info['capacity'] / 1073741824),
                 'in_use'     => in_array($path, $in_use, true),
             ];
         }

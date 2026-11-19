@@ -6,7 +6,30 @@ const JOB_HANDLERS = [
     'clone'          => 'job_clone',
     'image_download' => 'job_image_download',
     'cloud_create'   => 'job_cloud_create',
+    'volume_clone'   => 'job_volume_clone',
 ];
+
+// params: pool, source (volume name), name (new volume name)
+function job_volume_clone(array $params, $con, $job_id, $uri) {
+    $pool = libvirt_storagepool_lookup_by_name($con, (string)$params['pool']);
+    $source = $pool ? @libvirt_storagevolume_lookup_by_name($pool, (string)$params['source']) : false;
+    if (!$source) {
+        throw new RuntimeException('source volume not found');
+    }
+    if (in_array((string)$params['name'], libvirt_storagepool_list_volumes($pool) ?: [], true)) {
+        throw new RuntimeException('volume '.$params['name'].' already exists');
+    }
+    $info = libvirt_storagevolume_get_info($source);
+    $format = (string)(simplexml_load_string((string)libvirt_storagevolume_get_xml_desc($source, null))->target->format['type'] ?? 'raw');
+    job_progress($job_id, 'copying '.format_bytes($info['capacity']));
+    $xml = '<volume><name>'.xml_escape((string)$params['name']).'</name>'
+        ."<capacity unit='bytes'>".(int)$info['capacity'].'</capacity>'
+        ."<target><format type='".xml_escape($format)."'/></target></volume>";
+    if (!libvirt_storagevolume_create_xml_from($pool, $xml, $source)) {
+        throw new RuntimeException('copy failed: '.libvirt_get_last_error());
+    }
+    return 'copied from '.$params['source'].' in '.$params['pool'];
+}
 
 // returns a callback updating the job message at most every 2 seconds
 function job_progress_reporter($job_id, $label) {

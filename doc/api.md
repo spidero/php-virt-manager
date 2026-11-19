@@ -367,7 +367,7 @@ The last 100 jobs, newest first. `operator`.
 
 | Field | Meaning |
 |-------|---------|
-| `type` | `clone`, `cloud_create`, `image_download` |
+| `type` | `clone`, `cloud_create`, `image_download`, `volume_clone` |
 | `status` | `queued`, `running`, `done`, `failed` |
 | `progress` | percent of the current phase, `null` when unknown or finished |
 | `message` | current phase while running; result or error when finished |

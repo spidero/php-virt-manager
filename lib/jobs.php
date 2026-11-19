@@ -10,6 +10,7 @@ const JOB_LABELS = [
     'clone'          => 'Cloning',
     'image_download' => 'Image download',
     'cloud_create'   => 'Machine from cloud image',
+    'volume_clone'   => 'Volume copy',
 ];
 
 // bin/cron.php is considered stopped when it has not run for this long

@@ -20,6 +20,7 @@
           {call post_button url='storage.php' action='pool_start' label={'Start'|t} class='btn-outline-success btn-sm' extra=['storage'=>$p.name]}
         {/if}
         {call post_button url='storage.php' action='pool_autostart' label=($p.autostart)?{'Disable autostart'|t}:{'Enable autostart'|t} extra=['storage'=>$p.name, 'enable'=>($p.autostart)?'0':'1']}
+        {call post_button url='storage.php' action='pool_delete' label={'Remove'|t} class='btn-outline-danger btn-sm' extra=['storage'=>$p.name] confirm={'Remove storage pool %s from libvirt? Its files stay on the disk.'|t:$p.name}}
 {/if}
       </td>
     </tr>
@@ -30,6 +31,50 @@
   </table>
   </div>
 </div>
+{if $allow.admin}
+<div class="card mt-3">
+  <div class="card-header">{'New storage pool'|t}</div>
+  <div class="card-body">
+    <form method="post" action="storage.php" class="row g-2 align-items-end">
+      <input type="hidden" name="csrf" value="{$csrf_token}">
+      <input type="hidden" name="action" value="pool_create">
+      <div class="col-md-3">
+        <label class="form-label" for="pool-name">{'Name'|t}</label>
+        <input type="text" class="form-control form-control-sm" id="pool-name" name="name" required pattern="[A-Za-z0-9][A-Za-z0-9._\-]{ldelim}0,63{rdelim}" placeholder="vm-data">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="pool-type">{'Type'|t}</label>
+        <select class="form-select form-select-sm" id="pool-type" name="type">
+{foreach $pool_types as $type => $label}
+          <option value="{$type}">{$label|t}</option>
+{/foreach}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="pool-path">{'Target directory (directory, NFS mount point)'|t}</label>
+        <input type="text" class="form-control form-control-sm font-monospace" id="pool-path" name="path" placeholder="/srv/vm-images">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="pool-host">{'NFS server'|t}</label>
+        <input type="text" class="form-control form-control-sm font-monospace" id="pool-host" name="host" placeholder="nas.local">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="pool-export">{'NFS export'|t}</label>
+        <input type="text" class="form-control form-control-sm font-monospace" id="pool-export" name="export" placeholder="/export/vm">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="pool-vg">{'LVM volume group'|t}</label>
+        <input type="text" class="form-control form-control-sm font-monospace" id="pool-vg" name="vg" placeholder="vg_vms">
+      </div>
+      <div class="col-md-3">
+        <div class="form-check mb-1"><input type="checkbox" class="form-check-input" id="pool-auto" name="autostart" value="1" checked> <label class="form-check-label" for="pool-auto">{'autostart'|t}</label></div>
+        <button type="submit" class="btn btn-primary btn-sm w-100">{'Create'|t}</button>
+      </div>
+      <div class="col-12 form-text">{'Fill in the fields of the chosen type. The LVM volume group must already exist. Removing a pool later keeps its files.'|t}</div>
+    </form>
+  </div>
+</div>
+{/if}
 {else}
 <div class="card mb-3">
   <div class="card-header">
@@ -46,6 +91,7 @@
       {call post_button url='storage.php' action='pool_start' label={'Start'|t} class='btn-outline-success btn-sm' extra=['storage'=>$storage]}
     {/if}
     {call post_button url='storage.php' action='pool_autostart' label=($pool_autostart)?{'Disable autostart'|t}:{'Enable autostart'|t} extra=['storage'=>$storage, 'enable'=>($pool_autostart)?'0':'1']}
+    {call post_button url='storage.php' action='pool_delete' label={'Remove'|t} class='btn-outline-danger btn-sm' extra=['storage'=>$storage] confirm={'Remove storage pool %s from libvirt? Its files stay on the disk.'|t:$storage}}
 {/if}
   </div>
   <div class="table-responsive">
@@ -56,6 +102,24 @@
     <tr>
       <td>{$v.name}</td><td><small>{$v.path}</small></td><td>{$v.capacity}</td><td>{$v.allocation}</td>
       <td class="text-end text-nowrap">
+{if $allow.admin}
+        <form method="post" action="storage.php" class="d-inline-flex gap-1 me-1 mb-1">
+          <input type="hidden" name="csrf" value="{$csrf_token}">
+          <input type="hidden" name="action" value="volume_resize">
+          <input type="hidden" name="storage" value="{$storage}">
+          <input type="hidden" name="volume" value="{$v.name}">
+          <input type="number" name="size" class="form-control form-control-sm" style="width: 5.5rem" min="{$v.capacity_gb+1}" max="65536" value="{$v.capacity_gb+10}" aria-label="{'New size (GB)'|t}" required>
+          <button type="submit" class="btn btn-outline-primary btn-sm">{'GB, resize'|t}</button>
+        </form>
+        <form method="post" action="storage.php" class="d-inline-flex gap-1 me-1 mb-1">
+          <input type="hidden" name="csrf" value="{$csrf_token}">
+          <input type="hidden" name="action" value="volume_clone">
+          <input type="hidden" name="storage" value="{$storage}">
+          <input type="hidden" name="volume" value="{$v.name}">
+          <input type="text" name="name" class="form-control form-control-sm" style="width: 9rem" value="copy-{$v.name}" aria-label="{'Name of the copy'|t}" required pattern="[A-Za-z0-9][A-Za-z0-9._\-]{ldelim}0,127{rdelim}">
+          <button type="submit" class="btn btn-outline-secondary btn-sm">{'Copy'|t}</button>
+        </form>
+{/if}
 {if $v.in_use}
         <span class="badge text-bg-info">{'in use'|t}</span>
 {elseif $allow.admin}

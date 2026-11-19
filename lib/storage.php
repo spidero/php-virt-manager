@@ -61,3 +61,66 @@ function storage_sources_in_use($con, $except_name = null) {
     }
     return array_values(array_unique($paths));
 }
+
+// storage pool types offered by the "new pool" form
+const STORAGE_POOL_TYPES = ['dir' => 'Directory', 'netfs' => 'NFS share', 'logical' => 'LVM volume group'];
+const STORAGE_PATH_PATTERN = '#^/[A-Za-z0-9._/-]*$#';
+const STORAGE_HOST_PATTERN = '/^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$/';
+
+// pool definition from the form; returns [xml, errors]
+function storage_pool_xml($type, $name, array $p) {
+    $errors = [];
+    $path = rtrim(trim((string)($p['path'] ?? '')), '/');
+    $host = trim((string)($p['host'] ?? ''));
+    $export = trim((string)($p['export'] ?? ''));
+    $vg = trim((string)($p['vg'] ?? ''));
+    if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/', (string)$name)) {
+        $errors[] = t('Name: 1-64 characters, letters, digits, . _ - (must start with a letter or digit).');
+    }
+    $valid_path = fn($v) => $v !== '' && preg_match(STORAGE_PATH_PATTERN, $v) && !str_contains($v, '..') && !str_contains($v, '//');
+    if ($type === 'dir' || $type === 'netfs') {
+        if (!$valid_path($path) || in_array($path, ['', '/', '/etc', '/usr', '/bin', '/boot', '/dev', '/proc', '/sys'], true)) {
+            $errors[] = t('Target directory: an absolute path such as /srv/vm-images.');
+        }
+    }
+    if ($type === 'netfs') {
+        if (!preg_match(STORAGE_HOST_PATTERN, $host)) {
+            $errors[] = t('Invalid NFS server.');
+        }
+        if (!$valid_path($export)) {
+            $errors[] = t('NFS export: an absolute path such as /export/vm.');
+        }
+    }
+    if ($type === 'logical' && !preg_match('/^[A-Za-z0-9][A-Za-z0-9+_.-]{0,127}$/', $vg)) {
+        $errors[] = t('Invalid volume group name.');
+    }
+    if (!isset(STORAGE_POOL_TYPES[$type])) {
+        $errors[] = t('Unknown pool type.');
+    }
+    if ($errors) {
+        return ['', $errors];
+    }
+    $name_xml = '<name>'.xml_escape($name).'</name>';
+    $xml = match ($type) {
+        'dir'     => "<pool type='dir'>".$name_xml.'<target><path>'.xml_escape($path).'</path></target></pool>',
+        'netfs'   => "<pool type='netfs'>".$name_xml."<source><host name='".xml_escape($host)."'/>"
+            ."<dir path='".xml_escape($export)."'/><format type='nfs'/></source>"
+            .'<target><path>'.xml_escape($path).'</path></target></pool>',
+        default   => "<pool type='logical'>".$name_xml.'<source><name>'.xml_escape($vg).'</name><format type="lvm2"/></source>'
+            .'<target><path>/dev/'.xml_escape($vg).'</path></target></pool>',
+    };
+    return [$xml, []];
+}
+
+// disk paths of running machines (their disks grow through the machine, not the volume)
+function storage_sources_in_use_running($con) {
+    $paths = [];
+    foreach (libvirt_list_active_domains($con) ?: [] as $name) {
+        $res = libvirt_domain_lookup_by_name($con, $name);
+        $xml = $res ? (string)libvirt_domain_get_xml_desc($res, null, 0) : '';
+        if ($xml !== '') {
+            $paths = array_merge($paths, vm_all_sources($xml));
+        }
+    }
+    return $paths;
+}

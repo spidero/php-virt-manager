@@ -52,4 +52,27 @@ final class MiscTest extends TestCase
         $this->assertSame('127.0.0.1', console_vnc_host('0.0.0.0'));
         $this->assertSame('10.0.0.5', console_vnc_host('10.0.0.5'));
     }
+
+    public function testStoragePoolXml(): void
+    {
+        [$xml, $errors] = storage_pool_xml('dir', 'vm-data', ['path' => '/srv/vm-images/']);
+        $this->assertSame([], $errors);
+        $pool = simplexml_load_string($xml);
+        $this->assertSame(['dir', 'vm-data', '/srv/vm-images'], [(string)$pool['type'], (string)$pool->name, (string)$pool->target->path]);
+
+        [$xml] = storage_pool_xml('netfs', 'nas', ['path' => '/mnt/nas', 'host' => 'nas.local', 'export' => '/export/vm']);
+        $nfs = simplexml_load_string($xml);
+        $this->assertSame(['nas.local', '/export/vm', 'nfs'], [(string)$nfs->source->host['name'], (string)$nfs->source->dir['path'], (string)$nfs->source->format['type']]);
+
+        [$xml] = storage_pool_xml('logical', 'lvm', ['vg' => 'vg_vms']);
+        $this->assertSame('/dev/vg_vms', (string)simplexml_load_string($xml)->target->path);
+
+        foreach ([
+            ['dir', 'x', ['path' => 'relative']], ['dir', 'x', ['path' => '/']], ['dir', 'x', ['path' => '/srv/../etc']],
+            ['dir', 'x', ['path' => "/srv/a'b"]], ['dir', 'bad name', ['path' => '/srv/x']], ['netfs', 'x', ['path' => '/mnt/x', 'host' => 'a b', 'export' => '/e']],
+            ['logical', 'x', ['vg' => '../vg']], ['iscsi', 'x', []],
+        ] as [$type, $name, $params]) {
+            $this->assertNotEmpty(storage_pool_xml($type, $name, $params)[1], $type.' '.json_encode($params));
+        }
+    }
 }
