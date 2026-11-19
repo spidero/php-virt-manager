@@ -37,6 +37,7 @@
   </div>
 {/foreach}
 </div>
+{if $can.view}
 <div class="card">
   <div class="card-header">{'Hypervisor'|t}</div>
   <table class="table table-sm mb-0">
@@ -66,6 +67,16 @@
     </div>
   </div>
 </div>
+{else}
+<div class="card">
+  <div class="card-header">{'My quota on this hypervisor'|t}</div>
+  <table class="table table-sm mb-0">
+{foreach [['machines', 'Machines'], ['vcpus', 'vCPUs'], ['memory_mb', 'Memory (MB)'], ['disk_gb', 'Disk (GB)']] as $q}
+    <tr><th style="width: 30%">{$q[1]|t}</th><td>{$usage[$q[0]]} / {if $quotas[$q[0]] === null}{'no limit'|t}{else}{$quotas[$q[0]]}{/if}</td></tr>
+{/foreach}
+  </table>
+</div>
+{/if}
 
 {* bar color by usage: green, then yellow from 75 %, red from 90 % *}
 {function name=usage_bar pct=0 label=''}

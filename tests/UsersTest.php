@@ -4,17 +4,24 @@ use PHPUnit\Framework\TestCase;
 
 final class UsersTest extends TestCase
 {
-    public function testRoleHierarchy(): void
+    public function testRolePermissions(): void
     {
-        $this->assertTrue(role_allows('viewer', 'view'));
-        $this->assertFalse(role_allows('viewer', 'operate'));
-        $this->assertTrue(role_allows('operator', 'operate'));
-        $this->assertFalse(role_allows('operator', 'admin'));
-        $this->assertTrue(role_allows('admin', 'admin'));
+        $matrix = [
+            'user'       => ['own', 'create'],
+            'localadmin' => ['own', 'create', 'delete_own'],
+            'viewer'     => ['view'],
+            'auditor'    => ['view', 'audit'],
+            'operator'   => ['view', 'operate', 'create'],
+            'admin'      => ['view', 'operate', 'create', 'audit', 'admin'],
+        ];
+        foreach ($matrix as $role => $allowed) {
+            foreach (array_keys(PERMISSIONS) as $permission) {
+                $this->assertSame(in_array($permission, $allowed, true), role_allows($role, $permission), $role.' '.$permission);
+            }
+        }
+        $this->assertSame(array_keys($matrix), array_keys(ROLES));
         $this->assertFalse(role_allows('unknown', 'view'));
-        // unknown permissions require the admin role
-        $this->assertTrue(role_allows('admin', 'no-such-permission'));
-        $this->assertFalse(role_allows('operator', 'no-such-permission'));
+        $this->assertFalse(role_allows('admin', 'no-such-permission'));
     }
 
     public function testBootstrapCreatesFirstAdminOnce(): void

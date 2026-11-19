@@ -1,6 +1,7 @@
 <?php
 
 require_once 'function.php';
+require_permission('view');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_require();

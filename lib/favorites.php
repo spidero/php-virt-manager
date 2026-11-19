@@ -22,7 +22,7 @@ function favorite_menu_items($con, $user_id, $conn) {
     if (!$names) {
         return [];
     }
-    $existing = libvirt_list_domains($con) ?: [];
+    $existing = machine_filter_visible(libvirt_list_domains($con) ?: [], $conn);
     $items = [];
     foreach ($names as $name) {
         if (!in_array($name, $existing, true)) {

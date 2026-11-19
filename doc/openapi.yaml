@@ -8,7 +8,9 @@ info:
   description: |
     Manage libvirt/KVM machines of php-virt-manager. Authenticate with a
     personal token created in the panel profile (`Authorization: Bearer pvm_...`).
-    Tokens act with the role of their owner. See doc/api.md for a guide.
+    Tokens act with the role of their owner. The roles user and localadmin see
+    and operate only the machines they own (others answer 404) and are limited
+    by quotas. See doc/api.md for a guide.
 servers:
   - url: https://{host}/api.php/v1
     variables:
@@ -39,7 +41,7 @@ paths:
       operationId: listConnections
       tags: [connections]
       summary: Configured hypervisors
-      description: Required role - viewer.
+      description: Required role - viewer, or user/localadmin.
       parameters: [{$ref: '#/components/parameters/conn'}]
       responses:
         '200':
@@ -55,7 +57,7 @@ paths:
       operationId: listDomains
       tags: [machines]
       summary: List machines
-      description: Required role - viewer.
+      description: Required role - viewer; user/localadmin get only their own machines.
       parameters: [{$ref: '#/components/parameters/conn'}]
       responses:
         '200':
@@ -71,7 +73,7 @@ paths:
       operationId: getDomain
       tags: [machines]
       summary: Machine details
-      description: Required role - viewer.
+      description: Required role - viewer, or the owner (user/localadmin); 404 for machines of other users.
       parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/conn'}]
       responses:
         '200':
@@ -89,7 +91,7 @@ paths:
       summary: Raw usage counters
       description: |
         Cumulative counters; compute rates from two samples. Meaningful only
-        while `counters.state` is 1 (running). Required role - viewer.
+        while `counters.state` is 1 (running). Required role - viewer, or the owner (user/localadmin).
       parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/conn'}]
       responses:
         '200':
@@ -105,7 +107,7 @@ paths:
       operationId: domainAction
       tags: [machines]
       summary: Power action
-      description: Required role - operator. Returns 409 when libvirt refuses the action.
+      description: Required role - operator, or the owner (user/localadmin). Returns 409 when libvirt refuses the action.
       parameters:
         - {$ref: '#/components/parameters/name'}
         - name: action
@@ -127,7 +129,7 @@ paths:
       operationId: listSnapshots
       tags: [snapshots]
       summary: List snapshots (newest first)
-      description: Required role - viewer.
+      description: Required role - viewer, or the owner (user/localadmin).
       parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/conn'}]
       responses:
         '200':
@@ -141,7 +143,7 @@ paths:
       operationId: createSnapshot
       tags: [snapshots]
       summary: Create a snapshot
-      description: Required role - operator.
+      description: Required role - operator, or the owner (user/localadmin).
       parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/conn'}]
       requestBody:
         required: false
@@ -174,7 +176,7 @@ paths:
       operationId: revertSnapshot
       tags: [snapshots]
       summary: Revert to a snapshot
-      description: The current state of the machine is lost. Required role - operator.
+      description: The current state of the machine is lost. Required role - operator, or the owner (user/localadmin).
       parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/snapshot'}, {$ref: '#/components/parameters/conn'}]
       responses:
         '200': {$ref: '#/components/responses/Ok'}
@@ -186,7 +188,7 @@ paths:
       operationId: deleteSnapshot
       tags: [snapshots]
       summary: Delete a snapshot
-      description: Required role - operator.
+      description: Required role - operator, or the owner (user/localadmin).
       parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/snapshot'}, {$ref: '#/components/parameters/conn'}]
       responses:
         '200': {$ref: '#/components/responses/Ok'}
@@ -198,7 +200,7 @@ paths:
       operationId: cloneDomain
       tags: [machines]
       summary: Clone a shut off machine (background job)
-      description: Required role - operator.
+      description: Required role - operator, or user/localadmin for their own machines (within the quotas; the clone becomes theirs).
       parameters: [{$ref: '#/components/parameters/name'}, {$ref: '#/components/parameters/conn'}]
       requestBody:
         required: true
@@ -224,7 +226,7 @@ paths:
       operationId: listCloudImages
       tags: [cloud]
       summary: Cloud image catalog
-      description: Required role - viewer.
+      description: Required role - viewer, or user/localadmin.
       parameters: [{$ref: '#/components/parameters/conn'}]
       responses:
         '200':
@@ -242,7 +244,7 @@ paths:
       summary: Saved SSH keys of the token owner
       description: |
         Keys saved in the panel profile; their ids can be passed as `ssh_key_ids`
-        to `POST /cloud`. Required role - viewer.
+        to `POST /cloud`. Required role - viewer, or user/localadmin.
       responses:
         '200':
           description: Keys
@@ -259,7 +261,7 @@ paths:
       summary: Create a machine from a cloud image (background job)
       description: |
         The image must be downloaded. At least one SSH key (`ssh_keys` or
-        `ssh_key_ids`) or a `password` is required. Required role - operator.
+        `ssh_key_ids`) or a `password` is required. Required role - operator, or user/localadmin (within the quotas; the machine becomes theirs).
       parameters: [{$ref: '#/components/parameters/conn'}]
       requestBody:
         required: true
@@ -284,7 +286,7 @@ paths:
       operationId: listJobs
       tags: [jobs]
       summary: Last 100 background jobs
-      description: Required role - operator.
+      description: Required role - operator (all jobs), or user/localadmin (their own jobs).
       responses:
         '200':
           description: Jobs
@@ -299,7 +301,7 @@ paths:
       operationId: getJob
       tags: [jobs]
       summary: Background job
-      description: Poll until `status` is `done` or `failed`. Required role - operator.
+      description: Poll until `status` is `done` or `failed`. Required role - operator, or user/localadmin for their own jobs.
       parameters:
         - name: id
           in: path
@@ -319,7 +321,7 @@ paths:
       operationId: listNetworks
       tags: [infrastructure]
       summary: libvirt networks
-      description: Required role - viewer.
+      description: Required role - viewer, or user/localadmin.
       parameters: [{$ref: '#/components/parameters/conn'}]
       responses:
         '200':
@@ -335,7 +337,7 @@ paths:
       operationId: listPools
       tags: [infrastructure]
       summary: Storage pools (sizes in bytes)
-      description: Required role - viewer.
+      description: Required role - viewer, or user/localadmin.
       parameters: [{$ref: '#/components/parameters/conn'}]
       responses:
         '200':

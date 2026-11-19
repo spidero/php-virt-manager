@@ -1,15 +1,27 @@
 <?php
 
-// users with global roles; each role includes the permissions of the lower ones
-
-const ROLES = ['viewer' => 1, 'operator' => 2, 'admin' => 3];
-
-// permission => minimal role
-const PERMISSIONS = [
-    'view'    => 'viewer',   // read everything
-    'operate' => 'operator', // power, snapshots, console, create/edit/clone VM
-    'admin'   => 'admin',    // delete VM, storage/network management, schedules, users
+// users with roles; a role is a set of permissions. Global permissions:
+//   view       - see all machines and the host (storage, networks)
+//   operate    - power, console, snapshots, edit and clone any machine
+//   create     - create machines (own-machine roles within their quotas)
+//   own        - see and operate (incl. edit) only the machines the user owns
+//   delete_own - delete own machines
+//   audit      - action log and the user list, read-only
+//   admin      - everything: delete any machine, host settings, users, owners, quotas
+const ROLE_PERMISSIONS = [
+    'user'       => ['own', 'create'],
+    'localadmin' => ['own', 'create', 'delete_own'],
+    'viewer'     => ['view'],
+    'auditor'    => ['view', 'audit'],
+    'operator'   => ['view', 'operate', 'create'],
+    'admin'      => ['view', 'operate', 'create', 'audit', 'admin'],
 ];
+
+// roles in the order shown in the panel
+const ROLES = ['user' => 1, 'localadmin' => 2, 'viewer' => 3, 'auditor' => 4, 'operator' => 5, 'admin' => 6];
+
+// all global permissions (flags for templates)
+const PERMISSIONS = ['view' => true, 'operate' => true, 'create' => true, 'own' => true, 'delete_own' => true, 'audit' => true, 'admin' => true];
 
 const USERNAME_PATTERN = '/^[A-Za-z0-9._@-]{1,64}$/';
 const PASSWORD_MIN_LENGTH = 8;
@@ -37,7 +49,7 @@ function user_create($username, $password_hash, $role) {
 }
 
 function user_update($id, array $fields) {
-    $allowed = ['password_hash', 'role', 'lang', 'last_login'];
+    $allowed = ['password_hash', 'role', 'lang', 'last_login', 'quota_machines', 'quota_vcpus', 'quota_memory_mb', 'quota_disk_gb'];
     $set = [];
     $params = [];
     foreach ($fields as $name => $value) {
@@ -84,8 +96,7 @@ function user_validate_password($password) {
 }
 
 function role_allows($role, $permission) {
-    $needed = PERMISSIONS[$permission] ?? 'admin';
-    return (ROLES[$role] ?? 0) >= ROLES[$needed];
+    return in_array($permission, ROLE_PERMISSIONS[$role] ?? [], true);
 }
 
 // user of the current session (or of the API token, see api_authenticate()),

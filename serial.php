@@ -3,14 +3,14 @@
 // text console in the browser: xterm.js connected through websockify to the
 // machine's serial port on 127.0.0.1 (see vm_serial_xml())
 require_once 'function.php';
-require_permission('operate');
 
 $node = (string)($_GET['node'] ?? '');
-if (!in_array($node, libvirt_list_domains($con) ?: [], true)) {
+if (!machine_visible($con, $node)) {
     flash_set('danger', t('Unknown machine: %s', $node));
     redirect('index.php');
 }
 $node_url = 'node.php?node='.urlencode($node);
+require_machine('operate', $node, $node_url);
 $res = libvirt_domain_lookup_by_name($con, $node);
 
 if (!$console_enabled || !connection_is_local($connection)) {

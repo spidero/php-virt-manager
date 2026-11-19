@@ -100,6 +100,10 @@ function cloud_create_request($con, array $input) {
     if ($password !== '' && ($error = user_validate_password($password))) {
         $errors[] = $error;
     }
+    // quota of own-machine roles (user, localadmin)
+    if (!$errors && ($quota = quota_check($con, ['machines' => 1, 'vcpus' => $form['vcpus'], 'memory_mb' => $form['memory'], 'disk_gb' => $form['disk']])) !== '') {
+        $errors[] = $quota;
+    }
 
     $params = $errors ? [] : [
         'name' => $form['name'], 'image' => $downloaded[$form['image']]['path'], 'pool' => $form['pool'],

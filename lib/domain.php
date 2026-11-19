@@ -92,11 +92,15 @@ function domain_list($con) {
     return $list;
 }
 
-// machines for the hypervisor page: state, vCPUs, memory, guest IPs and disk use
-function domain_overview($con) {
+// machines for the hypervisor page: state, vCPUs, memory, guest IPs and disk use;
+// $only: names to include (the machines the user may see), null = all
+function domain_overview($con, ?array $only = null) {
     $stats = @libvirt_connect_get_all_domain_stats($con, 0, 0) ?: [];
     $rows = [];
     foreach (domain_list($con) as $d) {
+        if ($only !== null && !in_array($d['name'], $only, true)) {
+            continue;
+        }
         $res = libvirt_domain_lookup_by_name($con, $d['name']);
         if (!$res) {
             continue;
@@ -361,6 +365,7 @@ function volume_new_xml($name, $capacity_gb) {
 function domain_rename_references($conn, $old, $new) {
     db_query('UPDATE favorites SET name = ? WHERE conn = ? AND name = ?', [$new, $conn, $old]);
     db_query('UPDATE schedules SET domain = ? WHERE conn = ? AND domain = ?', [$new, $conn, $old]);
+    machine_owner_rename($conn, $old, $new);
 }
 
 // Linux input key codes of a text typed into a machine (US keyboard layout):
@@ -403,4 +408,5 @@ function domain_text_keycodes($text) {
 function domain_move_references($from_conn, $to_conn, $name) {
     db_query('UPDATE OR IGNORE favorites SET conn = ? WHERE conn = ? AND name = ?', [$to_conn, $from_conn, $name]);
     db_query('UPDATE schedules SET conn = ? WHERE conn = ? AND domain = ?', [$to_conn, $from_conn, $name]);
+    machine_owner_move($from_conn, $to_conn, $name);
 }

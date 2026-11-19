@@ -20,7 +20,7 @@
 {if $vm_description}
     <div class="small text-body-secondary mb-1" style="white-space: pre-line">{$vm_description}</div>
 {/if}
-    <p class="text-body-secondary mb-3"><small>UUID: {$domain_uuid}</small></p>
+    <p class="text-body-secondary mb-3"><small>UUID: {$domain_uuid}{if $owner} &middot; {'owner'|t}: {$owner}{/if}</small></p>
 
 {if $allow.operate}
     <div class="mb-3">
@@ -207,6 +207,27 @@
 </div>
 
 {if $allow.admin}
+<div class="card mb-3">
+  <div class="card-header">{'Owner'|t}</div>
+  <div class="card-body">
+{if $owner_candidates}
+    <form method="post" action="node.php" class="d-flex flex-wrap gap-2 align-items-center">
+      <input type="hidden" name="csrf" value="{$csrf_token}">
+      <input type="hidden" name="node" value="{$node}">
+      <input type="hidden" name="action" value="owner">
+      <select name="owner" class="form-select form-select-sm w-auto" aria-label="{'Owner'|t}">
+        <option value="0">{'(no owner)'|t}</option>
+{foreach $owner_candidates as $u}
+        <option value="{$u.id}"{if $u.id==$owner_id} selected{/if}>{$u.username} ({$u.role|t})</option>
+{/foreach}
+      </select>
+      <button type="submit" class="btn btn-outline-primary btn-sm">{'Save'|t}</button>
+    </form>
+{/if}
+    <div class="form-text">{'Users with the role user or localadmin see and operate only the machines they own.'|t}</div>
+  </div>
+</div>
+
 <div class="card mb-3">
   <div class="card-header">{'Migration'|t}</div>
   <div class="card-body">

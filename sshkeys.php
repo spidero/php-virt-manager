@@ -2,7 +2,7 @@
 
 // personal SSH public keys, offered in the cloud image wizard
 require_once 'function.php';
-require_permission('operate');
+require_permission('create');
 
 $user = current_user();
 

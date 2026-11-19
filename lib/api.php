@@ -5,25 +5,26 @@
 
 class ApiError extends RuntimeException {}
 
-// method, path pattern, handler, required permission
+// method, path pattern, handler, access: catalog (lists used to create machines), machine
+// (machines the user may see; the handlers check the machine itself), create, jobs (see api_access())
 const API_ROUTES = [
-    ['GET',    '#^/v1/connections$#',                              'api_connections',     'view'],
-    ['GET',    '#^/v1/domains$#',                                  'api_domains',         'view'],
-    ['GET',    '#^/v1/domains/([^/]+)$#',                          'api_domain',          'view'],
-    ['GET',    '#^/v1/domains/([^/]+)/stats$#',                    'api_domain_stats',    'view'],
-    ['POST',   '#^/v1/domains/([^/]+)/actions/([a-z]+)$#',         'api_domain_action',   'operate'],
-    ['GET',    '#^/v1/domains/([^/]+)/snapshots$#',                'api_snapshots',       'view'],
-    ['POST',   '#^/v1/domains/([^/]+)/snapshots$#',                'api_snapshot_create', 'operate'],
-    ['POST',   '#^/v1/domains/([^/]+)/snapshots/([^/]+)/revert$#', 'api_snapshot_revert', 'operate'],
-    ['DELETE', '#^/v1/domains/([^/]+)/snapshots/([^/]+)$#',        'api_snapshot_delete', 'operate'],
-    ['POST',   '#^/v1/domains/([^/]+)/clone$#',                    'api_domain_clone',    'operate'],
-    ['POST',   '#^/v1/cloud$#',                                    'api_cloud_create',    'operate'],
-    ['GET',    '#^/v1/cloud/images$#',                             'api_cloud_images',    'view'],
-    ['GET',    '#^/v1/ssh-keys$#',                                 'api_ssh_keys',        'view'],
-    ['GET',    '#^/v1/jobs$#',                                     'api_jobs',            'operate'],
-    ['GET',    '#^/v1/jobs/([0-9]+)$#',                            'api_job',             'operate'],
-    ['GET',    '#^/v1/networks$#',                                 'api_networks',        'view'],
-    ['GET',    '#^/v1/pools$#',                                    'api_pools',           'view'],
+    ['GET',    '#^/v1/connections$#',                              'api_connections',     'catalog'],
+    ['GET',    '#^/v1/domains$#',                                  'api_domains',         'machine'],
+    ['GET',    '#^/v1/domains/([^/]+)$#',                          'api_domain',          'machine'],
+    ['GET',    '#^/v1/domains/([^/]+)/stats$#',                    'api_domain_stats',    'machine'],
+    ['POST',   '#^/v1/domains/([^/]+)/actions/([a-z]+)$#',         'api_domain_action',   'machine'],
+    ['GET',    '#^/v1/domains/([^/]+)/snapshots$#',                'api_snapshots',       'machine'],
+    ['POST',   '#^/v1/domains/([^/]+)/snapshots$#',                'api_snapshot_create', 'machine'],
+    ['POST',   '#^/v1/domains/([^/]+)/snapshots/([^/]+)/revert$#', 'api_snapshot_revert', 'machine'],
+    ['DELETE', '#^/v1/domains/([^/]+)/snapshots/([^/]+)$#',        'api_snapshot_delete', 'machine'],
+    ['POST',   '#^/v1/domains/([^/]+)/clone$#',                    'api_domain_clone',    'create'],
+    ['POST',   '#^/v1/cloud$#',                                    'api_cloud_create',    'create'],
+    ['GET',    '#^/v1/cloud/images$#',                             'api_cloud_images',    'catalog'],
+    ['GET',    '#^/v1/ssh-keys$#',                                 'api_ssh_keys',        'catalog'],
+    ['GET',    '#^/v1/jobs$#',                                     'api_jobs',            'jobs'],
+    ['GET',    '#^/v1/jobs/([0-9]+)$#',                            'api_job',             'jobs'],
+    ['GET',    '#^/v1/networks$#',                                 'api_networks',        'catalog'],
+    ['GET',    '#^/v1/pools$#',                                    'api_pools',           'catalog'],
 ];
 
 // [handler, permission, arguments]; throws ApiError 404/405
@@ -58,9 +59,26 @@ function api_json_body() {
     return $data;
 }
 
-function api_lookup($con, $name) {
-    if (!in_array($name, libvirt_list_domains($con) ?: [], true)) {
+// route access of a role; machine routes are open to own-machine roles, the
+// handlers then check the machine (api_lookup)
+function api_access($role, $access) {
+    return match ($access) {
+        'machine' => role_allows($role, 'view') || role_allows($role, 'own'),
+        'jobs'    => role_allows($role, 'operate') || role_allows($role, 'create'),
+        // lists needed to create machines (images, keys, pools, networks, connections)
+        'catalog' => role_allows($role, 'view') || role_allows($role, 'create'),
+        default   => role_allows($role, $access),
+    };
+}
+
+// a machine the token owner may see ($access view) or operate; machines of other
+// users look like missing ones
+function api_lookup($con, $name, $access = 'view') {
+    if (!in_array($name, libvirt_list_domains($con) ?: [], true) || !machine_allowed('view', $name)) {
         throw new ApiError('machine not found', 404);
+    }
+    if ($access !== 'view' && !machine_allowed($access, $name)) {
+        throw new ApiError('your role ('.current_user()['role'].') does not allow this', 403);
     }
     return libvirt_domain_lookup_by_name($con, $name);
 }
@@ -89,7 +107,9 @@ function api_connections($con) {
 }
 
 function api_domains($con) {
-    return array_map(fn($d) => ['name' => $d['name'], 'state' => $d['label'], 'state_id' => $d['id']], domain_list($con));
+    $visible = machine_filter_visible(array_column(domain_list($con), 'name'));
+    return array_values(array_map(fn($d) => ['name' => $d['name'], 'state' => $d['label'], 'state_id' => $d['id']],
+        array_filter(domain_list($con), fn($d) => in_array($d['name'], $visible, true))));
 }
 
 function api_domain($con, $name) {
@@ -120,7 +140,7 @@ function api_domain_stats($con, $name) {
 
 function api_domain_action($con, $name, $action) {
     api_require_writable();
-    $res = api_lookup($con, $name);
+    $res = api_lookup($con, $name, 'operate');
     if (!isset(DOMAIN_POWER_ACTIONS[$action])) {
         throw new ApiError('unknown action, use: '.implode(', ', array_keys(DOMAIN_POWER_ACTIONS)), 400);
     }
@@ -136,7 +156,7 @@ function api_snapshots($con, $name) {
 
 function api_snapshot_create($con, $name) {
     api_require_writable();
-    $res = api_lookup($con, $name);
+    $res = api_lookup($con, $name, 'operate');
     $body = api_json_body();
     $snapshot = (string)($body['name'] ?? date('Y-m-d_H-i-s'));
     if (!preg_match(DOMAIN_NAME_PATTERN, $snapshot)) {
@@ -150,7 +170,7 @@ function api_snapshot_create($con, $name) {
 // runs $operation on the snapshot; the snapshot resource is released before
 // the domain (see the note at domain_snapshots())
 function api_snapshot_call($con, $name, $snapshot, $operation) {
-    $res = api_lookup($con, $name);
+    $res = api_lookup($con, $name, 'operate');
     if (!in_array($snapshot, libvirt_list_domain_snapshots($res) ?: [], true)) {
         throw new ApiError('snapshot not found', 404);
     }
@@ -174,7 +194,7 @@ function api_snapshot_delete($con, $name, $snapshot) {
 
 function api_domain_clone($con, $name) {
     api_require_writable();
-    $res = api_lookup($con, $name);
+    $res = api_lookup($con, $name, 'operate');
     $target = (string)(api_json_body()['name'] ?? '');
     if (libvirt_domain_is_active($res)) {
         throw new ApiError('shut the machine down first', 409);
@@ -186,7 +206,11 @@ function api_domain_clone($con, $name) {
         throw new ApiError('machine already exists', 409);
     }
     $xml = (string)libvirt_domain_get_xml_desc($res, null, VIR_DOMAIN_XML_INACTIVE);
-    $id = job_create('clone', ['source' => $name, 'name' => $target, 'disks' => vm_clone_disk_modes($xml, (array)(api_json_body()['disks'] ?? []))]);
+    $modes = vm_clone_disk_modes($xml, (array)(api_json_body()['disks'] ?? []));
+    if (($quota = quota_check($con, quota_clone_add($con, $res, $xml, $modes))) !== '') {
+        throw new ApiError($quota, 403);
+    }
+    $id = job_create('clone', ['source' => $name, 'name' => $target, 'disks' => $modes] + owner_job_params());
     action_log('clone_queued', $name, true, $target.' (job #'.$id.', api)');
     return ['ok' => true, 'job' => $id];
 }
@@ -214,18 +238,18 @@ function api_cloud_create($con) {
     if ($errors) {
         throw new ApiError(implode(' ', $errors), 400);
     }
-    $id = job_create('cloud_create', $params);
+    $id = job_create('cloud_create', $params + owner_job_params());
     action_log('cloud_create_queued', $params['name'], true, 'job #'.$id.' (api)');
     return ['ok' => true, 'job' => $id];
 }
 
 function api_jobs($con) {
-    return array_map('api_job_view', job_list(100));
+    return array_values(array_map('api_job_view', array_filter(job_list(100), 'job_visible')));
 }
 
 function api_job($con, $id) {
     foreach (job_list(1000) as $job) {
-        if ((int)$job['id'] === (int)$id) {
+        if ((int)$job['id'] === (int)$id && job_visible($job)) {
             return api_job_view($job);
         }
     }

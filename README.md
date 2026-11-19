@@ -261,8 +261,9 @@ them in bug reports.
 
 **Administration**
 
-- users with roles (admin, operator, viewer), personal SSH keys, login
-  lockout, CSRF protection, read-only connections
+- users with roles (admin, operator, auditor, viewer, localadmin, user),
+  machine owners and quotas per hypervisor (machines, vCPUs, memory, disk),
+  personal SSH keys, login lockout, CSRF protection, read-only connections
 - several hypervisors (local or `qemu+ssh://`) switchable in the menu; added,
   tested and removed by administrators on the *Connections* page (or fixed in
   `config.php`)
@@ -282,7 +283,7 @@ them in bug reports.
 | ![Cloud image catalog](.github/screenshots/catalog.png) | ![Networks](.github/screenshots/networks.png) |
 | **Catalog** of cloud images, synchronized from GitHub | **Networks** - new networks, DHCP range, static addresses |
 | ![Background tasks](.github/screenshots/jobs.png) | ![Users and roles](.github/screenshots/users.png) |
-| **Background tasks** with progress | **Users** with admin, operator and viewer roles |
+| **Background tasks** with progress | **Users** with roles and quotas |
 | ![Action log](.github/screenshots/action-log.png) | |
 | **Action log** - who did what and when | |
 
@@ -390,11 +391,26 @@ key check. Consoles work only for local connections.
 
 ### Users and roles
 
-| Role       | Permissions |
-|------------|-------------|
-| `viewer`   | read-only access, starring machines |
-| `operator` | power actions, snapshots, consoles, creating and editing machines (resources, disks, interfaces), saved SSH keys |
-| `admin`    | everything, including deleting machines, the XML editor, host device passthrough, storage pools and networks, the cloud image catalog, users and the action log |
+| Role         | Permissions |
+|--------------|-------------|
+| `user`       | only the machines they own: power actions, snapshots, consoles, editing; creates new machines (wizard, cloud images, clones of own machines) within the quotas, saved SSH keys |
+| `localadmin` | like `user`, and may also delete the machines they own |
+| `viewer`     | read-only access to all machines, storage and networks, starring machines |
+| `auditor`    | like `viewer`, plus the action log and the list of users (read-only) |
+| `operator`   | power actions, snapshots, consoles, creating, editing and cloning all machines, saved SSH keys |
+| `admin`      | everything, including deleting machines, the XML editor, host device passthrough, storage pools and networks, the cloud image catalog, users, owners, quotas and the action log |
+
+**Owners.** A machine created by a `user` or `localadmin` becomes theirs; an
+administrator assigns or changes the owner on the machine page (*Owner*).
+Machines of other users look like missing ones to them (also in the API).
+Ownership follows a rename or a migration and goes away with the machine.
+
+**Quotas** are set per user on the *Users* page: number of machines, vCPUs
+(maximum), memory (MB, maximum) and disk (GB, capacity of the disks, without
+CD-ROMs). They apply to each hypervisor separately; an empty field means no
+limit. Creating, cloning, changing resources, adding or growing disks is
+refused when it would exceed a quota. Quotas apply only to the roles `user`
+and `localadmin`.
 
 ## Cloud images
 

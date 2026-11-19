@@ -13,13 +13,16 @@ $fail = function ($code, $message) {
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !hash_equals(csrf_token(), (string)($_POST['csrf'] ?? ''))) {
     $fail(400, 'Invalid request (CSRF token mismatch).');
 }
-if (!can('operate') || $readonly) {
-    $fail(403, t('You do not have permission for this action.'));
+if ($readonly) {
+    $fail(403, t('Connection is read-only.'));
 }
 $node = (string)($_POST['node'] ?? '');
 $key = (string)($_POST['key'] ?? '');
-if (!in_array($node, libvirt_list_domains($con) ?: [], true)) {
+if (!machine_visible($con, $node)) {
     $fail(400, t('Unknown machine: %s', $node));
+}
+if (!machine_allowed('operate', $node)) {
+    $fail(403, t('You do not have permission for this action.'));
 }
 $text = (string)($_POST['text'] ?? '');
 if ($text === '' && !isset(DOMAIN_KEY_COMBOS[$key])) {

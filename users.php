@@ -1,10 +1,14 @@
 <?php
 
 require_once 'function.php';
-require_permission('admin');
+// administrators manage users, auditors see the list read-only
+if (!can('admin')) {
+    require_permission('audit');
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_require();
+    require_permission('admin', 'users.php');
     $action = (string)($_POST['action'] ?? '');
     $id = (int)($_POST['id'] ?? 0);
     $target = $id ? user_find($id) : null;
@@ -49,6 +53,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash_set('success', t('Role of %s changed to %s.', $target['username'], t($role)));
         }
     }
+    elseif ($action === 'quota') {
+        // empty field = no limit
+        $fields = [];
+        foreach (QUOTA_FIELDS as $key => $column) {
+            $value = trim((string)($_POST[$key] ?? ''));
+            $fields[$column] = $value === '' ? null : max(0, (int)$value);
+        }
+        user_update($target['id'], $fields);
+        action_log('user_quota', $target['username'], true, implode(', ', array_map(fn($k, $v) => $k.'='.($v ?? '-'), array_keys(QUOTA_FIELDS), $fields)));
+        flash_set('success', t('Quotas of %s saved.', $target['username']));
+    }
     elseif ($action === 'password') {
         $password = (string)($_POST['password'] ?? '');
         if ($error = user_validate_password($password)) {
@@ -76,7 +91,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect('users.php');
 }
 
-$smarty->assign('users', user_list());
+$users = user_list();
+// quotas and the usage on the current hypervisor of the users who own machines
+$quota_users = [];
+foreach ($users as $u) {
+    if (role_allows($u['role'], 'own')) {
+        $quota_users[] = ['id' => $u['id'], 'username' => $u['username'], 'role' => $u['role'],
+            'quotas' => user_quotas($u), 'usage' => user_usage($con, connection_current_key(), $u['id'])];
+    }
+}
+$smarty->assign('users', $users);
+$smarty->assign('quota_users', $quota_users);
+$smarty->assign('manage', can('admin'));
 $smarty->assign('roles', array_keys(ROLES));
 $smarty->assign('self_id', (int)current_user()['id']);
 $smarty->assign('password_min', PASSWORD_MIN_LENGTH);

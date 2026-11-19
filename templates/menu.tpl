@@ -14,7 +14,7 @@
     {if $readonly}<span class="badge text-bg-secondary mt-1">{'read-only'|t}</span>{/if}
   </div>
 {* starred machines only; all machines are in the table of the hypervisor page *}
-{if $favorites || $allow.operate}
+{if $favorites || $allow.create}
   <div class="card-body px-3 py-2">
 {foreach $favorites as $d}
     <div class="text-truncate">
@@ -22,24 +22,34 @@
       <a href="node.php?node={$d.name|escape:'url'}"{if isset($node) && $node==$d.name} class="fw-bold"{/if}>{$d.name}</a>
     </div>
 {/foreach}
-{if $allow.operate}
+{if $allow.create}
     <a href="cloud.php" class="btn btn-outline-primary btn-sm w-100{if $favorites} mt-2{/if}">+ {'From cloud image'|t}</a>
     <a href="create.php" class="btn btn-outline-secondary btn-sm w-100 mt-1">+ {'From ISO'|t}</a>
 {/if}
   </div>
 {/if}
   <div class="list-group list-group-flush">
-    <a href="index.php" class="list-group-item list-group-item-action py-2{if $page=='index'} active{/if}">{'Hypervisor'|t}</a>
+    <a href="index.php" class="list-group-item list-group-item-action py-2{if $page=='index'} active{/if}">{if $can.view}{'Hypervisor'|t}{else}{'My machines'|t}{/if}</a>
+{if $can.view}
     <a href="storage.php" class="list-group-item list-group-item-action py-2{if $page=='storage'} active{/if}">{'Storage'|t}</a>
     <a href="network.php" class="list-group-item list-group-item-action py-2{if $page=='network'} active{/if}">{'Networks'|t}</a>
-{if $can.operate}
+{/if}
+{if $can.operate || $can.create}
     <a href="jobs.php" class="list-group-item list-group-item-action py-2{if $page=='jobs'} active{/if}">{'Background tasks'|t}</a>
+{/if}
+{if $can.create}
     <a href="sshkeys.php" class="list-group-item list-group-item-action py-2{if $page=='sshkeys'} active{/if}">{'SSH keys'|t}</a>
 {/if}
-{if $can.admin}
+{if $can.audit}
     <a href="log.php" class="list-group-item list-group-item-action py-2{if $page=='log'} active{/if}">{'Action log'|t}</a>
+{/if}
+{if $can.admin}
     <a href="schedules.php" class="list-group-item list-group-item-action py-2{if $page=='schedules'} active{/if}">{'Snapshot schedules'|t}</a>
+{/if}
+{if $can.admin || $can.audit}
     <a href="users.php" class="list-group-item list-group-item-action py-2{if $page=='users'} active{/if}">{'Users'|t}</a>
+{/if}
+{if $can.admin}
     <a href="connections.php" class="list-group-item list-group-item-action py-2{if $page=='connections'} active{/if}">{'Connections'|t}</a>
 {/if}
   </div>

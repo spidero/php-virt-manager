@@ -1,7 +1,6 @@
 <?php
 
 require_once 'function.php';
-require_permission('operate');
 
 // libvirt device modification flags
 const AFFECT_LIVE = 1;
@@ -11,11 +10,12 @@ const AFFECT_LIVE_CONFIG = 3;
 const UNDEFINE_ALL_METADATA = 1 | 2 | 4;
 
 $node = (string)($_GET['node'] ?? $_POST['node'] ?? '');
-if (!in_array($node, libvirt_list_domains($con) ?: [], true)) {
+if (!machine_visible($con, $node)) {
     flash_set('danger', t('Unknown machine: %s', $node));
     redirect('index.php');
 }
 $edit_url = 'edit.php?node='.urlencode($node);
+require_machine('operate', $node, 'node.php?node='.urlencode($node));
 $res = libvirt_domain_lookup_by_name($con, $node);
 $active = (bool)libvirt_domain_is_active($res);
 $xml = domain_definition_xml($res);
@@ -64,7 +64,14 @@ function define_or_fail($con, $new_xml) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_require();
     $action = (string)($_POST['action'] ?? '');
-    readonly_guard($edit_url, $action === 'delete' ? 'admin' : 'operate');
+    readonly_guard($edit_url, null);
+    // deleting: administrators, or the owner with the localadmin role; cloning creates a machine
+    if ($action === 'delete' && !machine_allowed('delete', $node)) {
+        require_permission('admin', $edit_url);
+    }
+    if ($action === 'clone') {
+        require_permission('create', $edit_url);
+    }
     $after_restart = $active ? ' '.t('Takes effect after the machine is shut down and started again.') : '';
     $details = '';
     $message = '';
@@ -106,6 +113,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException(t('Host CPUs: a list such as 0-3 or 2,3 within 0-%d.', $max_vcpus - 1));
             }
             $old_vcpu = vm_vcpu_settings($xml);
+            // quota: the machine with its new size instead of the current one
+            if (($quota = quota_check($con, ['vcpus' => $vcpus, 'memory_mb' => $memory, 'disk_gb' => 0], $node)) !== '') {
+                throw new RuntimeException($quota);
+            }
             $old_vcpus = $old_cpu['sockets'] * $old_cpu['cores'] * $old_cpu['threads'];
             define_or_fail($con, vm_xml_set_vcpu_options(vm_xml_set_resources($xml, $memory, $vcpus, $current, $cpu), $current_vcpus, $cpuset));
             $details = sprintf('%d/%d MB, %d/%d vCPU (%dx%dx%d), %s, cpuset %s', $current, $memory, $current_vcpus, $vcpus,
@@ -169,6 +180,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $target = vm_next_target($xml, vm_disk_target_prefix($bus));
             $vol = null;
+            $new_gb = $source === 'existing' ? 0 : (int)($_POST['size'] ?? 0);
+            if ($source === 'existing') {
+                $info = @libvirt_storagevolume_get_info(@libvirt_storagevolume_lookup_by_path($con, (string)($_POST['volume'] ?? '')));
+                $new_gb = is_array($info) ? (int)ceil($info['capacity'] / 1073741824) : 0;
+            }
+            if (($quota = quota_check($con, ['disk_gb' => $new_gb])) !== '') {
+                throw new RuntimeException($quota);
+            }
             if ($source === 'existing') {
                 // an existing, unused volume (e.g. a disk image moved from another host)
                 $path = (string)($_POST['volume'] ?? '');
@@ -235,8 +254,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException(t('Unknown disk.'));
             }
             $delete = !empty($_POST['delete_volume']);
-            if ($delete && ($active || !can('admin'))) {
-                throw new RuntimeException(t('The disk file can be deleted only by an administrator, with the machine shut down.'));
+            if ($delete && ($active || !machine_allowed('delete', $node))) {
+                throw new RuntimeException(t('The disk file can be deleted only by a user allowed to delete the machine, with the machine shut down.'));
             }
             $path = $disks[$target]['path'];
             if ($delete && in_array($path, storage_sources_in_use($con, $node), true)) {
@@ -278,6 +297,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if ($current !== null && $bytes <= $current) {
                 throw new RuntimeException(t('The new size must be larger than the current %s (shrinking would destroy data).', format_bytes($current)));
+            }
+            if (($quota = quota_check($con, ['disk_gb' => $size_gb - (int)ceil(($current ?? 0) / 1073741824)])) !== '') {
+                throw new RuntimeException($quota);
             }
             if ($active) {
                 // flag 1 = size in bytes; the guest sees the bigger disk at once
@@ -561,7 +583,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException(t('A machine with this name already exists.'));
             }
             $modes = vm_clone_disk_modes($xml, (array)($_POST['disk_mode'] ?? []));
-            $id = job_create('clone', ['source' => $node, 'name' => $name, 'disks' => $modes]);
+            if (($quota = quota_check($con, quota_clone_add($con, $res, $xml, $modes))) !== '') {
+                throw new RuntimeException($quota);
+            }
+            // a clone made by an own-machine role is its own
+            $id = job_create('clone', ['source' => $node, 'name' => $name, 'disks' => $modes] + owner_job_params());
             action_log('clone_queued', $node, true, $name.' (job #'.$id.') '.json_encode($modes));
             flash_set('success', t('Cloning to %s started in the background (job #%d).', $name, $id));
             redirect('jobs.php');
@@ -576,6 +602,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!libvirt_domain_undefine_flags($res, UNDEFINE_ALL_METADATA)) {
                 throw new RuntimeException(t('Error: %s', libvirt_get_last_error()));
             }
+            machine_owner_set(connection_current_key(), $node, null);
             $deleted = [];
             $errors = [];
             foreach ($disk_paths as $target => $path) {
@@ -668,6 +695,7 @@ $smarty->assign('firmwares', DOMAIN_FIRMWARES);
 $smarty->assign('video_models', VM_VIDEO_MODELS);
 $smarty->assign('sound_models', VM_SOUND_MODELS);
 $smarty->assign('watchdog_actions', VM_WATCHDOG_ACTIONS);
+$smarty->assign('can_delete', machine_allowed('delete', $node) && !$readonly);
 // host devices: only administrators see and change them
 if (can('admin')) {
     $host_devices = hostdev_usb_list($con) + hostdev_pci_list($con);

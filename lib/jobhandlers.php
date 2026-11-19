@@ -174,6 +174,7 @@ function job_cloud_create(array $params, $con, $job_id, $uri) {
         if (!$res) {
             throw new RuntimeException('define failed: '.libvirt_get_last_error());
         }
+        owner_assign_new($params, $name);
     }
     catch (Throwable $e) {
         foreach ($created as $vol) {
@@ -239,6 +240,7 @@ function job_clone(array $params, $con, $job_id, $uri) {
         if (!libvirt_domain_define_xml($con, vm_xml_clone($xml, $name, $path_map, $skip))) {
             throw new RuntimeException('define failed: '.libvirt_get_last_error());
         }
+        owner_assign_new($params, $name);
     }
     catch (Throwable $e) {
         // do not leave copied disks behind

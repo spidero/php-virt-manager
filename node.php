@@ -5,16 +5,20 @@ require_once 'function.php';
 $power_actions = DOMAIN_POWER_ACTIONS;
 
 $node = (string)($_GET['node'] ?? $_POST['node'] ?? '');
-if (!in_array($node, libvirt_list_domains($con) ?: [], true)) {
+if (!machine_visible($con, $node)) {
     flash_set('danger', t('Unknown machine: %s', $node));
     redirect('index.php');
 }
 $node_url = 'node.php?node='.urlencode($node);
 $res = libvirt_domain_lookup_by_name($con, $node);
+// what the user may do with this machine (an owner operates it without the operate role)
+$smarty->assign('allow', ['operate' => machine_allowed('operate', $node) && !$readonly, 'admin' => can('admin') && !$readonly,
+    'create' => can('create') && !$readonly]);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_require();
-    readonly_guard($node_url);
+    readonly_guard($node_url, null);
+    require_machine('operate', $node, $node_url);
     $action = (string)($_POST['action'] ?? '');
     $ok = false;
     $details = '';
@@ -98,6 +102,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ok = true;
         }
     }
+    elseif ($action === 'owner') {
+        require_permission('admin', $node_url);
+        $owner_id = (int)($_POST['owner'] ?? 0);
+        $owner = $owner_id ? user_find($owner_id) : null;
+        if ($owner_id && (!$owner || !role_allows($owner['role'], 'own'))) {
+            flash_set('danger', t('Unknown user.'));
+            redirect($node_url);
+        }
+        machine_owner_set(connection_current_key(), $node, $owner ? (int)$owner['id'] : null);
+        $details = $owner ? $owner['username'] : '-';
+        $message = $owner ? t('Owner set to %s.', $owner['username']) : t('Owner removed.');
+        $ok = true;
+    }
     elseif ($action === 'migrate') {
         require_permission('admin', $node_url);
         $dest = (string)($_POST['dest'] ?? '');
@@ -156,6 +173,12 @@ $active = (bool)libvirt_domain_is_active($res);
 $xml = domain_xml($res);
 
 $smarty->assign('node', $node);
+$owner_id = machine_owner_id(connection_current_key(), $node);
+$owner_user = $owner_id ? user_find($owner_id) : null;
+$smarty->assign('owner', $owner_user ? $owner_user['username'] : '');
+$smarty->assign('owner_id', $owner_id);
+// users who can own machines (roles user and localadmin)
+$smarty->assign('owner_candidates', can('admin') ? array_values(array_filter(user_list(), fn($u) => role_allows($u['role'], 'own'))) : []);
 $smarty->assign('key_combos', DOMAIN_KEY_COMBOS);
 $smarty->assign('domain_uuid', libvirt_domain_get_uuid_string($res));
 $smarty->assign('vm_title', $xml ? trim((string)$xml->title) : '');

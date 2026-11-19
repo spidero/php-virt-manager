@@ -61,11 +61,19 @@ failures (default 5) the address is blocked for `$login_lock_seconds`
 A token acts with the **current role of its owner**; changing a user's role
 changes what their tokens may do immediately.
 
-| Role       | Allowed                                                        |
-|------------|----------------------------------------------------------------|
-| `viewer`   | all `GET` endpoints except background jobs                     |
-| `operator` | everything in this API (power actions, snapshots, cloning, creating machines, jobs) |
-| `admin`    | same as operator (administration such as users or storage is done in the panel) |
+| Role         | Allowed                                                        |
+|--------------|----------------------------------------------------------------|
+| `user`       | own machines only: reading, power actions, snapshots; cloning own machines and creating machines from cloud images within the quotas; own background jobs; the lists of images, SSH keys, pools, networks and connections |
+| `localadmin` | same as `user` (deleting machines is done in the panel) |
+| `viewer`     | all `GET` endpoints except background jobs                     |
+| `auditor`    | same as `viewer`                                               |
+| `operator`   | everything in this API (power actions, snapshots, cloning, creating machines, all jobs) |
+| `admin`      | same as operator (administration such as users or storage is done in the panel) |
+
+For `user` and `localadmin` the machines of other users do not exist: they are
+missing from `GET /domains` and answer `404`. A machine they create (or clone)
+becomes theirs. A request exceeding a quota is refused with `400` and a message
+such as `Quota exceeded: memory (MB) 4096 of 2048 (now 1024).`
 
 Additionally, a connection configured as read-only (`'readonly' => 1` in
 `$connections`) rejects every state-changing request with `403`.

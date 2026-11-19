@@ -3,7 +3,7 @@
 require_once 'function.php';
 
 $node = (string)($_GET['node'] ?? '');
-if (!in_array($node, libvirt_list_domains($con) ?: [], true)) {
+if (!machine_visible($con, $node)) {
     http_response_code(404);
     exit;
 }

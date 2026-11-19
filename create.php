@@ -1,7 +1,7 @@
 <?php
 
 require_once 'function.php';
-require_permission('operate');
+require_permission('create');
 
 $node_info = libvirt_node_get_info($con);
 $max_memory_mb = (int)floor($node_info['memory'] / 1024);
@@ -48,7 +48,7 @@ $vol_name = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_require();
-    readonly_guard('create.php');
+    readonly_guard('create.php', 'create');
 
     $form = [
         'name'    => trim((string)($_POST['name'] ?? '')),
@@ -122,6 +122,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $iso_path = $form['source'] === 'iso' ? $form['iso'] : '';
     $boot = ['iso' => ['cdrom', 'hd'], 'import' => ['hd'], 'pxe' => ['network', 'hd']][$form['source']] ?? ['hd'];
 
+    if (!$errors) {
+        $disk_gb = $import ? quota_volume_gb($con, $form['volume']) : $form['disk'];
+        if (($quota = quota_check($con, ['machines' => 1, 'vcpus' => $form['vcpus'], 'memory_mb' => $form['memory'], 'disk_gb' => $disk_gb])) !== '') {
+            $errors[] = $quota;
+        }
+    }
+
     if (!$errors && !$import) {
         $pool = libvirt_storagepool_lookup_by_name($con, $form['pool']);
         $vol_name = $form['name'].'.qcow2';
@@ -160,6 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         action_log('create', $form['name'], false, $details.'; '.implode(' ', $errors));
     }
     else {
+        owner_assign_new(owner_job_params(), $form['name']);
         action_log('create', $form['name'], true, $details);
         $message = t('Machine %s created', $form['name']);
         if ($form['start']) {

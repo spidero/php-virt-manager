@@ -7,7 +7,7 @@ require_once 'function.php';
 $node = (string)($_GET['node'] ?? $_POST['node'] ?? '');
 $xml_url = 'xml.php?node='.urlencode($node);
 require_permission('admin', 'node.php?node='.urlencode($node));
-if (!in_array($node, libvirt_list_domains($con) ?: [], true)) {
+if (!machine_visible($con, $node)) {
     flash_set('danger', t('Unknown machine: %s', $node));
     redirect('index.php');
 }

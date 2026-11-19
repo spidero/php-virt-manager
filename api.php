@@ -30,7 +30,7 @@ try {
 
     $path = (string)($_SERVER['PATH_INFO'] ?? $_GET['route'] ?? '');
     [$handler, $permission, $args] = api_route((string)$_SERVER['REQUEST_METHOD'], $path);
-    if (!role_allows($user['role'], $permission)) {
+    if (!api_access($user['role'], $permission)) {
         throw new ApiError('your role ('.$user['role'].') does not allow this', 403);
     }
 

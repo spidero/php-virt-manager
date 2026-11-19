@@ -1,6 +1,7 @@
 <?php
 
 require_once 'function.php';
+require_permission('view');
 
 // libvirt storage pool states (virStoragePoolState)
 $pool_states = [0 => 'inactive', 1 => 'building', 2 => 'running', 3 => 'degraded', 4 => 'inaccessible'];

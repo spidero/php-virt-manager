@@ -1,7 +1,7 @@
 <?php
 
 require_once 'function.php';
-require_permission('operate');
+require_permission('create');
 
 $catalog = cloud_catalog();
 $pools = storage_active_pools($con);
@@ -41,11 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('cloud.php');
     }
 
-    readonly_guard('cloud.php');
+    readonly_guard('cloud.php', 'create');
     ['errors' => $errors, 'form' => $form, 'params' => $params] = cloud_create_request($con, $_POST);
 
     if (!$errors) {
-        $id = job_create('cloud_create', $params);
+        $id = job_create('cloud_create', $params + owner_job_params());
         action_log('cloud_create_queued', $form['name'], true, $form['image'].' (job #'.$id.')');
         flash_set('success', t('Machine %s is being created in the background (job #%d).', $form['name'], $id));
         redirect('jobs.php');

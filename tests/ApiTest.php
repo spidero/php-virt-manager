@@ -8,7 +8,7 @@ final class ApiTest extends TestCase
     {
         [$handler, $permission, $args] = api_route('POST', '/v1/domains/azure%20linux/actions/start');
         $this->assertSame('api_domain_action', $handler);
-        $this->assertSame('operate', $permission);
+        $this->assertSame('machine', $permission, 'checked per machine in the handler');
         $this->assertSame(['azure linux', 'start'], $args);
 
         [$handler, , $args] = api_route('DELETE', '/v1/domains/vm1/snapshots/snap-1');
@@ -16,19 +16,23 @@ final class ApiTest extends TestCase
         $this->assertSame(['vm1', 'snap-1'], $args);
     }
 
-    public function testReadRoutesNeedViewPermission(): void
+    public function testRouteAccess(): void
     {
-        foreach (API_ROUTES as $route) {
-            $method = $route[0];
-            $handler = $route[2];
-            $permission = $route[3];
-            if ($method === 'GET' && $handler !== 'api_jobs' && $handler !== 'api_job') {
-                $this->assertSame('view', $permission, $handler);
-            }
+        foreach (API_ROUTES as [$method, $pattern, $handler, $access]) {
+            $this->assertContains($access, ['catalog', 'machine', 'create', 'jobs'], $handler);
             if ($method !== 'GET') {
-                $this->assertNotSame('view', $permission, $handler.' changes state');
+                $this->assertNotSame('catalog', $access, $handler.' changes state');
             }
         }
+        // own-machine roles reach machine routes (the handlers check the machine) but not host-wide ones
+        $this->assertTrue(api_access('user', 'machine'));
+        $this->assertFalse(api_access('user', 'view'));
+        $this->assertTrue(api_access('user', 'catalog'));
+        $this->assertTrue(api_access('viewer', 'catalog'));
+        $this->assertTrue(api_access('user', 'jobs'));
+        $this->assertFalse(api_access('viewer', 'create'));
+        $this->assertFalse(api_access('auditor', 'jobs'));
+        $this->assertTrue(api_access('operator', 'create'));
     }
 
     public function testUnknownRouteIs404(): void

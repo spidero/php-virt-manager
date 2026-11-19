@@ -5,4 +5,5 @@
 define('PUBLIC_PAGE', true);
 require_once 'function.php';
 
-http_response_code(can('operate') ? 204 : 401);
+// the machine is checked by console.php, this only stops users without any machine access
+http_response_code(can('operate') || can('own') ? 204 : 401);

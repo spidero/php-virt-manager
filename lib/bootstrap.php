@@ -24,6 +24,7 @@ require_once __DIR__.'/favorites.php';
 require_once __DIR__.'/networks.php';
 require_once __DIR__.'/hostdev.php';
 require_once __DIR__.'/update.php';
+require_once __DIR__.'/owners.php';
 require_once __DIR__.'/schedules.php';
 require_once __DIR__.'/api.php';
 

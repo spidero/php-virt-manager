@@ -51,7 +51,7 @@ const I18N_DYNAMIC = [
     'no state', 'running', 'blocked', 'paused', 'shutting down', 'shut off', 'crashed', 'suspended', 'unknown',
     'shutdown', 'shutoff', 'pmsuspended', 'disk-snapshot',
     'inactive', 'building', 'degraded', 'inaccessible',
-    'viewer', 'operator', 'admin',
+    'user', 'localadmin', 'viewer', 'auditor', 'operator', 'admin',
     'Starting machine, it may take some time', 'Shutting down machine, it may take some time',
     'Machine forcibly stopped', 'Machine reset', 'Machine state saved; the next start restores it',
     'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',

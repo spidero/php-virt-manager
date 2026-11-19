@@ -107,6 +107,35 @@ const DB_MIGRATIONS = [
             created_at INTEGER NOT NULL
         )',
     ],
+    10 => [
+        // owners of machines (roles user/localadmin see only their own machines)
+        'CREATE TABLE machine_owners (
+            conn TEXT NOT NULL,
+            name TEXT NOT NULL,
+            user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+            PRIMARY KEY (conn, name)
+        )',
+        // new roles: the CHECK constraint of users cannot be altered, the table is
+        // rebuilt (foreign keys are off during migrations, see db_migrate());
+        // quota_*: limits of own-machine roles per hypervisor, NULL = no limit
+        'CREATE TABLE users_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL CHECK (role IN (\'user\', \'localadmin\', \'viewer\', \'auditor\', \'operator\', \'admin\')),
+            lang TEXT,
+            created_at INTEGER NOT NULL,
+            last_login INTEGER,
+            quota_machines INTEGER,
+            quota_vcpus INTEGER,
+            quota_memory_mb INTEGER,
+            quota_disk_gb INTEGER
+        )',
+        'INSERT INTO users_new (id, username, password_hash, role, lang, created_at, last_login)
+            SELECT id, username, password_hash, role, lang, created_at, last_login FROM users',
+        'DROP TABLE users',
+        'ALTER TABLE users_new RENAME TO users',
+    ],
 ];
 
 function db() {
@@ -131,7 +160,16 @@ function db_open($path) {
 
 function db_migrate(PDO $pdo) {
     $version = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    foreach (DB_MIGRATIONS as $target => $statements) {
+    $migrations = DB_MIGRATIONS;
+    // by number, whatever the order in the array
+    ksort($migrations);
+    if (max(array_keys($migrations)) <= $version) {
+        return;
+    }
+    // foreign keys off while tables are rebuilt (a DROP TABLE would otherwise delete
+    // the rows referencing it); the pragma has no effect inside a transaction
+    $pdo->exec('PRAGMA foreign_keys = OFF');
+    foreach ($migrations as $target => $statements) {
         if ($target <= $version) {
             continue;
         }
@@ -141,6 +179,11 @@ function db_migrate(PDO $pdo) {
         }
         $pdo->exec('PRAGMA user_version = '.(int)$target);
         $pdo->commit();
+    }
+    $broken = $pdo->query('PRAGMA foreign_key_check')->fetchAll();
+    $pdo->exec('PRAGMA foreign_keys = ON');
+    if ($broken) {
+        throw new RuntimeException('database migration left broken references');
     }
 }
 

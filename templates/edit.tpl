@@ -66,7 +66,7 @@
             <input type="hidden" name="node" value="{$node}">
             <input type="hidden" name="action" value="detach_disk">
             <input type="hidden" name="target" value="{$d.target}">
-{if !$active && $can.admin && !$d.shared}
+{if !$active && $can_delete && !$d.shared}
             <label class="small text-nowrap"><input type="checkbox" class="form-check-input" name="delete_volume" value="1"> {'delete file'|t}</label>
 {/if}
             <button type="submit" class="btn btn-outline-danger btn-sm">{'Detach'|t}</button>
@@ -542,7 +542,7 @@
   </div>
 </div>
 
-{if $can.admin}
+{if $can_delete}
 <div class="card border-danger mb-3">
   <div class="card-header text-danger">{'Delete machine'|t}</div>
   <div class="card-body">

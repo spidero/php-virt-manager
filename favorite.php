@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect('index.php');
 }
 csrf_require();
-if (in_array($name, libvirt_list_domains($con) ?: [], true)) {
+if (machine_visible($con, $name)) {
     favorite_toggle(current_user()['id'], connection_current_key(), $name);
 }
 redirect($back);

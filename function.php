@@ -52,7 +52,8 @@ $smarty->assign('logged_user', $user['username'] ?? null);
 $smarty->assign('user_role', $user['role'] ?? null);
 $smarty->assign('can', permission_flags());
 // what the user may change on this connection (role and read-only mode combined)
-$smarty->assign('allow', ['operate' => can('operate') && !$readonly, 'admin' => can('admin') && !$readonly]);
+$smarty->assign('allow', ['operate' => can('operate') && !$readonly, 'admin' => can('admin') && !$readonly,
+    'create' => can('create') && !$readonly]);
 $smarty->assign('lang', i18n_language());
 $smarty->assign('app_version', app_version());
 // a newer release than the running one (administrators only, from the daily check)
@@ -94,7 +95,9 @@ if (!defined('PUBLIC_PAGE')) {
 // or the user lacks the permission
 function readonly_guard($back_url, $permission = 'operate') {
     global $readonly;
-    require_permission($permission, $back_url);
+    if ($permission !== null) {
+        require_permission($permission, $back_url);
+    }
     if ($readonly) {
         flash_set('danger', t('Connection is read-only.'));
         redirect($back_url);
